@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { KanbanSquare, Loader2, Settings, Sparkles, UserRound } from 'lucide-react';
 import { Logo } from '@/components/ui/kit';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { applyThemeMode } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { waitForTelegramInitData, waitForTelegramSdk } from '@/lib/telegram/web-app-launch';
@@ -82,11 +83,8 @@ function applyTheme(webApp: WebApp) {
   const content = webApp.contentSafeAreaInset;
   root.style.setProperty('--tg-safe-top', `${(safe?.top || 0) + (content?.top || 0)}px`);
   root.style.setProperty('--tg-safe-bottom', `${(safe?.bottom || 0) + (content?.bottom || 0)}px`);
-  root.dataset.theme = webApp.colorScheme;
   root.dataset.tg = '1';
-  const page = webApp.colorScheme === 'dark' ? '#000000' : '#ffffff';
-  webApp.setHeaderColor?.(page);
-  webApp.setBackgroundColor?.(page);
+  applyThemeMode();
 }
 
 /** telegram-web-app.js also defines WebApp in a normal browser; only theme inside Telegram. */
@@ -98,6 +96,7 @@ function boot(webApp: WebApp) {
   if (!insideTelegram(webApp)) return () => {};
   webApp.ready();
   webApp.expand();
+  hideMainButton(webApp);
   applyTheme(webApp);
   const onChange = () => applyTheme(webApp);
   webApp.onEvent('themeChanged', onChange);
@@ -142,37 +141,9 @@ export function TelegramBoot() {
   return null;
 }
 
-export function useMainButton(text: string | null, onClick: () => void) {
-  const handler = useRef(onClick);
-  handler.current = onClick;
-
-  useEffect(() => {
-    const webApp = getWebApp();
-    if (!webApp || !text) return;
-    const click = () => handler.current();
-    webApp.MainButton.setText(text);
-    webApp.MainButton.enable();
-    webApp.MainButton.show();
-    webApp.MainButton.onClick(click);
-    return () => {
-      webApp.MainButton.offClick(click);
-      webApp.MainButton.hide();
-    };
-  }, [text]);
-}
-
-export function useMainButtonProgress(pending: boolean) {
-  useEffect(() => {
-    const button = getWebApp()?.MainButton;
-    if (!button) return;
-    if (pending) {
-      button.showProgress(false);
-      button.disable();
-    } else {
-      button.hideProgress();
-      button.enable();
-    }
-  }, [pending]);
+/** Telegram's MainButton is intentionally not used: every screen has its own in-page button. */
+function hideMainButton(webApp: WebApp) {
+  webApp.MainButton?.hide();
 }
 
 export function TelegramBack({ href }: { href: string }) {
@@ -206,8 +177,16 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function BottomNav() {
+/** Highlights the tapped tab immediately, before the route commits. */
+function useOptimisticPath() {
   const pathname = usePathname();
+  const [pending, setPending] = useState<string | null>(null);
+  useEffect(() => setPending(null), [pathname]);
+  return { path: pending ?? pathname, go: setPending };
+}
+
+export function BottomNav() {
+  const { path: pathname, go } = useOptimisticPath();
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(12px+var(--safe-bottom))] md:hidden">
       <div className="pointer-events-auto mx-auto flex h-16 max-w-md items-center gap-1 rounded-full bg-[#111111] px-2 shadow-[0_8px_28px_-6px_rgb(0_0_0/0.35)] dark:bg-[#1c1c1f]">
@@ -218,7 +197,11 @@ export function BottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
-              onClick={() => haptic('light')}
+              prefetch
+              onClick={() => {
+                haptic('light');
+                go(tab.href);
+              }}
               aria-current={active ? 'page' : undefined}
               aria-label={tab.label}
               className={cn(
@@ -237,7 +220,7 @@ export function BottomNav() {
 }
 
 export function Sidebar({ account }: { account: string }) {
-  const pathname = usePathname();
+  const { path: pathname, go } = useOptimisticPath();
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
       <Link href="/" className="px-3 pb-6"><Logo /></Link>
@@ -249,6 +232,8 @@ export function Sidebar({ account }: { account: string }) {
             <Link
               key={tab.href}
               href={tab.href}
+              prefetch
+              onClick={() => go(tab.href)}
               className={cn(
                 'flex items-center gap-2.5 rounded-full px-3.5 py-2 text-[14px] transition-colors',
                 active ? 'bg-fg font-semibold text-bg [&_svg]:text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg',

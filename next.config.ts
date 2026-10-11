@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   serverExternalPackages: ['pdf-parse', '@prisma/client'],
   partialPrefetching: true,
+  experimental: {
+    // Keep visited tabs in the client cache so switching back is instant.
+    staleTimes: { dynamic: 60, static: 300 },
+  },
   turbopack: {
     rules: {
       "*.css": {

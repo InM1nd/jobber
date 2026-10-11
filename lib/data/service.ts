@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { cache } from 'react';
 import { isDemoMode } from '@/lib/demo/mode';
 import { demoStore, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
 import { decryptApiKey, encryptApiKey } from '@/lib/crypto/encryption';
@@ -22,7 +23,10 @@ function followUpDates(status: string, appliedAt?: string | null, followUpAt?: s
   return { appliedAt: applied, followUpAt: followUp };
 }
 
-export async function requireUser(): Promise<SessionUser | null> {
+/** Deduped per request: layout and page share one lookup. */
+export const requireUser = cache(loadUser);
+
+async function loadUser(): Promise<SessionUser | null> {
   if (isDemoMode()) return demoStore.user();
 
   const sessionUserId = await readSessionUserId();

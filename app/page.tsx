@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CtaLink, Logo, Note, ScoreRing, capsClass } from '@/components/ui/kit';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { InstallApp } from '@/components/pwa';
 
 const BOT = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'JobberCheck_bot').replace(/^@/, '');
 
@@ -34,6 +35,7 @@ export default function Home() {
           <CtaLink href={`https://t.me/${BOT}`} external>Open in Telegram</CtaLink>
           <Button asChild size="lg" variant="outline"><Link href="/auth/signin">Sign in <ArrowRight /></Link></Button>
         </div>
+        <div className="mt-5"><InstallApp variant="inline" /></div>
 
         <div className="relative mt-20 w-full max-w-md pt-3 text-left">
           <div className="absolute inset-x-6 top-0 h-10 rounded-[22px] border border-line bg-bg" aria-hidden />

@@ -3,7 +3,7 @@ import { deleteApiKey, requireUser, saveApiKey } from '@/lib/data/service';
 
 export const instant = false;
 
-const PROVIDERS = new Set(['openrouter', 'openai', 'anthropic', 'gemini', 'xai']);
+const PROVIDERS = new Set(['openai', 'anthropic', 'gemini', 'xai']);
 
 export async function POST(request: Request) {
   const user = await requireUser();

@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Copy, KeyRound, Mail, Send, Sparkles, Ticket, Trash2 } from 'lucide-react';
+import { ChevronRight, Copy, KeyRound, Mail, Send, Ticket, Trash2 } from 'lucide-react';
+import { EmailLinkForm } from '@/components/email-link-form';
+import { InstallApp } from '@/components/pwa';
+import { ThemeSegmented } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Group, Notice, Row, fieldClass } from '@/components/ui/kit';
-import { haptic, openExternal } from '@/components/telegram-ui';
+import { haptic, insideTelegram } from '@/components/telegram-ui';
 import { TelegramLoginButton } from '@/components/telegram-login-button';
-import { createClient } from '@/lib/db/supabase';
 import type { LinkedAccounts } from '@/lib/data/service';
 
 const PROVIDERS = [
-  ['openrouter', 'OpenRouter'],
   ['openai', 'OpenAI'],
   ['anthropic', 'Anthropic'],
   ['gemini', 'Gemini'],
@@ -25,30 +26,47 @@ function providerName(id: string) {
 export function SettingsPanel({
   keys,
   accounts,
-  emailLinkToken,
   botUsername,
   isOwner,
-  notice,
-  error: initialError,
+  demo,
 }: {
   keys: { id: string; provider: string; createdAt: string }[];
   accounts: LinkedAccounts;
-  emailLinkToken: string | null;
   botUsername: string;
   isOwner: boolean;
-  notice?: string;
-  error?: string;
+  demo?: boolean;
 }) {
   const router = useRouter();
-  const [provider, setProvider] = useState('openrouter');
+  const [provider, setProvider] = useState('openai');
   const [apiKey, setApiKey] = useState('');
   const [showKeyForm, setShowKeyForm] = useState(false);
   const [invite, setInvite] = useState('');
-  const [email, setEmail] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showTelegramOptions, setShowTelegramOptions] = useState(false);
-  const [message, setMessage] = useState(notice || '');
-  const [error, setError] = useState(initialError || '');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [previewEmailSent, setPreviewEmailSent] = useState(false);
+  const [emailLinkToken, setEmailLinkToken] = useState<string | null>(null);
+
+  async function openEmailForm() {
+    setShowEmailForm((v) => !v);
+    if (emailLinkToken) return;
+    const response = await fetch('/api/link/email-token', { method: 'POST' });
+    const body = await response.json().catch(() => ({}));
+    if (response.ok && body.token) setEmailLinkToken(body.token);
+    else setError(body.error || 'Email linking is not available here.');
+  }
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('connected')) setMessage(`${q.get('connected')} connected.`);
+    if (q.get('error')) setError(q.get('error') || '');
+    if (demo && q.get('preview') === 'email-sent') {
+      setPreviewEmailSent(true);
+      setShowEmailForm(true);
+      setEmailLinkToken('preview');
+    }
+  }, [demo]);
 
   function reset() {
     setError('');
@@ -81,19 +99,6 @@ export function SettingsPanel({
     router.refresh();
   }
 
-  async function connectOpenRouter() {
-    reset();
-    haptic('light');
-    const response = await fetch('/api/auth/openrouter/start', { method: 'POST' });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.url) {
-      setError(body.error || 'Could not start OpenRouter');
-      haptic('error');
-      return;
-    }
-    await openExternal(body.url);
-  }
-
   async function linkTelegramViaBot() {
     reset();
     const response = await fetch('/api/link/telegram', { method: 'POST' });
@@ -104,32 +109,6 @@ export function SettingsPanel({
     }
     window.open(body.url, '_blank', 'noopener');
     setMessage('Press Start in the bot, then come back and refresh this page.');
-  }
-
-  async function linkEmail(event: React.FormEvent) {
-    event.preventDefault();
-    reset();
-    if (!emailLinkToken) {
-      setError('Email linking is not available here.');
-      return;
-    }
-    try {
-      const supabase = createClient();
-      const redirect = new URL('/auth/callback', window.location.origin);
-      redirect.searchParams.set('link', 'email');
-      redirect.searchParams.set('t', emailLinkToken);
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: redirect.toString() },
-      });
-      if (otpError) setError(otpError.message);
-      else {
-        setMessage(`We sent a link to ${email}. Open it on any device to finish linking.`);
-        setShowEmailForm(false);
-      }
-    } catch {
-      setError('Email sign-in is not configured.');
-    }
   }
 
   async function unlink(kind: 'telegram' | 'email') {
@@ -168,8 +147,8 @@ export function SettingsPanel({
       {error && <Notice tone="danger">{error}</Notice>}
 
       <Group
-        title="AI connection"
-        footer="Jobber never pays for or sees your model usage. Keys are encrypted with AES-256-GCM."
+        title="AI key"
+        footer="Your key pays for scoring and letters. It’s encrypted with AES-256-GCM and never shown again."
       >
         {keys.map((key) => (
           <Row
@@ -185,12 +164,9 @@ export function SettingsPanel({
             }
           />
         ))}
-        <button type="button" onClick={connectOpenRouter} className="block w-full text-left transition-colors hover:bg-surface-2">
-          <Row icon={Sparkles} label="Connect OpenRouter" detail="Recommended · one login, every model" trailing={<ChevronRight className="size-4 text-subtle" />} />
-        </button>
         {showKeyForm ? (
           <form onSubmit={saveKey} className="animate-in space-y-2.5 p-4">
-            <div className="grid grid-cols-5 gap-1 rounded-[8px] bg-surface-2 p-0.5">
+            <div className="grid grid-cols-4 gap-1 rounded-[8px] bg-surface-2 p-0.5">
               {PROVIDERS.map(([id, name]) => (
                 <button
                   key={id}
@@ -210,10 +186,16 @@ export function SettingsPanel({
           </form>
         ) : (
           <button type="button" onClick={() => setShowKeyForm(true)} className="block w-full text-left transition-colors hover:bg-surface-2">
-            <Row icon={KeyRound} iconTone="neutral" label="Paste an API key" detail="OpenAI, Anthropic, Gemini, xAI" trailing={<ChevronRight className="size-4 text-subtle" />} />
+            <Row icon={KeyRound} label={keys.length ? "Replace API key" : "Add your API key"} detail="OpenAI, Anthropic, Gemini or xAI" trailing={<ChevronRight className="size-4 text-subtle" />} />
           </button>
         )}
       </Group>
+
+      <Group title="Appearance" footer="System follows your device on the web and your Telegram theme in the app.">
+        <div className="p-3"><ThemeSegmented /></div>
+      </Group>
+
+      <InstallGroup />
 
       <Group title="Linked accounts" footer="Both sign-ins open the same account, so the Telegram app and the website share matches, tracker and settings.">
         <Row
@@ -254,15 +236,22 @@ export function SettingsPanel({
                 <span className="text-[12px] text-muted">Linked</span>
               )
             ) : (
-              <Button size="sm" variant="soft" onClick={() => setShowEmailForm((v) => !v)}>Link</Button>
+              <Button size="sm" variant="soft" onClick={openEmailForm}>Link</Button>
             )
           }
         />
         {!accounts.email && showEmailForm && (
-          <form onSubmit={linkEmail} className="animate-in flex gap-2 p-4">
-            <input className={fieldClass} type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Button type="submit">Send link</Button>
-          </form>
+          <div className="animate-in p-4">
+            {emailLinkToken ? (
+              <EmailLinkForm
+                redirectTo={`/auth/callback?link=email&t=${encodeURIComponent(emailLinkToken)}`}
+                submitLabel="Send link"
+                initialState={previewEmailSent ? { kind: 'sent', email: 'you@example.com', at: Date.now() - 20000 } : undefined}
+              />
+            ) : (
+              <p className="text-[13px] text-muted">Preparing…</p>
+            )}
+          </div>
         )}
       </Group>
 
@@ -287,5 +276,22 @@ export function SettingsPanel({
       )}
 
     </div>
+  );
+}
+
+/** Only on the web: inside Telegram the app is already "installed". */
+function InstallGroup() {
+  const [web, setWeb] = useState(false);
+  const [force, setForce] = useState<'ios' | 'prompt' | undefined>();
+  useEffect(() => {
+    setWeb(!insideTelegram());
+    const p = new URLSearchParams(window.location.search).get('install');
+    if (p === 'ios' || p === 'prompt') setForce(p);
+  }, []);
+  if (!web) return null;
+  return (
+    <Group title="App">
+      <InstallApp force={force} />
+    </Group>
   );
 }

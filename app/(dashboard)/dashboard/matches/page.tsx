@@ -79,7 +79,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
           <EmptyState
             icon={KeyRound}
             title="Connect your AI"
-            text="Scoring and letters run on your own OpenRouter or API key, so you stay in control of cost."
+            text="Scoring and letters run on your own OpenAI, Anthropic, Gemini or xAI key, so you stay in control of cost."
             action={<CtaLink href="/dashboard/settings">Connect AI key</CtaLink>}
           />
         ) : (

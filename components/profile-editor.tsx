@@ -6,7 +6,7 @@ import { FileText, Globe2, Languages, MapPin, Upload, Wallet, Wifi } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Group, Notice, Row, inlineFieldClass } from '@/components/ui/kit';
 import { cn } from '@/lib/utils';
-import { haptic, useMainButton, useMainButtonProgress } from '@/components/telegram-ui';
+import { haptic } from '@/components/telegram-ui';
 import type { DemoProfile } from '@/lib/demo/store';
 
 const areaClass =
@@ -82,10 +82,6 @@ export function ProfileEditor({ profile }: { profile: DemoProfile }) {
     router.refresh();
   }
 
-  useMainButton('Save profile', () => {
-    void saveProfile();
-  });
-  useMainButtonProgress(saving);
 
   function save(event: React.FormEvent) {
     event.preventDefault();

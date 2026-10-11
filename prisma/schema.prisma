@@ -63,7 +63,7 @@ model ApiKey {
   userId            String
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  provider          String    // "openrouter", "openai", "anthropic", "gemini", "xai"
+  provider          String    // "openai", "anthropic", "gemini", "xai"
   encryptedKey      String    @db.Text
   iv                String
   authTag           String

@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-export type LLMProvider = 'openrouter' | 'openai' | 'anthropic' | 'gemini' | 'xai';
+export type LLMProvider = 'openai' | 'anthropic' | 'gemini' | 'xai';
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -35,8 +35,6 @@ export class LLMClient {
     
     try {
       switch (provider) {
-        case 'openrouter':
-          return await this.chatOpenRouter(messages, options);
         case 'openai':
           return await this.chatOpenAI(messages, options);
         case 'anthropic':
@@ -52,31 +50,6 @@ export class LLMClient {
       console.error(`LLM error (${provider}):`, error);
       throw error;
     }
-  }
-  
-  private async chatOpenRouter(
-    messages: LLMMessage[],
-    options?: { temperature?: number; maxTokens?: number }
-  ): Promise<LLMResponse> {
-    const client = new OpenAI({
-      apiKey: this.config.apiKey,
-      baseURL: 'https://openrouter.ai/api/v1',
-    });
-    
-    const response = await client.chat.completions.create({
-      model: this.config.model || 'anthropic/claude-3.5-sonnet',
-      messages: messages.map(m => ({
-        role: m.role,
-        content: m.content,
-      })),
-      temperature: options?.temperature ?? 0.7,
-      max_tokens: options?.maxTokens ?? 4000,
-    });
-    
-    return {
-      content: response.choices[0]?.message?.content || '',
-      tokensUsed: response.usage?.total_tokens,
-    };
   }
   
   private async chatOpenAI(

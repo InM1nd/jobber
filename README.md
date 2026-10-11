@@ -12,7 +12,7 @@ The owner tests it first. Friends get in with an invite code. Jobber does not pa
 - Deduping the same company + title + location across sources.
 - Daily Vercel cron: fetch a few sources per run, then score a few new vacancies per user, then send Telegram follow-ups. Progress for the fetch loop is stored in `CronJob`.
 - Match scores (0–100), reasons, and red flags. Daily digest to Telegram for scores of 70+.
-- Cover letters through one provider interface: OpenRouter, OpenAI, Anthropic, Gemini, or xAI. OpenRouter also has a PKCE start/callback.
+- Cover letters through one provider interface: OpenAI, Anthropic, Gemini, or xAI, using a key the user pastes.
 - API keys encrypted with AES-256-GCM. The ciphertext is not returned to the browser and is not written to logs on purpose.
 - Application tracker with statuses and a 7-day follow-up date.
 - `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
@@ -20,7 +20,6 @@ The owner tests it first. Friends get in with an invite code. Jobber does not pa
 
 ## What is stubbed
 
-- OpenRouter's key exchange follows their documented PKCE callback (`POST /api/v1/auth/keys`). If their payload changes, the callback will say the exchange failed. There is no separate OpenRouter app id in this version.
 - Sources marked `html` or `join` in the watchlist have no adapter. The cron records that on the source row instead of scraping the page.
 - SmartRecruiters stores the list payload (title, location, url). The long description needs a second request and is not fetched yet.
 - There is no separate `/link` step. Opening the Mini App is the account.
@@ -136,9 +135,9 @@ Invite links look like `https://t.me/<bot>/<shortname>?startapp=CODE`. `/start C
 
 ### 7. Your model key
 
-Settings → Connect OpenRouter, or paste a key for OpenRouter, OpenAI, Anthropic, Gemini, or xAI.
+Settings → paste a key for OpenAI, Anthropic, Gemini, or xAI.
 
-Inside Telegram, Connect OpenRouter calls `Telegram.WebApp.openLink`. The return page is shown in that browser and tells you to switch back to the chat. The key is stored from a signed `state` on the callback, so the Telegram webview does not have to share cookies with that browser. Pasting a key does not leave the Mini App.
+Pasting a key does not leave the Mini App.
 
 ### 8. Vercel
 
@@ -175,7 +174,6 @@ Tests cover AES-GCM roundtrip, salary and ATS parsers (Greenhouse, Ashby, Lever,
 - `app/(dashboard)` — Matches, Tracker, Profile, Settings
 - `app/api/telegram` — grammY webhook
 - `app/api/cron` — fetch, match, follow-up
-- `app/api/auth/openrouter` — PKCE start and callback
 - `lib/sources` — one parser per ATS
 - `lib/llm` — provider client, scoring, letters
 - `lib/crypto` — AES-256-GCM
