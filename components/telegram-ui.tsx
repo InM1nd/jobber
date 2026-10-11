@@ -95,36 +95,65 @@ function applyTheme(webApp: WebApp) {
   }
 }
 
+function boot(webApp: WebApp, pathname: string, refresh: () => void) {
+  webApp.ready();
+  webApp.expand();
+  applyTheme(webApp);
+  const onChange = () => applyTheme(webApp);
+  webApp.onEvent('themeChanged', onChange);
+  webApp.onEvent('viewportChanged', onChange);
+  webApp.onEvent('safeAreaChanged', onChange);
+
+  if (webApp.initData && (pathname === '/' || pathname.startsWith('/dashboard'))) {
+    const invite = new URLSearchParams(window.location.search).get('invite') || undefined;
+    void fetch('/api/auth/telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData: webApp.initData, invite }),
+    }).then((response) => {
+      if (response.ok) refresh();
+    });
+  }
+
+  return () => {
+    webApp.offEvent('themeChanged', onChange);
+    webApp.offEvent('viewportChanged', onChange);
+    webApp.offEvent('safeAreaChanged', onChange);
+  };
+}
+
 export function TelegramBoot() {
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const webApp = getWebApp();
-    if (!webApp) return;
-    webApp.ready();
-    webApp.expand();
-    applyTheme(webApp);
-    const onChange = () => applyTheme(webApp);
-    webApp.onEvent('themeChanged', onChange);
-    webApp.onEvent('viewportChanged', onChange);
-    webApp.onEvent('safeAreaChanged', onChange);
-
-    if (webApp.initData && (pathname === '/' || pathname.startsWith('/dashboard'))) {
-      const invite = new URLSearchParams(window.location.search).get('invite') || undefined;
-      void fetch('/api/auth/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData: webApp.initData, invite }),
-      }).then((response) => {
-        if (response.ok) router.refresh();
-      });
+    let cancelled = false;
+    let cleanup = () => {};
+    const existing = getWebApp();
+    if (existing) {
+      cleanup = boot(existing, pathname, () => router.refresh());
+      return () => {
+        cancelled = true;
+        cleanup();
+      };
     }
 
+    // Telegram injects the SDK in its webview. Loading it in a normal browser
+    // writes viewport CSS variables onto <html> before hydration and reloads the page.
+    if (!/Telegram/i.test(navigator.userAgent)) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-web-app.js';
+    script.async = true;
+    script.onload = () => {
+      if (cancelled) return;
+      const webApp = getWebApp();
+      if (webApp) cleanup = boot(webApp, pathname, () => router.refresh());
+    };
+    document.head.appendChild(script);
     return () => {
-      webApp.offEvent('themeChanged', onChange);
-      webApp.offEvent('viewportChanged', onChange);
-      webApp.offEvent('safeAreaChanged', onChange);
+      cancelled = true;
+      cleanup();
     };
   }, [pathname, router]);
 
