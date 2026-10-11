@@ -8,18 +8,23 @@ import { InstallApp } from '@/components/pwa';
 import { ThemeSegmented } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Group, Notice, Row, fieldClass } from '@/components/ui/kit';
+import { GeminiKeyCard } from '@/components/gemini-key';
 import { haptic, insideTelegram } from '@/components/telegram-ui';
 import { TelegramLoginButton } from '@/components/telegram-login-button';
 import type { LinkedAccounts } from '@/lib/data/service';
 
 export function SettingsPanel({
   usage,
+  geminiKey,
+  shared,
   accounts,
   botUsername,
   isOwner,
   demo,
 }: {
   usage: { limits: { score: number; write: number; parse: number }; used: { score: number; write: number; parse: number } };
+  geminiKey: { addedAt: string } | null;
+  shared: { left: number };
   accounts: LinkedAccounts;
   botUsername: string;
   isOwner: boolean;
@@ -106,13 +111,16 @@ export function SettingsPanel({
       {message && <Notice tone="success">{message}</Notice>}
       {error && <Notice tone="danger">{error}</Notice>}
 
+      <GeminiKeyCard initial={geminiKey} />
+
       <Group
-        title="AI"
-        footer="Jobber runs on a shared free Gemini quota, so there are daily limits per person. If the shared AI is busy, the rest is scored automatically in the next run."
+        title="AI today"
+        footer={geminiKey
+          ? 'Running on your own Gemini key.'
+          : `Jobber shares one free Gemini quota between everyone (${shared.left} requests left today across all users). Limits reset at 09:00 Vienna time.`}
       >
-        <Row icon={Sparkles} iconTone="success" label="Shared Gemini" detail="No key needed — it’s included" />
-        <Row icon={Gauge} label="Job scores today" detail="Pre-filtered first, so only plausible jobs use AI" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.score} / {usage.limits.score}</span>} />
-        <Row icon={PenLine} label="Letters & CV advice today" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.write} / {usage.limits.write}</span>} />
+        <Row icon={Gauge} label="Scoring" detail={`Each request scores up to 5 pre-filtered jobs`} trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.score} / {usage.limits.score}</span>} />
+        <Row icon={PenLine} label="Letters & CV advice" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.write} / {usage.limits.write}</span>} />
       </Group>
 
       <Group title="Appearance" footer="System follows your device on the web and your Telegram theme in the app.">

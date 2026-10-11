@@ -2,26 +2,57 @@ import type { SearchRun } from '@prisma/client';
 import { getPrisma } from '@/lib/db/prisma';
 import { ingestSource } from '@/lib/jobs/ingest';
 import { boardUrl, type SeedCompany } from '@/lib/companies/seed';
-import { KEYWORD_BOARDS, keywordSourceUrl } from '@/lib/sources/boards';
+import { LOCAL_BOARDS, boardsFor, keywordSourceUrl, type KeywordBoard } from '@/lib/sources/boards';
 import { sendTelegramMessage } from '@/lib/telegram/bot';
 import { poolWhere, scoreUserBatch } from './score';
 
 const FRESH_MS = 6 * 60 * 60 * 1000;
 
-/** Creates (or reuses) JobSource rows for the plan. Returns their ids. */
-export async function ensureSources(companies: SeedCompany[], keywords: string[]) {
-  const prisma = getPrisma();
-  const specs = [
-    ...companies.map((c) => ({ company: c.name, sourceType: c.ats, sourceUrl: boardUrl(c), sector: c.tags[0] || null })),
-    ...keywords.slice(0, 3).flatMap((k) =>
-      KEYWORD_BOARDS.map((b) => ({
-        company: `${b[0].toUpperCase()}${b.slice(1)} · ${k}`,
-        sourceType: b,
-        sourceUrl: keywordSourceUrl(b, k),
-        sector: 'board',
-      })),
-    ),
+export interface SourceSpec {
+  company: string;
+  sourceType: string;
+  sourceUrl: string;
+  sector: string | null;
+}
+
+/**
+ * Specs for a plan, ordered by location priority: local boards and companies
+ * hiring in the user's city first, then country, then remote boards.
+ */
+export function sourceSpecs(
+  companies: Array<Pick<SeedCompany, 'name' | 'ats' | 'slug' | 'cities' | 'countries' | 'tags'> & { remoteShare?: number }>,
+  keywords: string[],
+  place: { city?: string | null; country?: string | null; remote: boolean },
+): SourceSpec[] {
+  const city = (place.city || '').toLowerCase();
+  const country = (place.country || '').toLowerCase();
+  const rank = (c: (typeof companies)[number]) =>
+    c.cities.some((x) => x.toLowerCase() === city) ? 0 : c.countries.some((x) => x.toLowerCase() === country) ? 1 : 2;
+  const boards = boardsFor({ country: place.country, remote: place.remote });
+  const kw = keywords.slice(0, 3);
+  const local = boards.filter((b) => LOCAL_BOARDS.includes(b));
+  const remote = boards.filter((b) => !LOCAL_BOARDS.includes(b));
+  const board = (b: KeywordBoard, k: string): SourceSpec => ({
+    company: `${b[0].toUpperCase()}${b.slice(1)} · ${k}${LOCAL_BOARDS.includes(b) && place.city ? ` · ${place.city}` : ''}`,
+    sourceType: b,
+    sourceUrl: keywordSourceUrl(b, k, place),
+    sector: 'board',
+  });
+  const company = (c: (typeof companies)[number]): SourceSpec => ({
+    company: c.name, sourceType: c.ats, sourceUrl: boardUrl(c), sector: c.tags[0] || null,
+  });
+  const sorted = [...companies].sort((a, b) => rank(a) - rank(b));
+  return [
+    ...kw.flatMap((k) => local.map((b) => board(b, k))),
+    ...sorted.filter((c) => rank(c) < 2).map(company),
+    ...sorted.filter((c) => rank(c) === 2).map(company),
+    ...kw.flatMap((k) => remote.map((b) => board(b, k))),
   ];
+}
+
+/** Creates (or reuses) JobSource rows. Returns their ids in the given order. */
+export async function ensureSourceRows(specs: SourceSpec[]) {
+  const prisma = getPrisma();
   const ids: string[] = [];
   for (const spec of specs) {
     const row = await prisma.jobSource.upsert({
@@ -32,6 +63,11 @@ export async function ensureSources(companies: SeedCompany[], keywords: string[]
     ids.push(row.id);
   }
   return ids;
+}
+
+/** Keyword-board sources only (companies are managed separately by the watch list). */
+export async function ensureBoardSources(keywords: string[], place: { city?: string | null; country?: string | null; remote: boolean }) {
+  return ensureSourceRows(sourceSpecs([], keywords, place));
 }
 
 export async function startSearchRun(userId: string) {
@@ -95,14 +131,16 @@ export async function stepSearchRun(userId: string, runId: string, budgetMs = 35
 
   // scoring
   const result = await scoreUserBatch(userId, {
-    maxCalls: 9,
+    maxCalls: 4,
     deadline: started + budgetMs,
-    concurrency: 3,
+    concurrency: 2,
   });
-  const done = result.queued === 0 || result.stoppedBy === 'quota' || result.stoppedBy === 'no-ai' || result.stoppedBy === 'rate';
+  const done = result.queued === 0 || result.stoppedBy === 'quota' || result.stoppedBy === 'budget' || result.stoppedBy === 'no-ai' || result.stoppedBy === 'rate';
   const note =
     result.stoppedBy === 'quota'
-      ? 'Daily AI limit reached — the rest will be scored tomorrow.'
+      ? 'Your daily AI limit is used — the rest is scored tomorrow (or add your own free Gemini key in Settings).'
+      : result.stoppedBy === 'budget'
+        ? 'The shared AI used today’s free quota — the rest is scored tomorrow.'
       : result.stoppedBy === 'rate'
         ? 'The shared AI is busy — the rest will be scored in the next run.'
         : result.stoppedBy === 'no-ai'
@@ -126,10 +164,18 @@ async function notifyRunDone(userId: string, runId: string) {
   const prisma = getPrisma();
   const claimed = await prisma.searchRun.updateMany({ where: { id: runId, notifiedAt: null }, data: { notifiedAt: new Date() } });
   if (!claimed.count) return;
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user?.telegramId) return;
+  const [user, profile, runs] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
+    prisma.profile.findUnique({ where: { userId } }),
+    prisma.searchRun.count({ where: { userId } }),
+  ]);
+  if (!user?.telegramId || profile?.alertFrequency === 'off') return;
+  // First run always reports; later runs only for "instant" alerts (daily digest covers the rest).
+  if (runs > 1 && profile?.alertFrequency !== 'instant') return;
+  const threshold = runs > 1 ? profile?.alertThreshold ?? 70 : 0;
+  const run = await prisma.searchRun.findUnique({ where: { id: runId } });
   const top = await prisma.jobMatch.findMany({
-    where: { userId, filtered: false },
+    where: { userId, filtered: false, score: { gte: threshold }, ...(runs > 1 && run ? { createdAt: { gte: run.createdAt } } : {}) },
     include: { job: { include: { source: true } } },
     orderBy: { score: 'desc' },
     take: 5,
@@ -139,6 +185,6 @@ async function notifyRunDone(userId: string, runId: string) {
   const lines = top.map((m, i) => `${i + 1}. ${m.score} · ${m.job.title} — ${m.job.company || m.job.source.company}\n${m.job.url}`);
   await sendTelegramMessage(
     user.telegramId,
-    `Your first search is done. Top matches:\n\n${lines.join('\n\n')}\n\nAll matches: ${base}/dashboard/matches`,
+    `${runs > 1 ? 'New matches' : 'Your first search is done. Top matches'}:\n\n${lines.join('\n\n')}\n\nAll matches: ${base}/dashboard/matches`,
   );
 }

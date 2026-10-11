@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { gemini, parseJsonLoose } from './gemini';
+import { parseJsonLoose } from './gemini';
+import { runAi } from './run';
 
 const str = (max: number) => z.string().trim().max(max);
 const list = (max: number, itemMax = 60) =>
@@ -29,6 +30,8 @@ export const REMOTE_PREFS = ['remote', 'hybrid', 'onsite', 'any'] as const;
 export const CvProfileSchema = z.object({
   fullName: optionalStr(120),
   headline: optionalStr(160),
+  workField: optionalStr(60),
+  country: optionalStr(60),
   targetRoles: list(6, 80),
   seniority: z.unknown().optional().transform((v) => {
     const s = typeof v === 'string' ? v.toLowerCase().trim() : '';
@@ -67,11 +70,13 @@ Keys:
  "seniority": "intern"|"junior"|"mid"|"senior"|"lead"|"principal", "yearsExperience": number|null,
  "skills": string[] (up to 25, most important first, canonical names e.g. "React", "TypeScript"),
  "languages": string[] (spoken languages with level if given, e.g. "English (C1)"),
- "location": string|null (city, country), "remotePreference": "remote"|"hybrid"|"onsite"|"any",
+ "workField": one of "Software & IT","Design","Product","Data","Marketing","Sales","Customer support","Finance & accounting","HR","Healthcare","Education","Hospitality","Logistics","Engineering","Office & admin","Other",
+ "location": string|null (city only, e.g. "Vienna"), "country": string|null (e.g. "Austria"), "remotePreference": "remote"|"hybrid"|"onsite"|"any",
  "salaryMin": number|null, "salaryMax": number|null, "gaps": string[], "summary": string (2 sentences, third person)}`;
 
-export async function extractCvProfile(cvText: string): Promise<CvProfile> {
-  const reply = await gemini(`CV:\n"""\n${cvText.slice(0, 18_000)}\n"""`, {
+export async function extractCvProfile(userId: string, cvText: string): Promise<CvProfile> {
+  const reply = await runAi(userId, 'parse', `CV:\n"""\n${cvText.slice(0, 18_000)}\n"""`, {
+    onboarding: true,
     tier: 'smart',
     system: SYSTEM,
     json: true,

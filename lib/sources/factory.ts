@@ -9,6 +9,7 @@ import { RemotiveSource } from './remotive';
 import { RssSource } from './rss';
 import { SmartRecruitersSource } from './smartrecruiters';
 import { KeywordBoardSource } from './boards';
+import { MoreSource } from './more';
 
 export const SUPPORTED_SOURCE_TYPES = [
   'greenhouse',
@@ -24,6 +25,15 @@ export const SUPPORTED_SOURCE_TYPES = [
   'jobicy',
   'himalayas',
   'arbeitnow',
+  'remoteok',
+  'weworkremotely',
+  'workingnomads',
+  'themuse',
+  'bundesagentur',
+  'adzuna',
+  'jooble',
+  'bamboohr',
+  'workday',
 ] as const;
 
 export function isSupportedSourceType(type: string): boolean {
@@ -61,6 +71,16 @@ export function createJobSource(config: JobSourceConfig): JobSource {
     case 'himalayas':
     case 'arbeitnow':
       return new KeywordBoardSource(config);
+    case 'remoteok':
+    case 'weworkremotely':
+    case 'workingnomads':
+    case 'themuse':
+    case 'bundesagentur':
+    case 'adzuna':
+    case 'jooble':
+    case 'bamboohr':
+    case 'workday':
+      return new MoreSource(config);
     default:
       return new UnsupportedSource();
   }

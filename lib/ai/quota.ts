@@ -4,7 +4,7 @@ import { AiKind, allowance, dailyLimits, utcDay } from './limiter';
 
 export class QuotaExceededError extends Error {
   constructor(public kind: AiKind, public limit: number) {
-    super(`Daily ${kind} limit reached (${limit}). It resets at midnight UTC.`);
+    super(`You’ve used today’s ${kind === 'score' ? 'scoring' : kind === 'parse' ? 'CV reading' : 'writing'} limit (${limit}). It resets at 02:00 Vienna time — or add your own free Gemini key in Settings for more.`);
     this.name = 'QuotaExceededError';
   }
 }
@@ -36,19 +36,18 @@ export async function addUsage(userId: string, kind: AiKind, n = 1) {
 }
 
 /** How many `kind` calls the user may still make today (capped at wanted). */
-export async function quotaAllowance(userId: string, kind: AiKind, wanted: number) {
-  return allowance(wanted, await usedToday(userId, kind), dailyLimits()[kind]);
+export async function quotaAllowance(userId: string, kind: AiKind, wanted: number, ownKey = false) {
+  return allowance(wanted, await usedToday(userId, kind), dailyLimits(ownKey)[kind]);
 }
 
 /** Throws QuotaExceededError when the user has none left; otherwise records one use. */
-export async function consumeOne(userId: string, kind: AiKind) {
-  const limit = dailyLimits()[kind];
-  if ((await quotaAllowance(userId, kind, 1)) < 1) throw new QuotaExceededError(kind, limit);
-  await addUsage(userId, kind, 1);
+export async function assertQuota(userId: string, kind: AiKind, ownKey = false) {
+  const limit = dailyLimits(ownKey)[kind];
+  if ((await quotaAllowance(userId, kind, 1, ownKey)) < 1) throw new QuotaExceededError(kind, limit);
 }
 
-export async function usageSummary(userId: string) {
-  const limits = dailyLimits();
+export async function usageSummary(userId: string, ownKey = false) {
+  const limits = dailyLimits(ownKey);
   const [score, write, parse] = await Promise.all([
     usedToday(userId, 'score'),
     usedToday(userId, 'write'),

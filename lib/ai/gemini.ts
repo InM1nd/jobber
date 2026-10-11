@@ -16,11 +16,18 @@ export class AiUnavailableError extends Error {
   }
 }
 
-function models(tier: GeminiTier): string[] {
-  const smart = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
-  const lite = process.env.GEMINI_MODEL_LITE || 'gemini-3.5-flash-lite';
-  // Bulk scoring never spills onto the scarce smart model (free tier: ~5 RPM).
-  return tier === 'smart' ? [...new Set([smart, lite])] : [lite];
+export const LITE_MODEL = () => process.env.GEMINI_MODEL_LITE || 'gemini-3.5-flash-lite';
+export const FLASH_MODEL = () => process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+
+/**
+ * Flash-lite does everything by default (free tier: 15 RPM / 500 RPD per project).
+ * Flash (5 RPM / 20 RPD) is only an optional fallback for "smart" work when
+ * GEMINI_FLASH_FALLBACK=true, so the scarce daily Flash budget is never the default.
+ */
+export function modelsFor(tier: GeminiTier): string[] {
+  const lite = LITE_MODEL();
+  if (tier === 'smart' && process.env.GEMINI_FLASH_FALLBACK === 'true') return [...new Set([lite, FLASH_MODEL()])];
+  return [lite];
 }
 
 /** Requests per minute we allow ourselves per model (free tier: flash 5, flash-lite higher). */
@@ -32,12 +39,14 @@ function rpm(model: string) {
 }
 
 const g = globalThis as unknown as { geminiLimiters?: Map<string, SlidingWindowLimiter> };
-function limiter(model: string) {
+/** One limiter per (key, model): the shared key and each user's own key have separate quotas. */
+function limiter(model: string, keyId: string) {
   g.geminiLimiters ??= new Map();
-  let l = g.geminiLimiters.get(model);
+  const id = `${keyId}:${model}`;
+  let l = g.geminiLimiters.get(id);
   if (!l) {
     l = new SlidingWindowLimiter(rpm(model));
-    g.geminiLimiters.set(model, l);
+    g.geminiLimiters.set(id, l);
   }
   return l;
 }
@@ -54,20 +63,25 @@ export interface GeminiOptions {
   json?: boolean;
   temperature?: number;
   maxTokens?: number;
+  /** A user's own key; defaults to the shared GEMINI_API_KEY. */
+  apiKey?: string;
+  /** Called once per HTTP request actually sent (for budget accounting). */
+  onRequest?: (model: string) => void | Promise<void>;
   /** Longest we are willing to wait for the limiter / a retry, in ms. */
   maxWaitMs?: number;
   timeoutMs?: number;
 }
 
 export async function gemini(prompt: string, opts: GeminiOptions): Promise<string> {
-  const key = process.env.GEMINI_API_KEY;
+  const key = opts.apiKey || process.env.GEMINI_API_KEY;
   if (!key) throw new AiUnavailableError('GEMINI_API_KEY is not set');
+  const keyId = opts.apiKey ? `u${opts.apiKey.slice(-6)}` : 'shared';
   const maxWait = opts.maxWaitMs ?? 20_000;
   let lastError: unknown;
 
-  for (const model of models(opts.tier)) {
+  for (const model of modelsFor(opts.tier)) {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const lim = limiter(model);
+      const lim = limiter(model, keyId);
       const wait = lim.waitTime();
       if (wait > maxWait) {
         lastError = new AiUnavailableError(`Rate limited on ${model}`, wait);
@@ -75,6 +89,7 @@ export async function gemini(prompt: string, opts: GeminiOptions): Promise<strin
       }
       if (wait > 0) await sleep(wait);
       lim.record();
+      await opts.onRequest?.(model);
 
       let res: Response;
       try {
@@ -150,6 +165,7 @@ export function parseJsonLoose(text: string): unknown {
   } catch {
     const match = trimmed.match(/[\[{][\s\S]*[\]}]/);
     if (!match) throw new Error('No JSON in model reply');
-    return JSON.parse(match[0]);
+    // Models sometimes leave trailing commas.
+    return JSON.parse(match[0].replace(/,\s*([\]}])/g, '$1'));
   }
 }

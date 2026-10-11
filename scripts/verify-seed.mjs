@@ -1,141 +1,85 @@
-// Builds lib/companies/seed.json: only boards that answer with >=1 job are kept.
+// Builds lib/companies/seed.json from scripts/seed-candidates.json.
+// Keeps only boards that answer with >=1 open job right now, and tags each
+// company with the cities/countries its jobs are actually in.
 import fs from 'node:fs';
-const C = [
- // [name, ats, slug, hq, tags]
- ['GitLab','greenhouse','gitlab','Remote','devops,ruby,go,vue,remote'],
- ['Datadog','greenhouse','datadog','New York / Europe','observability,go,python,react'],
- ['Cloudflare','greenhouse','cloudflare','Remote / Europe','network,go,rust,typescript'],
- ['Elastic','greenhouse','elastic','Remote','search,java,typescript,remote'],
- ['MongoDB','greenhouse','mongodb','Dublin / Europe','database,typescript,go'],
- ['Vercel','greenhouse','vercel','Remote','frontend,nextjs,react,typescript,remote'],
- ['GetYourGuide','greenhouse','getyourguide','Berlin / Zurich','travel,react,kotlin,scala'],
- ['N26','greenhouse','n26','Berlin / Vienna','fintech,kotlin,java,react'],
- ['Contentful','greenhouse','contentful','Berlin','cms,typescript,react,node'],
- ['Celonis','greenhouse','celonis','Munich','data,java,angular'],
- ['Personio','greenhouse','personio','Munich','hr,react,typescript,php'],
- ['Adyen','greenhouse','adyen','Amsterdam','fintech,java,python'],
- ['Monzo','greenhouse','monzo','London','fintech,go'],
- ['SumUp','greenhouse','sumup','Berlin','fintech,go,react'],
- ['Bitpanda','greenhouse','bitpanda','Vienna','fintech,crypto,react,go,kotlin'],
- ['GoStudent','greenhouse','gostudent','Vienna','edtech,react,node,typescript'],
- ['Dynatrace','greenhouse','dynatrace','Linz / Vienna','observability,java,typescript,react'],
- ['Miro','greenhouse','realtimeboardglobal','Amsterdam / Berlin','collaboration,react,typescript,java'],
- ['HelloFresh','greenhouse','hellofresh','Berlin','foodtech,react,go,python'],
- ['Delivery Hero','greenhouse','deliveryhero','Berlin','foodtech,go,react'],
- ['Wolt','greenhouse','wolt','Helsinki / Berlin','delivery,python,kotlin,react'],
- ['Klarna','greenhouse','klarna','Stockholm','fintech,java,react'],
- ['Grafana Labs','greenhouse','grafanalabs','Remote','observability,go,react,typescript,remote'],
- ['Hotjar','greenhouse','hotjar','Remote (Europe)','analytics,react,python,remote'],
- ['Remote.com','greenhouse','remotecom','Remote','hr,elixir,react,remote'],
- ['Doctolib','greenhouse','doctolib','Paris / Berlin','health,ruby,react'],
- ['Trade Republic','greenhouse','traderepublicbank','Berlin','fintech,kotlin,typescript'],
- ['Scalable Capital','greenhouse','scalablecapital','Munich / Vienna','fintech,java,react'],
- ['Zalando','greenhouse','zalando','Berlin','ecommerce,java,react'],
- ['Babbel','greenhouse','babbel','Berlin','edtech,react,ruby'],
- ['Spotify','lever','spotify','Stockholm / London','music,java,react,python'],
- ['Mistral AI','lever','mistral','Paris','ai,python'],
- ['Pigment','lever','pigment','Paris','saas,typescript,react'],
- ['Qonto','lever','qonto','Paris','fintech,go,react'],
- ['Swile','lever','swile','Paris','fintech,react'],
- ['Pennylane','lever','pennylane','Paris','fintech,ruby,react'],
- ['Alan','lever','alan','Paris','health,python,react'],
- ['Kraken','lever','kraken123','Remote','crypto,rust,react'],
- ['Netlify','lever','netlify','Remote','frontend,react,go,remote'],
- ['Plausible','lever','plausible','Remote','analytics,elixir'],
- ['Supabase','ashby','supabase','Remote','database,typescript,react,postgres,remote'],
- ['Linear','ashby','linear','Remote','productivity,typescript,react,remote'],
- ['PostHog','ashby','posthog','Remote','analytics,python,typescript,react,remote'],
- ['n8n','ashby','n8n','Berlin / Remote','automation,typescript,vue,node'],
- ['DeepL','ashby','DeepL','Cologne','ai,python,typescript'],
- ['Pleo','ashby','pleo','Copenhagen','fintech,typescript,react,kotlin'],
- ['Deel','ashby','deel','Remote','hr,typescript,react,node,remote'],
- ['Taxfix','ashby','taxfix','Berlin','fintech,python,react'],
- ['Sanity','ashby','sanity','Oslo / Remote','cms,typescript,react'],
- ['Raycast','ashby','raycast','Remote (Europe)','productivity,swift,typescript,react,remote'],
- ['Cursor (Anysphere)','ashby','cursor','San Francisco','ai,typescript'],
- ['ElevenLabs','ashby','elevenlabs','Remote','ai,python,typescript,react,remote'],
- ['Synthesia','ashby','synthesia','London','ai,python,react'],
- ['Langfuse','ashby','langfuse','Berlin','ai,typescript,nextjs'],
- ['Hugging Face','workable','huggingface','Remote','ai,python,remote'],
- ['Toggl','workable','toggl','Remote','productivity,go,react,remote'],
- ['Hostinger','workable','hostinger','Vilnius','hosting,php,react'],
- ['Storyblok','personio','storyblok','Linz / Remote','cms,vue,typescript,node'],
- ['Anyline','personio','anyline','Vienna','ai,mobile,kotlin,swift'],
- ['Prewave','personio','prewave','Vienna','ai,python,react'],
- ['Kununu','personio','kununu','Vienna','hr,php,react'],
- ['refurbed','personio','refurbed','Vienna','ecommerce,go,vue'],
- ['TourRadar','personio','tourradar','Vienna','travel,php,react'],
- ['Adverity','personio','adverity','Vienna','data,python,react'],
- ['Bitmovin','personio','bitmovin','Vienna / Klagenfurt','video,java,typescript'],
- ['Tractive','personio','tractive','Linz','iot,kotlin,swift,react'],
- ['Runtastic','personio','runtastic','Linz','health,ruby,kotlin'],
- ['MySugr','personio','mysugr','Vienna','health,kotlin,swift'],
- ['Craftworks','personio','craftworks','Vienna','ai,python'],
- ['Hokify','personio','hokify','Vienna','hr,typescript,vue'],
- ['Usersnap','personio','usersnap','Linz','saas,python,react'],
- ['Fiskaly','personio','fiskaly','Vienna','fintech,go,typescript'],
- ['Planday','recruitee','planday','Copenhagen','hr,dotnet,react'],
- ['Mollie','recruitee','mollie','Amsterdam','fintech,php,react'],
- ['Bunq','recruitee','bunq','Amsterdam','fintech,java'],
- ['Templafy','recruitee','templafy','Copenhagen','saas,dotnet,react'],
- ['Framer','recruitee','framer','Amsterdam / Remote','design,typescript,react,remote'],
- ['Delivery Hero (SR)','smartrecruiters','DeliveryHero','Berlin','foodtech,go,react'],
- ['Bosch','smartrecruiters','BoschGroup','Germany','industry,java,c++'],
- ['Visa','smartrecruiters','Visa','Global','fintech,java'],
- ['Ubisoft','smartrecruiters','Ubisoft2','Paris','games,c++'],
- ['Wise','smartrecruiters','Wise','London / Tallinn','fintech,java,react'],
- ['Storyblok','personio-com','storyblok','Linz / Remote','cms,vue,typescript,node'],
- ['Anyline','personio-com','anyline','Vienna','ai,mobile,kotlin,swift'],
- ['refurbed','personio-com','refurbed','Vienna','ecommerce,go,vue'],
- ['Tractive','personio-com','tractive','Linz','iot,kotlin,swift,react'],
- ['Bitmovin','personio-com','bitmovin','Vienna / Klagenfurt','video,java,typescript'],
- ['Adverity','personio-com','adverity','Vienna','data,python,react'],
- ['Fiskaly','personio-com','fiskaly','Vienna','fintech,go,typescript'],
- ['TourRadar','personio-com','tourradar','Vienna','travel,php,react'],
- ['Kununu','personio-com','kununu','Vienna','hr,php,react'],
- ['Personio','personio-com','personio','Munich','hr,react,typescript,php'],
- ['Zalando','smartrecruiters','Zalando','Berlin','ecommerce,java,react'],
- ['Hotjar','lever','hotjar','Remote (Europe)','analytics,react,python,remote'],
- ['Mollie','greenhouse','mollie','Amsterdam','fintech,php,react'],
- ['Klarna','greenhouse','klarnadeutschland','Stockholm','fintech,java,react'],
- ['Babbel','greenhouse','babbelgmbh','Berlin','edtech,react,ruby'],
- ['Trivago','greenhouse','trivago','Düsseldorf','travel,php,react'],
- ['Revolut','lever','revolut','London / Remote','fintech,java,react'],
- ['Canonical','greenhouse','canonical','Remote','linux,python,go,remote'],
- ['Automattic','greenhouse','automatticcareers','Remote','wordpress,php,react,remote'],
- ['Twilio','greenhouse','twilio','Remote','api,java,typescript,remote'],
- ['Stripe','greenhouse','stripe','Dublin / Remote','fintech,ruby,react,typescript'],
- ['Figma','greenhouse','figma','London','design,typescript,react,c++'],
- ['Airtable','greenhouse','airtable','London','productivity,typescript,react'],
- ['Intercom','greenhouse','intercom','Dublin / London','support,ruby,react'],
- ['Discord','greenhouse','discord','Remote','social,rust,python,react'],
- ['Mapbox','greenhouse','mapbox','Remote','maps,javascript,c++'],
- ['Sentry','ashby','sentry','Vienna / Remote','observability,python,react,typescript'],
- ['Notion','ashby','notion','Dublin','productivity,typescript,react'],
- ['Vapi','ashby','vapi','Remote','ai,typescript'],
- ['Clerk','ashby','clerk','Remote','auth,typescript,react,nextjs,remote'],
- ['Resend','ashby','resend','Remote','email,typescript,react,nextjs,remote'],
- ['Neon','ashby','neon','Remote','database,rust,typescript,postgres,remote'],
- ['Zapier','ashby','zapier','Remote','automation,python,react,remote'],
- ['Docker','ashby','docker','Remote','devops,go,typescript,remote'],
- ['Sennder','greenhouse','sennder','Berlin','logistics,python,vue'],
- ['Wayflyer','ashby','wayflyer','Dublin','fintech,python,react'],
- ['Factorial','greenhouse','factorial','Barcelona','hr,ruby,react,typescript'],
- ['Typeform','greenhouse','typeform','Barcelona','saas,react,typescript'],
- ['Glovo','greenhouse','glovo','Barcelona','delivery,java,react'],
-];
-const url = (a,s)=>({greenhouse:`https://boards-api.greenhouse.io/v1/boards/${s}/jobs`,lever:`https://api.lever.co/v0/postings/${s}?mode=json`,ashby:`https://api.ashbyhq.com/posting-api/job-board/${s}`,workable:`https://apply.workable.com/api/v1/widget/accounts/${s}`,personio:`https://${s}.jobs.personio.de/xml`,'personio-com':`https://${s}.jobs.personio.com/xml`,recruitee:`https://${s}.recruitee.com/api/offers/`,smartrecruiters:`https://api.smartrecruiters.com/v1/companies/${s}/postings`})[a];
-const count=(a,t)=>{ if(a.startsWith('personio')) return (t.match(/<position>/g)||[]).length; const j=JSON.parse(t);
- return a==='greenhouse'?j.jobs?.length:a==='lever'?j.length:a==='ashby'?j.jobs?.length:a==='workable'?j.jobs?.length:a==='recruitee'?j.offers?.length:a==='smartrecruiters'?j.totalFound:0;};
-const out=[];
-await Promise.all(C.map(async([name,ats,slug,hq,tags])=>{
-  try{const r=await fetch(url(ats,slug),{signal:AbortSignal.timeout(20000),headers:{'user-agent':'Jobber/1.0'}});
-   const t=await r.text(); const n=r.ok?count(ats,t)||0:0;
-   console.log(n>0?'OK ':'-- ',ats,slug,r.status,n);
-   if(n>0 && ats!=='personio-com') out.push({name,ats,slug,hq,tags:tags.split(','),jobs:n});
-  }catch(e){console.log('ERR',ats,slug,e.message)}
-}));
-out.sort((a,b)=>a.name.localeCompare(b.name));
-fs.mkdirSync('lib/companies',{recursive:true});
-fs.writeFileSync('lib/companies/seed.json',JSON.stringify({verifiedAt:new Date().toISOString().slice(0,10),companies:out},null,1));
-console.log('kept',out.length,'of',C.length);
+const C = JSON.parse(fs.readFileSync('scripts/seed-candidates.json', 'utf8'));
+const UA = { 'user-agent': 'Jobber/1.0 (+https://jobber-kohl.vercel.app)' };
+
+const COUNTRY = {
+  austria: 'Austria', österreich: 'Austria', vienna: 'Austria', wien: 'Austria', graz: 'Austria', linz: 'Austria', salzburg: 'Austria', innsbruck: 'Austria', klagenfurt: 'Austria',
+  germany: 'Germany', deutschland: 'Germany', berlin: 'Germany', munich: 'Germany', münchen: 'Germany', hamburg: 'Germany', frankfurt: 'Germany', cologne: 'Germany', köln: 'Germany', stuttgart: 'Germany', düsseldorf: 'Germany', leipzig: 'Germany',
+  switzerland: 'Switzerland', zurich: 'Switzerland', zürich: 'Switzerland', geneva: 'Switzerland', basel: 'Switzerland',
+  netherlands: 'Netherlands', amsterdam: 'Netherlands', rotterdam: 'Netherlands', eindhoven: 'Netherlands',
+  'united kingdom': 'United Kingdom', uk: 'United Kingdom', london: 'United Kingdom', manchester: 'United Kingdom', edinburgh: 'United Kingdom',
+  ireland: 'Ireland', dublin: 'Ireland', france: 'France', paris: 'France', lyon: 'France',
+  spain: 'Spain', madrid: 'Spain', barcelona: 'Spain', portugal: 'Portugal', lisbon: 'Portugal', porto: 'Portugal',
+  italy: 'Italy', milan: 'Italy', rome: 'Italy', poland: 'Poland', warsaw: 'Poland', krakow: 'Poland', kraków: 'Poland', wroclaw: 'Poland',
+  czechia: 'Czechia', 'czech republic': 'Czechia', prague: 'Czechia', brno: 'Czechia', hungary: 'Hungary', budapest: 'Hungary',
+  sweden: 'Sweden', stockholm: 'Sweden', gothenburg: 'Sweden', denmark: 'Denmark', copenhagen: 'Denmark', norway: 'Norway', oslo: 'Norway',
+  finland: 'Finland', helsinki: 'Finland', estonia: 'Estonia', tallinn: 'Estonia', lithuania: 'Lithuania', vilnius: 'Lithuania',
+  romania: 'Romania', bucharest: 'Romania', greece: 'Greece', athens: 'Greece', belgium: 'Belgium', brussels: 'Belgium',
+  'united states': 'United States', usa: 'United States', 'new york': 'United States', 'san francisco': 'United States', seattle: 'United States', boston: 'United States', austin: 'United States', chicago: 'United States',
+  canada: 'Canada', toronto: 'Canada', india: 'India', bengaluru: 'India', bangalore: 'India', singapore: 'Singapore', japan: 'Japan', tokyo: 'Japan', australia: 'Australia', sydney: 'Australia',
+};
+const CITY = new Set(Object.keys(COUNTRY).filter((k) => !/^(austria|österreich|germany|deutschland|switzerland|netherlands|united kingdom|uk|ireland|france|spain|portugal|italy|poland|czechia|czech republic|hungary|sweden|denmark|norway|finland|estonia|lithuania|romania|greece|belgium|united states|usa|canada|india|singapore|japan|australia)$/.test(k)));
+const cap = (s) => s.replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+
+function placeTags(locs) {
+  const countries = {}, cities = {};
+  let remote = 0;
+  for (const l of locs) {
+    const low = String(l || '').toLowerCase();
+    if (/remote|anywhere|worldwide/.test(low)) remote++;
+    for (const [k, country] of Object.entries(COUNTRY)) {
+      if (new RegExp(`(^|[^\\p{L}])${k}([^\\p{L}]|$)`, 'u').test(low)) {
+        countries[country] = (countries[country] || 0) + 1;
+        if (CITY.has(k)) cities[cap(k === 'wien' ? 'vienna' : k === 'münchen' ? 'munich' : k)] = (cities[cap(k === 'wien' ? 'vienna' : k === 'münchen' ? 'munich' : k)] || 0) + 1;
+      }
+    }
+  }
+  const top = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
+  return { countries: top(countries, 6), cities: top(cities, 8), remoteShare: locs.length ? Math.round((remote / locs.length) * 100) / 100 : 0 };
+}
+
+async function get(url, opts = {}) {
+  const r = await fetch(url, { ...opts, headers: { ...UA, ...(opts.headers || {}) }, signal: AbortSignal.timeout(20000) });
+  return { ok: r.ok, status: r.status, text: await r.text() };
+}
+
+async function check(ats, slug) {
+  switch (ats) {
+    case 'greenhouse': { const r = await get(`https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`); const j = r.ok ? JSON.parse(r.text) : {}; return (j.jobs || []).map((x) => x.location?.name); }
+    case 'lever': { const r = await get(`https://api.lever.co/v0/postings/${slug}?mode=json`); const j = r.ok ? JSON.parse(r.text) : []; return Array.isArray(j) ? j.map((x) => x.categories?.location) : []; }
+    case 'ashby': { const r = await get(`https://api.ashbyhq.com/posting-api/job-board/${slug}`); const j = r.ok ? JSON.parse(r.text) : {}; return (j.jobs || []).map((x) => `${x.location || ''}${x.isRemote ? ' remote' : ''}`); }
+    case 'workable': { const r = await get(`https://apply.workable.com/api/v1/widget/accounts/${slug}`); const j = r.ok ? JSON.parse(r.text) : {}; return (j.jobs || []).map((x) => [x.city, x.country, x.telecommuting ? 'remote' : ''].filter(Boolean).join(', ')); }
+    case 'personio': { const r = await get(`https://${slug}.jobs.personio.de/xml`); return r.ok ? [...r.text.matchAll(/<office>([^<]*)<\/office>/g)].map((m) => m[1]) : []; }
+    case 'recruitee': { const r = await get(`https://${slug}.recruitee.com/api/offers/`); const j = r.ok ? JSON.parse(r.text) : {}; return (j.offers || []).map((x) => `${x.location || ''} ${x.country || ''}${x.remote ? ' remote' : ''}`); }
+    case 'smartrecruiters': { const r = await get(`https://api.smartrecruiters.com/v1/companies/${slug}/postings?limit=100`); const j = r.ok ? JSON.parse(r.text) : {}; return (j.content || []).map((x) => `${x.location?.city || ''}, ${x.location?.country || ''}${x.location?.remote ? ' remote' : ''}`); }
+    case 'teamtailor': { const r = await get(`https://${slug}.teamtailor.com/jobs.rss`); return r.ok ? [...r.text.matchAll(/<item>[\s\S]*?<\/item>/g)].map((m) => (m[0].match(/<tt:city>([^<]*)/) || m[0].match(/<category>([^<]*)/) || [, ''])[1]) : []; }
+    case 'bamboohr': { const r = await get(`https://${slug}.bamboohr.com/careers/list`); if (!r.ok || !r.text.startsWith('{')) return []; const j = JSON.parse(r.text); return (j.result || []).map((x) => `${x.location?.city || ''}, ${x.location?.state || ''} ${x.isRemote ? 'remote' : ''}`); }
+    case 'workday': {
+      const [tenant, wd, site] = slug.split(':');
+      const r = await get(`https://${tenant}.${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ limit: 20, offset: 0, searchText: '', appliedFacets: {} }) });
+      const j = r.ok ? JSON.parse(r.text) : {}; return (j.jobPostings || []).map((x) => x.locationsText);
+    }
+  }
+  return [];
+}
+
+const out = [];
+const queue = [...C];
+async function worker() {
+  while (queue.length) {
+    const [name, ats, slug, industry, tags] = queue.shift();
+    try {
+      const locs = await check(ats, slug);
+      const n = locs.length;
+      console.log(n > 0 ? 'OK ' : '-- ', ats.padEnd(15), slug.padEnd(40), n);
+      if (n > 0) out.push({ name, ats, slug, industry, tags: tags.split(',').filter(Boolean), jobs: n, ...placeTags(locs) });
+    } catch (e) { console.log('ERR', ats, slug, e.message.slice(0, 60)); }
+  }
+}
+await Promise.all(Array.from({ length: 12 }, worker));
+out.sort((a, b) => a.name.localeCompare(b.name));
+fs.writeFileSync('lib/companies/seed.json', JSON.stringify({ verifiedAt: new Date().toISOString().slice(0, 10), companies: out }, null, 1));
+console.log('kept', out.length, 'of', C.length);

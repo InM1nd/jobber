@@ -22,6 +22,18 @@ export interface DemoProfile {
   searchKeywords?: string[];
   sourceIds?: string[];
   onboardedAt?: string | null;
+  workField?: string | null;
+  country?: string | null;
+  openTo?: string[];
+  stretch?: boolean;
+  employmentTypes?: string[];
+  avoidKeywords?: string[];
+  excludeCompanies?: string[];
+  scoringInstructions?: string | null;
+  minScore?: number;
+  alertThreshold?: number;
+  alertFrequency?: string;
+  maxJobAgeDays?: number;
 }
 
 export interface DemoMatch {
@@ -33,6 +45,10 @@ export interface DemoMatch {
   coverLetter: string | null;
   cvAdvice?: import('@/lib/ai/cv-advice').CvAdvice | null;
   tailoredCv?: string | null;
+  cvId?: string | null;
+  cvLabel?: string | null;
+  locationTier?: string | null;
+  subScores?: Record<string, number> | null;
   /** When Jobber scored it; drives the "new" badge. */
   createdAt?: string;
   job: {

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getMatch, getProfile, requireUser, saveCoverLetter } from '@/lib/data/service';
 import { generateCoverLetter } from '@/lib/llm/matcher';
-import { sharedChatClient } from '@/lib/ai/shared-client';
-import { consumeOne } from '@/lib/ai/quota';
+import { userChatClient } from '@/lib/ai/shared-client';
+import { getPrisma } from '@/lib/db/prisma';
 import { aiErrorResponse } from '@/lib/ai/errors';
 
 export const instant = false;
@@ -18,9 +18,9 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
 
   const profile = await getProfile(user.id);
   try {
-    await consumeOne(user.id, 'write');
-    const letter = await generateCoverLetter(sharedChatClient('smart', 25_000), {
-      cvText: profile.cvText || undefined,
+    const cv = match.cvId ? await getPrisma().cv.findFirst({ where: { id: match.cvId, userId: user.id } }).catch(() => null) : null;
+    const letter = await generateCoverLetter(userChatClient(user.id, 'write', 'smart', 25_000), {
+      cvText: cv?.text || profile.cvText || undefined,
       skills: profile.skills,
       location: profile.location || undefined,
       remoteOnly: profile.remoteOnly,

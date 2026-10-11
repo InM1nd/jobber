@@ -15,14 +15,30 @@ function intEnv(name: string, fallback: number) {
   return Number.isFinite(value) && value >= 0 ? Math.floor(value) : fallback;
 }
 
-/** Per-user daily limits. Configurable via env. */
-export function dailyLimits(): QuotaLimits {
+/**
+ * Per-user daily limits in AI *requests*. A scoring request covers up to
+ * SCORE_BATCH jobs. Defaults are sized for the shared free tier
+ * (500 requests/day for the whole project, 80 kept for onboarding):
+ * a typical active user needs ~6-10 requests/day, so ~40 active users fit.
+ * Users with their own key get their own (much larger) limits.
+ */
+export function dailyLimits(ownKey = false): QuotaLimits {
+  if (ownKey) {
+    return {
+      score: intEnv('AI_BYO_DAILY_SCORE_CALLS', 80),
+      write: intEnv('AI_BYO_DAILY_WRITES', 60),
+      parse: intEnv('AI_BYO_DAILY_CV_PARSES', 20),
+    };
+  }
   return {
-    score: intEnv('AI_DAILY_SCORES', 60),
-    write: intEnv('AI_DAILY_WRITES', 12),
-    parse: intEnv('AI_DAILY_CV_PARSES', 4),
+    score: intEnv('AI_DAILY_SCORE_CALLS', 6),
+    write: intEnv('AI_DAILY_WRITES', 4),
+    parse: intEnv('AI_DAILY_CV_PARSES', 5),
   };
 }
+
+/** Jobs scored per AI request. */
+export const SCORE_BATCH = 5;
 
 export function utcDay(now = new Date()) {
   return now.toISOString().slice(0, 10);

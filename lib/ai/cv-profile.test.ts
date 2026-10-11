@@ -63,7 +63,7 @@ describe('search plan', () => {
   it('seed list has board URLs for every company and ranks Vienna companies up', () => {
     expect(SEED_COMPANIES.length).toBeGreaterThan(30);
     for (const c of SEED_COMPANIES) expect(boardUrl(c)).toMatch(/^https:\/\//);
-    const top = rankCompanies({ skills: ['React'], location: 'Vienna, Austria' }, 5).map((c) => c.hq);
-    expect(top.some((hq) => /vienna/i.test(hq))).toBe(true);
+    const top = rankCompanies({ skills: ['React'], location: 'Vienna, Austria' }, 5);
+    expect(top.every((c) => c.cities.includes('Vienna') || c.countries.includes('Austria'))).toBe(true);
   });
 });

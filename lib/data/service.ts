@@ -96,28 +96,8 @@ export async function getProfile(userId: string): Promise<DemoProfile> {
     };
   }
 
-  return {
-    cvText: profile.cvText,
-    cvFileName: profile.cvFileName,
-    skills: profile.skills,
-    location: profile.location,
-    remoteOnly: profile.remoteOnly,
-    countryEligible: profile.countryEligible,
-    languages: profile.languages,
-    salaryMin: profile.salaryMin,
-    salaryMax: profile.salaryMax,
-    stackKeywords: profile.stackKeywords,
-    skillGaps: profile.skillGaps,
-    writingRules: profile.writingRules,
-    watchedCompanies: profile.watchedCompanies,
-    fullName: profile.fullName,
-    targetRoles: profile.targetRoles,
-    seniority: profile.seniority,
-    yearsExperience: profile.yearsExperience,
-    searchKeywords: profile.searchKeywords,
-    sourceIds: profile.sourceIds,
-    onboardedAt: profile.onboardedAt?.toISOString() ?? null,
-  };
+  const { id: _id, userId: _uid, createdAt: _c, updatedAt: _u, ...rest } = profile;
+  return { ...rest, onboardedAt: profile.onboardedAt?.toISOString() ?? null };
 }
 
 export async function saveProfile(userId: string, patch: Partial<DemoProfile>) {
@@ -143,10 +123,14 @@ export async function getMatches(userId: string) {
     where: { userId, filtered: false },
     include: { job: { include: { source: true } } },
     orderBy: { score: 'desc' },
-    take: 80,
+    take: 120,
   });
+  const cvIds = [...new Set(matches.map((m) => m.cvId).filter((v): v is string => Boolean(v)))];
+  const cvs = cvIds.length ? await prisma.cv.findMany({ where: { id: { in: cvIds }, userId }, select: { id: true, label: true } }) : [];
+  const cvLabel = new Map(cvs.map((c) => [c.id, c.label]));
 
   return matches.map((match) => ({
+    cvLabel: match.cvId ? cvLabel.get(match.cvId) ?? null : null,
     id: match.id,
     score: match.score,
     priority: match.priority as 'high' | 'medium' | 'low',
@@ -155,6 +139,9 @@ export async function getMatches(userId: string) {
     coverLetter: match.coverLetter,
     cvAdvice: (match.cvAdvice as CvAdvice | null) ?? null,
     tailoredCv: match.tailoredCv,
+    cvId: match.cvId,
+    locationTier: match.locationTier,
+    subScores: (match.subScores as Record<string, number> | null) ?? null,
     job: {
       id: match.job.id,
       title: match.job.title,
@@ -171,6 +158,35 @@ export async function getMatches(userId: string) {
     },
     createdAt: match.createdAt.toISOString(),
   }));
+}
+
+/** Jobs the rule-based filter skipped (no AI used), newest first. */
+export async function getSkipped(userId: string) {
+  if (isDemoMode()) return [];
+  const rows = await getPrisma().jobMatch.findMany({
+    where: { userId, filtered: true },
+    include: { job: { include: { source: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 150,
+  });
+  return rows.map((m) => ({
+    id: m.id,
+    reason: m.redFlags[0] || 'Filtered',
+    tier: m.locationTier,
+    job: { title: m.job.title, company: m.job.company || m.job.source.company, location: m.job.location, remote: m.job.remote, url: m.job.url },
+  }));
+}
+
+export async function skippedReasons(userId: string) {
+  if (isDemoMode()) return [];
+  const rows = await getPrisma().$queryRaw<Array<{ reason: string | null; n: bigint }>>`
+    select "redFlags"[1] as reason, count(*) as n from "JobMatch" where "userId" = ${userId} and filtered group by 1 order by 2 desc limit 12`;
+  return rows.map((r) => ({ reason: r.reason || 'Filtered', count: Number(r.n) }));
+}
+
+export async function countSkipped(userId: string) {
+  if (isDemoMode()) return 0;
+  return getPrisma().jobMatch.count({ where: { userId, filtered: true } });
 }
 
 export async function getMatch(userId: string, matchId: string) {

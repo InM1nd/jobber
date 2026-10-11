@@ -27,7 +27,7 @@ describe('prefilterJob', () => {
   });
 
   it('drops unrelated titles', () => {
-    expect(prefilterJob(alex, job({ title: 'Account Executive DACH' }))).toMatchObject({ pass: false, reason: 'Title does not match target roles' });
+    expect(prefilterJob(alex, job({ title: 'Account Executive DACH' }))).toMatchObject({ pass: false, reason: 'Title does not match your roles' });
   });
 
   it('drops roles that are too senior or too junior', () => {
@@ -43,7 +43,7 @@ describe('prefilterJob', () => {
   });
 
   it('handles on-site, remote and region-locked remote', () => {
-    expect(prefilterJob(alex, job({ location: 'Berlin, Germany' })).reason).toBe('On-site in another city');
+    expect(prefilterJob(alex, job({ location: 'Berlin, Germany' })).reason).toBe('On-site in another country');
     expect(prefilterJob(alex, job({ location: 'Wien' })).pass).toBe(true);
     expect(prefilterJob({ ...alex, remoteOnly: true }, job({})).reason).toBe('Not remote');
     expect(prefilterJob(alex, job({ location: 'Remote', remote: true })).pass).toBe(true);

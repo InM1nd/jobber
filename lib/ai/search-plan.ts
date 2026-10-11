@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { gemini, parseJsonLoose } from './gemini';
-import { rankCompanies, type SeedCompany } from '@/lib/companies/seed';
-import type { CvProfile } from './cv-profile';
+import { parseJsonLoose } from './gemini';
+import { runAi } from './run';
+import { placeLabel, rankCompanies, type SeedCompany } from '@/lib/companies/seed';
+import type { Draft } from '@/lib/profile/draft';
 
 export interface SearchPlan {
   titles: string[];
@@ -22,13 +23,13 @@ function clean(list: string[], max: number) {
 }
 
 /** Keyword list for free-text boards: short, lowercase, title-ish. */
-export function fallbackKeywords(profile: Pick<CvProfile, 'targetRoles' | 'skills'>) {
+export function fallbackKeywords(profile: Pick<Draft, 'targetRoles' | 'skills'>) {
   const fromRoles = profile.targetRoles.map((r) => r.replace(/\b(senior|junior|lead|mid|principal|staff)\b/gi, '').trim());
   return clean([...fromRoles, ...profile.skills.slice(0, 3)].map((s) => s.toLowerCase()), 6);
 }
 
 /** Only companies from the verified seed list can come back, whatever the model says. */
-export function applyPlan(raw: unknown, shortlist: SeedCompany[], profile: CvProfile, max = 12): SearchPlan {
+export function applyPlan(raw: unknown, shortlist: SeedCompany[], profile: Pick<Draft, 'targetRoles' | 'skills'>, max = 12): SearchPlan {
   const plan = PlanSchema.parse(raw ?? {});
   const byName = new Map(shortlist.map((c) => [c.name.toLowerCase(), c]));
   const companies = clean(plan.companies, 30)
@@ -45,24 +46,27 @@ export function applyPlan(raw: unknown, shortlist: SeedCompany[], profile: CvPro
   };
 }
 
-export async function buildSearchPlan(profile: CvProfile): Promise<SearchPlan> {
-  const remote = profile.remotePreference === 'remote';
-  const shortlist = rankCompanies({ skills: profile.skills, location: profile.location, remote }, 30);
+/** One AI request: titles, keywords and which verified companies fit. Falls back to ranking. */
+export async function buildSearchPlan(userId: string, profile: Draft): Promise<SearchPlan> {
+  const remote = profile.openTo.includes('remote');
+  const shortlist = rankCompanies({ skills: profile.skills, city: profile.city, country: profile.country, remote, workField: profile.workField }, 40);
   const prompt = `Candidate:
+- Work field: ${profile.workField || 'unknown'}
 - Target roles: ${profile.targetRoles.join(', ')}
-- Seniority: ${profile.seniority}, ${profile.yearsExperience ?? '?'} years
-- Skills: ${profile.skills.join(', ')}
-- Location: ${profile.location || 'unknown'}; prefers ${profile.remotePreference}
-- Languages: ${profile.languages.join(', ')}
+- Level: ${profile.seniority}${profile.stretch ? ' (also one level up)' : ''}, ${profile.yearsExperience ?? '?'} years
+- Skills: ${profile.skills.slice(0, 20).join(', ')}
+- Location: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'unknown'}; open to: ${profile.openTo.join(', ')}
+- Languages: ${profile.languages.map((l) => `${l.name} ${l.level}`).join(', ')}
+- Avoid: ${profile.avoidKeywords.join(', ') || 'nothing'}
 
-Companies (name | HQ | stack tags) — pick ONLY from this list, copy names exactly:
-${shortlist.map((c) => `${c.name} | ${c.hq} | ${c.tags.join(',')}`).join('\n')}
+Companies (name | where they hire | industry | tags) — pick ONLY from this list, copy names exactly:
+${shortlist.map((c) => `${c.name} | ${placeLabel(c)} | ${c.industry} | ${c.tags.join(',')}`).join('\n')}
 
-Return JSON: {"titles": 3-6 job titles to search, "keywords": 3-6 short search keywords for job boards (e.g. "react", "frontend engineer"), "companies": 8-12 names from the list most likely to hire this person (stack + location fit)}`;
+Return JSON: {"titles": 3-6 job titles to search, "keywords": 3-6 short search keywords for job boards (lowercase, e.g. "frontend developer", "react"), "companies": 8-14 names from the list most likely to hire this person (location fit first, then field and stack)}`;
   try {
-    const reply = await gemini(prompt, { tier: 'smart', json: true, temperature: 0.2, maxTokens: 1500 });
-    return applyPlan(parseJsonLoose(reply), shortlist, profile);
+    const reply = await runAi(userId, 'parse', prompt, { onboarding: true, tier: 'smart', json: true, temperature: 0.2, maxTokens: 1500 });
+    return applyPlan(parseJsonLoose(reply), shortlist, profile, 14);
   } catch {
-    return applyPlan({}, shortlist, profile);
+    return applyPlan({}, shortlist, profile, 14);
   }
 }

@@ -6,7 +6,11 @@ import { LetterPanel } from '@/components/letter-panel';
 import { TailorCv } from '@/components/tailor-cv';
 import { TelegramBack } from '@/components/telegram-ui';
 import { FIT_LABEL, FIT_TEXT, Note, ScoreRing, fitOf } from '@/components/ui/kit';
-import { getMatch, requireUser } from '@/lib/data/service';
+import { getMatch, getProfile, requireUser } from '@/lib/data/service';
+import { MatchMeta } from '@/components/app/match-card';
+import { getPrisma } from '@/lib/db/prisma';
+import { isDemoMode } from '@/lib/demo/mode';
+import { WEIGHTS } from '@/lib/search/rubric';
 import { formatSalaryRange } from '@/lib/text';
 
 export const instant = false;
@@ -19,6 +23,13 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   const match = await getMatch(user.id, id);
   if (!match) notFound();
 
+  const [profile, cvs] = await Promise.all([
+    getProfile(user.id),
+    isDemoMode() ? Promise.resolve([]) : getPrisma().cv.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }, select: { id: true, label: true } }),
+  ]);
+  const where = { city: profile.location?.split(',')[0]?.trim() || null, country: profile.country || profile.location?.split(',')[1]?.trim() || null };
+  const SUB_LABEL: Record<string, string> = { role: 'Role fit', skills: 'Skills', seniority: 'Level', location: 'Location', language: 'Language', salary: 'Salary' };
+  const sub = match.subScores;
   const salary = formatSalaryRange(match.job.salaryMin, match.job.salaryMax, match.job.currency || 'EUR');
   const place = [match.job.location, match.job.remote && !/remote/i.test(match.job.location || '') ? 'Remote' : null].filter(Boolean).join(' · ');
 
@@ -47,6 +58,29 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         </a>
       </header>
 
+      <MatchMeta match={match} place={where} className="-mt-2 px-1" />
+      {match.cvLabel && cvs.length > 1 && (
+        <p className="-mt-3 px-1 text-[13px] text-muted">Send your <span className="font-medium text-fg">{match.cvLabel}</span> CV for this one — it fits best of your {cvs.length}.</p>
+      )}
+
+      {sub && (
+        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+          <p className="mb-3 text-[14px] font-medium">Why {match.score}</p>
+          <div className="space-y-2.5">
+            {(Object.keys(WEIGHTS) as Array<keyof typeof WEIGHTS>).map((k) => (
+              <div key={k} className="flex items-center gap-3 text-[13px]">
+                <span className="w-[72px] shrink-0 text-muted">{SUB_LABEL[k]}</span>
+                <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+                  <span className={`absolute inset-y-0 left-0 rounded-full ${(sub[k] ?? 0) >= 75 ? 'bg-fit-strong' : (sub[k] ?? 0) >= 55 ? 'bg-fit-good' : (sub[k] ?? 0) >= 35 ? 'bg-fit-ok' : 'bg-fit-weak'}`} style={{ width: `${sub[k] ?? 0}%` }} />
+                </span>
+                <span className="w-7 shrink-0 text-right tabular-nums">{sub[k] ?? '–'}</span>
+                <span className="w-8 shrink-0 text-right text-[11px] text-subtle">×{Math.round(WEIGHTS[k] * 100)}%</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {(match.reasons.length > 0 || match.redFlags.length > 0) && (
         <div className="space-y-2 px-1">
           {match.reasons.map((r) => <Note key={r}>{r}</Note>)}
@@ -54,7 +88,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         </div>
       )}
 
-      <TailorCv matchId={match.id} initialAdvice={match.cvAdvice ?? null} initialCv={match.tailoredCv ?? null} />
+      <TailorCv matchId={match.id} initialAdvice={match.cvAdvice ?? null} initialCv={match.tailoredCv ?? null} cvs={cvs} cvId={match.cvId} />
 
       <LetterPanel matchId={match.id} initial={match.coverLetter} />
 

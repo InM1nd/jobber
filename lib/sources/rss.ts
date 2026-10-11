@@ -5,11 +5,23 @@ import { looksRemote, stripHtml } from './html';
 
 const parser = new Parser();
 
+/** Teamtailor feeds carry <tt:city>/<tt:country> per item; generic RSS uses categories. */
+function teamtailorPlaces(xml: string) {
+  const out: string[] = [];
+  for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const city = m[1].match(/<tt:city>([^<]*)/)?.[1];
+    const country = m[1].match(/<tt:country>([^<]*)/)?.[1];
+    out.push([city, country].filter(Boolean).join(', '));
+  }
+  return out;
+}
+
 export async function parseJobRss(xml: string, company: string): Promise<RawJob[]> {
   const feed = await parser.parseString(xml);
+  const places = xml.includes('<tt:') ? teamtailorPlaces(xml) : [];
   return (feed.items || []).map((item, index) => {
     const title = item.title || 'Untitled';
-    const location = item.categories?.join(', ');
+    const location = places[index] || item.categories?.join(', ');
     const link = item.link || item.guid || '';
     return {
       externalId: String(item.guid || item.link || `${company}-${index}`),

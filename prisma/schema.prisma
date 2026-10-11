@@ -25,6 +25,7 @@ model User {
   matches           JobMatch[]
   applications      Application[]
   aiUsage           AiUsage[]
+  cvs               Cv[]
   searchRuns        SearchRun[]
   
   @@index([email])
@@ -64,6 +65,20 @@ model Profile {
   searchKeywords    String[]
   sourceIds         String[]
   onboardedAt       DateTime?
+
+  // Guided form (source of truth; CVs only prefill it)
+  workField           String?
+  country             String?
+  openTo              String[]  // "city" | "country" | "remote" | "relocation"
+  stretch             Boolean   @default(false)
+  employmentTypes     String[]  // "full_time" | "part_time" | "contract" | "internship" | "freelance"
+  avoidKeywords       String[]
+  excludeCompanies    String[]
+  scoringInstructions String?   @db.Text
+  minScore            Int       @default(0)
+  alertThreshold      Int       @default(70)
+  alertFrequency      String    @default("daily") // "instant" | "daily" | "off"
+  maxJobAgeDays       Int       @default(45)
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -159,6 +174,9 @@ model JobMatch {
   coverLetter       String?   @db.Text
   cvAdvice          Json?
   tailoredCv        String?   @db.Text
+  cvId              String?   // which of the user's CVs fits this job best
+  locationTier      String?   // "city" | "country" | "remote" | "relocation" | "other"
+  subScores         Json?
   // true = rejected by the rule pre-filter, never sent to the model, hidden in the UI
   filtered          Boolean   @default(false)
   
@@ -261,4 +279,29 @@ model SearchRun {
   updatedAt    DateTime  @updatedAt
 
   @@index([userId, createdAt])
+}
+
+/// A user can keep several CVs (e.g. Frontend, Full-stack, Product). Matching picks the best one per job.
+model Cv {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  fileName  String?
+  text      String   @db.Text
+  parsed    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+/// Requests made on the shared Gemini key per Pacific-time day (RPD is per project, shared by all users).
+model GlobalAiUsage {
+  day       String
+  model     String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@id([day, model])
 }

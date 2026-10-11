@@ -178,13 +178,16 @@ export async function sendTelegramMessage(telegramId: string, message: string) {
 }
 
 export async function sendDailyDigest(userId: string) {
+  const profile = await getPrisma().profile.findUnique({ where: { userId }, select: { alertFrequency: true, alertThreshold: true } });
+  if (profile?.alertFrequency === 'off' || profile?.alertFrequency === 'instant') return;
   const user = await getPrisma().user.findUnique({
     where: { id: userId },
     include: {
       matches: {
         where: {
           createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-          score: { gte: 70 },
+          score: { gte: profile?.alertThreshold ?? 70 },
+          filtered: false,
         },
         include: { job: { include: { source: true } } },
         orderBy: { score: 'desc' },
@@ -196,7 +199,7 @@ export async function sendDailyDigest(userId: string) {
   if (!user?.telegramId || user.matches.length === 0) return;
 
   const lines = user.matches.map(
-    (match) => `${match.job.title} at ${match.job.source.company}\nScore ${match.score} · ${match.priority}\n${match.job.url}`,
+    (match) => `${match.job.title} at ${match.job.company || match.job.source.company}\nScore ${match.score} · ${match.priority}\n${match.job.url}`,
   );
   await sendTelegramMessage(user.telegramId, `Daily matches\n\n${lines.join('\n\n')}`);
 }

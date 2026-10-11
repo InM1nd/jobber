@@ -14,10 +14,11 @@ describe('quota maths', () => {
   });
 
   it('reads limits from env with sane fallbacks', () => {
-    process.env.AI_DAILY_SCORES = '25';
+    process.env.AI_DAILY_SCORE_CALLS = '25';
     expect(dailyLimits().score).toBe(25);
-    process.env.AI_DAILY_SCORES = 'lots';
-    expect(dailyLimits().score).toBe(60);
+    process.env.AI_DAILY_SCORE_CALLS = 'lots';
+    expect(dailyLimits().score).toBe(6);
+    expect(dailyLimits(true).score).toBe(80);
   });
 
   it('uses UTC days', () => {

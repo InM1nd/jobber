@@ -1,245 +1,171 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, FileText, Loader2, Sparkles, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Group, Notice, capsClass, fieldClass } from '@/components/ui/kit';
+import { Notice, capsClass } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { SearchProgress, type RunView } from '@/components/search-progress';
+import { CvManager, type CvItem } from '@/components/cv-manager';
+import { CompaniesWatch, keyOf, type CompanyOption } from '@/components/companies-watch';
+import { SECTIONS, SECTION_COPY, type Section } from '@/components/profile-form';
 import { cn } from '@/lib/utils';
+import { DraftSchema, draftFromCvs, type Draft } from '@/lib/profile/draft';
 import type { CvProfile } from '@/lib/ai/cv-profile';
 
-type Step = 'upload' | 'reading' | 'review' | 'planning' | 'searching';
+const FORM: Section[] = ['work', 'where', 'languages', 'level', 'type', 'avoid'];
+type Step = 'cvs' | Section | 'planning' | 'companies' | 'searching';
+const ORDER: Step[] = ['cvs', ...FORM, 'companies', 'searching'];
+
 interface Plan {
   titles: string[];
   keywords: string[];
-  companies: { name: string; hq: string; ats: string }[];
+  companies: CompanyOption[];
   aiPicked: boolean;
 }
 
-const SENIORITY = ['junior', 'mid', 'senior', 'lead'] as const;
-const REMOTE = [
-  ['remote', 'Remote'],
-  ['hybrid', 'Hybrid'],
-  ['onsite', 'Office'],
-  ['any', 'Any'],
-] as const;
-
-const splitList = (v: string) => v.split(',').map((s) => s.trim()).filter(Boolean);
-
 function StepDots({ step }: { step: Step }) {
-  const order: Step[] = ['upload', 'review', 'searching'];
-  const at = step === 'reading' ? 0 : step === 'planning' ? 1 : order.indexOf(step);
+  const at = step === 'planning' ? ORDER.indexOf('companies') : ORDER.indexOf(step);
   return (
-    <div className="mb-8 flex items-center gap-1.5" aria-hidden>
-      {order.map((s, i) => (
-        <span key={s} className={cn('h-1 rounded-full transition-all duration-300', i <= at ? 'w-6 bg-accent' : 'w-3 bg-line')} />
+    <div className="mb-8 flex items-center gap-1" aria-hidden>
+      {ORDER.map((s, i) => (
+        <span key={s} className={cn('h-1 rounded-full transition-all duration-300', i <= at ? 'w-5 bg-accent' : 'w-2.5 bg-line')} />
       ))}
     </div>
   );
 }
 
-export function Onboarding({ firstName, preview }: { firstName?: string | null; preview?: { step: Step; profile?: CvProfile; plan?: Plan; run?: RunView } }) {
-  const router = useRouter();
-  const [step, setStep] = useState<Step>(preview?.step || 'upload');
-  const [mode, setMode] = useState<'pdf' | 'text'>('pdf');
-  const [text, setText] = useState('');
-  const [error, setError] = useState('');
-  const [profile, setProfile] = useState<CvProfile | null>(preview?.profile || null);
-  const [plan, setPlan] = useState<Plan | null>(preview?.plan || null);
-  const [run, setRun] = useState<RunView | null>(preview?.run || null);
-  const [finished, setFinished] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+function Title({ children, hint }: { children: React.ReactNode; hint?: string }) {
+  return (
+    <div className="mb-7">
+      <h1 className="text-[30px] font-semibold leading-[1.08] tracking-[-0.04em]">{children}</h1>
+      {hint && <p className="mt-2.5 text-[15px] leading-relaxed text-muted">{hint}</p>}
+    </div>
+  );
+}
 
-  async function readCv(body: FormData | string) {
+export function Onboarding({ firstName, initialStep }: { firstName?: string | null; initialStep?: Step }) {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>(initialStep || 'cvs');
+  const [cvs, setCvs] = useState<CvItem[]>([]);
+  const [draft, setDraft] = useState<Draft>(() => DraftSchema.parse({ openTo: ['city', 'country', 'remote'], employmentTypes: ['full_time'] }));
+  const [touched, setTouched] = useState(false);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [extra, setExtra] = useState<CompanyOption[]>([]);
+  const [run, setRun] = useState<RunView | null>(null);
+  const [finished, setFinished] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    void fetch('/api/cvs').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!d?.cvs?.length) return;
+      setCvs(d.cvs);
+      const parsed = d.cvs.map((c: CvItem) => c.parsed).filter(Boolean) as CvProfile[];
+      if (parsed.length) setDraft(draftFromCvs(parsed));
+    });
+  }, []);
+
+  /** CVs prefill the form until the user edits it; after that the form wins. */
+  function onCvs(next: CvItem[]) {
+    setCvs(next);
+    const parsed = next.map((c) => c.parsed).filter(Boolean) as CvProfile[];
+    if (!touched && parsed.length) setDraft(draftFromCvs(parsed));
+  }
+  const set = (patch: Partial<Draft>) => {
+    setTouched(true);
+    setDraft((d) => ({ ...d, ...patch }));
+  };
+
+  const go = (s: Step) => {
     setError('');
-    setStep('reading');
-    const res = await fetch('/api/onboarding/cv', {
-      method: 'POST',
-      ...(typeof body === 'string' ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: body }) } : { body }),
-    }).catch(() => null);
+    setStep(s);
+    window.scrollTo({ top: 0 });
+  };
+  const next = () => {
+    const i = ORDER.indexOf(step);
+    if (step === 'avoid') return void makePlan();
+    go(ORDER[i + 1]);
+  };
+  const back = () => go(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
+
+  async function makePlan() {
+    setStep('planning');
+    const res = await fetch('/api/onboarding/plan', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ draft }) }).catch(() => null);
     const data = res ? await res.json().catch(() => ({})) : {};
     if (!res?.ok) {
-      setError(data.error || 'Could not read the CV. Try again.');
-      setStep('upload');
-      haptic('error');
+      setError(data.error || 'Could not plan the search. Try again.');
+      setStep('avoid');
       return;
     }
-    setProfile(data.profile);
-    setStep('review');
-    haptic('success');
-  }
-
-  function onFile(file?: File | null) {
-    if (!file) return;
-    const form = new FormData();
-    form.set('file', file);
-    void readCv(form);
+    setPlan(data);
+    if (!draft.keywords.length) setDraft((d) => ({ ...d, keywords: data.keywords }));
+    setPicked(new Set(data.companies.filter((c: CompanyOption) => c.suggested).map(keyOf)));
+    go('companies');
   }
 
   async function confirm() {
-    if (!profile) return;
     setError('');
+    const all = [...extra, ...(plan?.companies || [])];
+    const companies = all.filter((c) => picked.has(keyOf(c))).map(({ name, ats, slug, cities, countries }) => ({ name, ats, slug, cities, countries }));
     setStep('planning');
     const res = await fetch('/api/onboarding/confirm', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ profile }),
+      body: JSON.stringify({ draft: { ...draft, keywords: draft.keywords.length ? draft.keywords : plan?.keywords || [] }, companies }),
     }).catch(() => null);
     const data = res ? await res.json().catch(() => ({})) : {};
     if (!res?.ok) {
       setError(data.error || 'Could not start the search.');
-      setStep('review');
+      setStep('companies');
       return;
     }
-    setPlan(data.plan);
     setRun(data.run);
-    setStep('searching');
+    go('searching');
   }
 
-  const set = <K extends keyof CvProfile>(key: K, value: CvProfile[K]) => setProfile((p) => (p ? { ...p, [key]: value } : p));
+  const canNext = useMemo(() => {
+    if (step === 'work') return draft.targetRoles.length > 0;
+    if (step === 'where') return draft.openTo.length > 0 && (draft.openTo.every((o) => o === 'remote') || Boolean(draft.city || draft.country));
+    return true;
+  }, [step, draft]);
+
+  const Section = (FORM as Step[]).includes(step) ? SECTIONS[step as Section] : null;
+  const options = [...extra, ...(plan?.companies || [])];
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="mx-auto max-w-lg pb-4">
       <StepDots step={step} />
+      {error && <div className="mb-5"><Notice tone="danger">{error}</Notice></div>}
 
-      {(step === 'upload' || step === 'reading') && (
+      {step === 'cvs' && (
         <div className="animate-in">
-          <h1 className="text-[32px] font-semibold leading-[1.08] tracking-[-0.04em]">
-            {firstName ? `Hi ${firstName}.` : 'Hi.'}<br />Start with your CV.
-          </h1>
-          <p className="mt-3 text-[15px] leading-relaxed text-muted">
-            That’s all Jobber needs. It reads it, suggests roles and companies, and finds matching jobs — you just check it understood you right.
-          </p>
-
-          {error && <div className="mt-6"><Notice tone="danger">{error}</Notice></div>}
-
-          {step === 'reading' ? (
-            <div className="mt-8 flex flex-col items-center rounded-[var(--radius-card)] border border-line px-6 py-14 text-center">
-              <Loader2 className="size-7 animate-spin text-accent" />
-              <p className="mt-4 text-[17px] font-semibold tracking-[-0.02em]">Reading your CV…</p>
-              <p className="mt-1 text-[13.5px] text-muted">Pulling out roles, skills and preferences. ~15 seconds.</p>
-            </div>
-          ) : mode === 'pdf' ? (
-            <>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  onFile(e.dataTransfer.files?.[0]);
-                }}
-                className="mt-8 flex w-full flex-col items-center rounded-[var(--radius-card)] border border-dashed border-line-strong px-6 py-12 text-center transition-colors hover:border-accent hover:bg-surface-2 active:scale-[0.99]"
-              >
-                <span className="flex size-12 items-center justify-center rounded-full bg-accent text-accent-fg"><Upload className="size-5" /></span>
-                <span className="mt-4 text-[17px] font-semibold tracking-[-0.02em]">Upload CV (PDF)</span>
-                <span className="mt-1 text-[13.5px] text-muted">Tap to choose a file · up to 5 MB</span>
-              </button>
-              <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-              <button type="button" onClick={() => setMode('text')} className="mt-4 w-full text-center text-[14px] text-accent">
-                No PDF? Paste the text instead
-              </button>
-            </>
-          ) : (
-            <div className="mt-8 space-y-3">
-              <textarea
-                className={cn(fieldClass, 'min-h-[260px] resize-y leading-relaxed')}
-                placeholder="Paste your CV here — experience, skills, languages, location…"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-              />
-              <Button size="lg" className="w-full" disabled={text.trim().length < 200} onClick={() => readCv(text)}>
-                <FileText /> Read my CV
-              </Button>
-              <button type="button" onClick={() => setMode('pdf')} className="w-full text-center text-[14px] text-accent">Upload a PDF instead</button>
-            </div>
-          )}
-          <p className="mt-6 text-center text-[12px] leading-relaxed text-subtle">Your CV is stored in your account only and read by Google Gemini to build your profile.</p>
+          <Title hint="Jobber reads it and fills in the next questions for you. Have versions for different roles? Add them all — each job gets the best one.">
+            {firstName ? `Hi ${firstName}.` : 'Hi.'} Let’s start<br />with your CV.
+          </Title>
+          <CvManager cvs={cvs} onChange={onCvs} />
+          <p className="mt-6 text-center text-[12px] leading-relaxed text-subtle">Your CVs stay in your account and are read by Google Gemini.</p>
+          <Footer>
+            {cvs.length ? (
+              <NextButton onClick={next}>Continue</NextButton>
+            ) : (
+              <button type="button" onClick={next} className="w-full py-3 text-center text-[14px] text-muted">I don’t have a CV — skip</button>
+            )}
+          </Footer>
         </div>
       )}
 
-      {step === 'review' && profile && (
-        <div className="animate-in space-y-6">
-          <div>
-            <h1 className="text-[32px] font-semibold leading-[1.08] tracking-[-0.04em]">Here’s what I understood</h1>
-            <p className="mt-2 text-[15px] text-muted">Fix anything that’s off — this drives the search.</p>
-          </div>
-          {error && <Notice tone="danger">{error}</Notice>}
-
-          <div className="rounded-[var(--radius-card)] border border-line bg-bg p-5">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"><Sparkles className="size-4" /></span>
-              <div className="min-w-0">
-                <p className="text-[17px] font-semibold tracking-[-0.02em]">{profile.fullName || 'You'}</p>
-                {profile.summary && <p className="mt-1 text-[14px] leading-relaxed text-muted">{profile.summary}</p>}
-              </div>
+      {Section && (
+        <div className="animate-in" key={step}>
+          <Title hint={SECTION_COPY[step as Section].hint}>{SECTION_COPY[step as Section].title}</Title>
+          <Section draft={draft} set={set} />
+          <Footer>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="lg" className="px-4" onClick={back} aria-label="Back"><ArrowLeft /></Button>
+              <NextButton onClick={next} disabled={!canNext}>{step === 'avoid' ? 'Find companies' : 'Next'}</NextButton>
             </div>
-          </div>
-
-          <Field label="Roles to look for" hint="Comma-separated">
-            <input className={fieldClass} value={profile.targetRoles.join(', ')} onChange={(e) => set('targetRoles', splitList(e.target.value))} />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Level">
-              <select className={fieldClass} value={profile.seniority} onChange={(e) => set('seniority', e.target.value as CvProfile['seniority'])}>
-                {SENIORITY.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
-              </select>
-            </Field>
-            <Field label="Years">
-              <input className={fieldClass} inputMode="numeric" value={profile.yearsExperience ?? ''} onChange={(e) => set('yearsExperience', e.target.value ? Number(e.target.value.replace(/\D/g, '')) || null : null)} />
-            </Field>
-          </div>
-
-          <Field label="Key skills">
-            <textarea className={cn(fieldClass, 'min-h-[84px] resize-y')} value={profile.skills.join(', ')} onChange={(e) => set('skills', splitList(e.target.value))} />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Location">
-              <input className={fieldClass} value={profile.location || ''} onChange={(e) => set('location', e.target.value || null)} />
-            </Field>
-            <Field label="Languages">
-              <input className={fieldClass} value={profile.languages.join(', ')} onChange={(e) => set('languages', splitList(e.target.value))} />
-            </Field>
-          </div>
-
-          <Field label="Work setup">
-            <div className="grid grid-cols-4 gap-1 rounded-full bg-surface-2 p-1">
-              {REMOTE.map(([id, name]) => (
-                <button key={id} type="button" onClick={() => set('remotePreference', id)}
-                  className={cn('rounded-full py-2 text-[13px] font-medium transition-all', profile.remotePreference === id ? 'bg-bg text-fg shadow-sm' : 'text-muted')}>
-                  {name}
-                </button>
-              ))}
-            </div>
-          </Field>
-
-          <Field label="Salary (gross €/year, a guess)">
-            <div className="grid grid-cols-2 gap-3">
-              <input className={fieldClass} inputMode="numeric" placeholder="From" value={profile.salaryMin ?? ''} onChange={(e) => set('salaryMin', Number(e.target.value.replace(/\D/g, '')) || null)} />
-              <input className={fieldClass} inputMode="numeric" placeholder="To" value={profile.salaryMax ?? ''} onChange={(e) => set('salaryMax', Number(e.target.value.replace(/\D/g, '')) || null)} />
-            </div>
-          </Field>
-
-          {profile.gaps.length > 0 && (
-            <Group title="Gaps I noticed" footer="Jobber won’t claim these in letters or CV advice.">
-              {profile.gaps.map((g, i) => (
-                <div key={i} className="flex items-start gap-2.5 px-5 py-3 text-[14px] leading-snug">
-                  <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-warning" />{g}
-                </div>
-              ))}
-            </Group>
-          )}
-
-          <div className="sticky bottom-0 -mx-5 bg-gradient-to-t from-bg via-bg to-transparent px-5 pb-[calc(16px+var(--safe-bottom))] pt-6">
-            <Button size="lg" className="w-full justify-between pl-7 pr-2" onClick={confirm} disabled={!profile.targetRoles.length}>
-              Looks right — find jobs
-              <span className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-fg"><ArrowRight className="size-5" /></span>
-            </Button>
-          </div>
+          </Footer>
         </div>
       )}
 
@@ -247,11 +173,32 @@ export function Onboarding({ firstName, preview }: { firstName?: string | null; 
         <div className="animate-in flex flex-col items-center px-6 py-20 text-center">
           <Loader2 className="size-7 animate-spin text-accent" />
           <p className="mt-4 text-[20px] font-semibold tracking-[-0.03em]">Planning your search…</p>
-          <p className="mt-1 text-[14px] text-muted">Picking job titles, keywords and companies that fit.</p>
+          <p className="mt-1 text-[14px] text-muted">Choosing job boards and companies that fit you.</p>
         </div>
       )}
 
-      {step === 'searching' && plan && run && (
+      {step === 'companies' && plan && (
+        <div className="animate-in">
+          <Title hint="Tick the ones Jobber should check every day. ✦ = suggested for you. Add any other company by name or careers link.">Companies to watch</Title>
+          <CompaniesWatch
+            options={options}
+            selected={picked}
+            onToggle={(c) => setPicked((s) => { const n = new Set(s); n.has(keyOf(c)) ? n.delete(keyOf(c)) : n.add(keyOf(c)); return n; })}
+            onAdd={(c) => { setExtra((e) => [c, ...e.filter((x) => keyOf(x) !== keyOf(c))]); setPicked((s) => new Set(s).add(keyOf(c))); }}
+          />
+          <p className="mt-4 px-1 text-[12.5px] leading-relaxed text-muted">
+            Also searched by keyword: {(draft.keywords.length ? draft.keywords : plan.keywords).join(', ')} — on public job boards near you and remote boards.
+          </p>
+          <Footer>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="lg" className="px-4" onClick={back} aria-label="Back"><ArrowLeft /></Button>
+              <NextButton onClick={confirm}>Find jobs · {picked.size} companies</NextButton>
+            </div>
+          </Footer>
+        </div>
+      )}
+
+      {step === 'searching' && run && (
         <div className="animate-in space-y-7">
           <div>
             <h1 className="text-[32px] font-semibold leading-[1.08] tracking-[-0.04em]">{finished ? 'Your first matches are ready' : 'Finding your jobs'}</h1>
@@ -264,36 +211,23 @@ export function Onboarding({ firstName, preview }: { firstName?: string | null; 
               <span className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-fg"><ArrowRight className="size-5" /></span>
             </Button>
           )}
-          <section>
-            <h2 className={cn(capsClass, 'mb-2.5 px-1')}>Searching for</h2>
-            <div className="flex flex-wrap gap-1.5">
-              {[...plan.titles, ...plan.keywords.filter((k) => !plan.titles.some((t) => t.toLowerCase() === k))].map((t) => (
-                <span key={t} className="rounded-full border border-line px-3 py-1 text-[13px]">{t}</span>
-              ))}
-            </div>
-          </section>
-          <Group title={`Companies to watch · ${plan.companies.length}`} footer={`Each one has a verified public job board. ${plan.aiPicked ? 'Picked by AI from Jobber’s curated list.' : 'Ranked by stack and location.'} Plus Remotive, Jobicy, Himalayas and Arbeitnow by keyword.`}>
-            {plan.companies.map((c) => (
-              <div key={c.name} className="flex items-center justify-between gap-3 px-5 py-3">
-                <span className="truncate text-[15px] font-medium tracking-[-0.01em]">{c.name}</span>
-                <span className="shrink-0 truncate text-[12.5px] text-muted">{c.hq}</span>
-              </div>
-            ))}
-          </Group>
         </div>
       )}
     </div>
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Footer({ children }: { children: React.ReactNode }) {
+  return <div className="sticky bottom-0 -mx-5 mt-8 bg-gradient-to-t from-bg via-bg to-transparent px-5 pb-[calc(16px+var(--safe-bottom))] pt-6">{children}</div>;
+}
+
+function NextButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
-    <label className="block space-y-1.5">
-      <span className="flex items-baseline justify-between px-1">
-        <span className="text-[13px] font-medium text-muted">{label}</span>
-        {hint && <span className="text-[11.5px] text-subtle">{hint}</span>}
-      </span>
+    <Button size="lg" className="w-full flex-1 justify-between pl-7 pr-2" onClick={() => { haptic('light'); onClick(); }} disabled={disabled}>
       {children}
-    </label>
+      <span className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-fg"><ArrowRight className="size-5" /></span>
+    </Button>
   );
 }
+
+export const _capsClass = capsClass;

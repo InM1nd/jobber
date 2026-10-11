@@ -1,13 +1,15 @@
 import type { ChatClient } from '@/lib/llm/matcher';
-import { gemini, type GeminiTier } from './gemini';
+import type { GeminiTier } from './gemini';
+import type { AiKind } from './limiter';
+import { runAi } from './run';
 
-/** Adapts the shared Gemini client to the provider-agnostic ChatClient interface. */
-export function sharedChatClient(tier: GeminiTier, maxWaitMs?: number): ChatClient {
+/** Adapts runAi (user key or shared key, with quotas) to the ChatClient interface. */
+export function userChatClient(userId: string, kind: AiKind, tier: GeminiTier = 'smart', maxWaitMs?: number): ChatClient {
   return {
     async chat(messages, options) {
       const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n');
       const prompt = messages.filter((m) => m.role !== 'system').map((m) => m.content).join('\n\n');
-      const content = await gemini(prompt, {
+      const content = await runAi(userId, kind, prompt, {
         tier,
         system: system || undefined,
         temperature: options?.temperature,

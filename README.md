@@ -1,6 +1,6 @@
 # Jobber
 
-Jobber is a Telegram Mini App for job search. The same Next.js app on Vercel holds the UI, the bot webhook, and the cron routes. It fetches vacancies from public ATS APIs, scores them on the owner's shared Gemini key (`GEMINI_API_KEY`, free tier), drafts cover letters and per-job CV advice, and reminds you to follow up in the chat, and reminds you to follow up in the chat.
+Jobber is a Telegram Mini App for job search. The same Next.js app on Vercel holds the UI, the bot webhook, and the cron routes. It fetches vacancies from public ATS APIs, scores them on the owner's shared Gemini key (`GEMINI_API_KEY`, free tier), drafts cover letters and per-job CV advice, and reminds you to follow up in the chat.
 
 The owner tests it first. Friends get in with an invite code. Nobody pastes keys: AI runs server-side on one shared Gemini key with per-user daily quotas.
 
@@ -15,13 +15,29 @@ The owner tests it first. Friends get in with an invite code. Nobody pastes keys
 - CV-first onboarding (`/dashboard/onboarding`): upload a PDF or paste text → Gemini extracts a structured profile (validated with zod) → the user edits a "Here's what I understood" card → Jobber builds a search plan (titles, keywords, and companies picked **only** from `lib/companies/seed.json`, a curated list of boards verified to return jobs by `scripts/verify-seed.mjs`) → the first fetch + score runs immediately in small steps (`/api/search/step`), with a progress card. A Telegram message with the top matches goes out when the first run finishes.
 - Keyword boards without a watchlist: Remotive, Jobicy, Himalayas (search API) and Arbeitnow (keyword-filtered).
 - Rule pre-filter before any AI call (`lib/jobs/prefilter.ts`): title/role family, seniority, German-language requirements, on-site city, region-locked remote.
-- Shared Gemini (`lib/ai/gemini.ts`): smart model (`GEMINI_MODEL`, default `gemini-3.5-flash`) for CV parsing, plans, letters and CV advice; lite model (`GEMINI_MODEL_LITE`, default `gemini-3.5-flash-lite`) for bulk scoring. Per-model sliding-window limiter (`GEMINI_RPM_SMART`=5, `GEMINI_RPM_LITE`=15), retries with RetryInfo backoff on 429, a cross-instance backoff row after long 429s, fallback smart→lite on 503/404. Whatever isn't scored waits for the next cron run.
-- Per-user daily quotas (`AiUsage` table): `AI_DAILY_SCORES` (60), `AI_DAILY_WRITES` (12, letters + CV advice + tailored CV), `AI_DAILY_CV_PARSES` (4).
+- AI (`lib/ai/run.ts` → `gemini.ts`): **flash-lite does everything** (`GEMINI_MODEL_LITE`, default `gemini-3.5-flash-lite`: CV reading, search plan, scoring, advice, letters). Flash (`GEMINI_MODEL`) is only a fallback for “smart” work when `GEMINI_FLASH_FALLBACK=true`. Sliding-window limiter per key+model (`GEMINI_RPM_LITE`=15), RetryInfo backoff on 429, cross-instance backoff row.
+- Shared daily budget (`lib/ai/budget.ts`, table `GlobalAiUsage`, Pacific-time day like Google): `GEMINI_RPD_LITE`=500, `GEMINI_RPD_FLASH`=20, safety margin `GEMINI_RPD_MARGIN`=20, `GEMINI_ONBOARDING_RESERVE`=80 kept for CV reading + plans of new users. Atomic `insert … on conflict … where count < cap`.
+- Optional own Gemini key per user (Settings → illustrated “How to get a free Gemini key” guide). Checked with the free `models.list` call, stored AES-256-GCM encrypted in `ApiKey` (provider `gemini`). When present: user's own quota, no shared budget, bigger limits.
+- Per-user daily limits in AI *requests* (`AiUsage`): shared key `AI_DAILY_SCORE_CALLS`=6 (one request scores up to 5 jobs → 30 jobs/day), `AI_DAILY_WRITES`=4, `AI_DAILY_CV_PARSES`=5; own key `AI_BYO_DAILY_SCORE_CALLS`=80, `AI_BYO_DAILY_WRITES`=60, `AI_BYO_DAILY_CV_PARSES`=20. ~10 requests per active user/day → ~40 active users on the free 500 RPD.
+- Guided profile form (`lib/profile/draft.ts`, `components/profile-form.tsx`): field, job titles, city/country + open to (city / country / remote / relocation), languages with plain levels, level + “stretch roles”, contract type, salary, things/companies to avoid. CVs prefill it; the form is the source of truth and everything stays editable in Profile (plus keywords, skills, scoring rules, min score, max job age, Telegram alert frequency/threshold).
+- Multiple labelled CVs (`Cv` table, `/api/cvs`). Scoring sends all CVs and the AI picks the best one per job (shown as “CV: …” on matches); advice / tailored CV / letter use the chosen CV, switchable on the match page.
+- Location tiers (`lib/jobs/prefilter.ts#locationTier`): city → country → remote → relocation. Sources are fetched in that order, local jobs are scored first, and matches are sorted by tier inside each fit band.
+- Scoring rubric (`lib/search/rubric.ts`): AI gives role fit + skills (calibrated anchors, few-shot), code gives seniority (incl. stretch + “N+ years”), location tier, language, salary → weighted 30/30/15/10/7/8, low role fit caps the total. Breakdown is shown on each match.
+- Filters you can see: “Skipped by filters” lists every job the rules dropped (with reasons) and a “Score anyway” button.
+- Companies to watch: AI-picked from the verified dataset (`lib/companies/seed.json`, 128 companies, tagged with real cities/countries from their open jobs) plus any company by name or careers URL — ATS auto-detected (`lib/companies/detect.ts`).
 - "Tailor CV" on each match: concrete emphasise/add/reword suggestions, missing keywords, and a "don't claim" list; optional tailored CV text. Cached per user+job on `JobMatch`.
-- Database change for this version: run `supabase/migrations/002_shared_ai_onboarding.sql` in the Supabase SQL editor (idempotent).
+- Database changes: run `supabase/migrations/002_shared_ai_onboarding.sql`, then `supabase/migrations/003_guided_form_multi_cv.sql` in the Supabase SQL editor (both idempotent).
 - Application tracker with statuses and a 7-day follow-up date.
 - `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
 - Local demo mode when Supabase is not configured, so the screens can be clicked through with sample matches.
+
+## Job sources
+
+All public and used per their terms; no LinkedIn or logged-in scraping. Re-check live with `npx tsx scripts/verify-sources.mts`; rebuild the company list with `node scripts/verify-seed.mjs`.
+
+- Keyword boards: Remotive, Jobicy, Himalayas, Arbeitnow, RemoteOK (link back required), We Work Remotely (RSS), Working Nomads, The Muse, Bundesagentur für Arbeit Jobsuche API (Germany, local search), Adzuna (`ADZUNA_APP_ID`/`ADZUNA_APP_KEY`, free key, optional), Jooble (`JOOBLE_API_KEY`, free key, optional).
+- Company ATS boards: Greenhouse, Lever, Ashby, Workable, Personio, Recruitee, SmartRecruiters, Teamtailor, BambooHR, Workday (public CXS endpoint).
+- Not included: AMS eJob-Room / karriere.at (no public API or feed; AMS search API needs login), EURES (no public API), LinkedIn, Join.com (public API needs a numeric company id).
 
 ## What is stubbed
 

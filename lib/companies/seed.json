@@ -2,47 +2,329 @@
  "verifiedAt": "2026-10-11",
  "companies": [
   {
+   "name": "Accor",
+   "ats": "smartrecruiters",
+   "slug": "AccorHotel",
+   "industry": "Travel",
+   "tags": [
+    "hospitality"
+   ],
+   "jobs": 100,
+   "countries": [
+    "United States",
+    "France",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Paris",
+    "New York",
+    "London",
+    "Chicago"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Adobe",
+   "ats": "workday",
+   "slug": "adobe:wd5:external_experienced",
+   "industry": "Software & AI",
+   "tags": [
+    "design"
+   ],
+   "jobs": 20,
+   "countries": [
+    "India",
+    "United Kingdom",
+    "Romania"
+   ],
+   "cities": [
+    "Bangalore",
+    "London",
+    "Bucharest"
+   ],
+   "remoteShare": 0
+  },
+  {
    "name": "Adyen",
    "ats": "greenhouse",
    "slug": "adyen",
-   "hq": "Amsterdam",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "java",
     "python"
    ],
-   "jobs": 237
+   "jobs": 237,
+   "countries": [
+    "United States",
+    "Netherlands",
+    "Singapore",
+    "Germany",
+    "United Kingdom",
+    "Japan"
+   ],
+   "cities": [
+    "Amsterdam",
+    "San Francisco",
+    "Chicago",
+    "New York",
+    "Berlin",
+    "London",
+    "Tokyo",
+    "Bengaluru"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Affirm",
+   "ats": "greenhouse",
+   "slug": "affirm",
+   "industry": "Finance",
+   "tags": [
+    "python",
+    "react"
+   ],
+   "jobs": 203,
+   "countries": [
+    "Canada",
+    "United Kingdom",
+    "Spain",
+    "Poland",
+    "United States",
+    "Australia"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York"
+   ],
+   "remoteShare": 0.97
+  },
+  {
+   "name": "Agicap",
+   "ats": "lever",
+   "slug": "agicap",
+   "industry": "Finance",
+   "tags": [
+    "fintech"
+   ],
+   "jobs": 24,
+   "countries": [
+    "France",
+    "Germany",
+    "Italy",
+    "United States",
+    "Portugal",
+    "Spain"
+   ],
+   "cities": [
+    "Lyon",
+    "Milan",
+    "Berlin",
+    "DÜSseldorf",
+    "Austin",
+    "Lisbon",
+    "Barcelona"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Airbnb",
+   "ats": "greenhouse",
+   "slug": "airbnb",
+   "industry": "Travel",
+   "tags": [
+    "travel",
+    "react",
+    "java"
+   ],
+   "jobs": 161,
+   "countries": [
+    "United States",
+    "Canada",
+    "Japan",
+    "India",
+    "United Kingdom",
+    "Ireland"
+   ],
+   "cities": [
+    "San Francisco",
+    "Tokyo",
+    "London",
+    "Bangalore",
+    "Milan",
+    "Sydney",
+    "Dublin",
+    "Berlin"
+   ],
+   "remoteShare": 0.13
   },
   {
    "name": "Airtable",
    "ats": "greenhouse",
    "slug": "airtable",
-   "hq": "London",
+   "industry": "Software & AI",
    "tags": [
     "productivity",
     "typescript",
     "react"
    ],
-   "jobs": 4
+   "jobs": 4,
+   "countries": [
+    "United Kingdom",
+    "United States"
+   ],
+   "cities": [
+    "Austin",
+    "London"
+   ],
+   "remoteShare": 0.5
+  },
+  {
+   "name": "Algolia",
+   "ats": "greenhouse",
+   "slug": "algolia",
+   "industry": "Software & AI",
+   "tags": [
+    "search",
+    "go",
+    "react"
+   ],
+   "jobs": 38,
+   "countries": [
+    "France",
+    "United Kingdom",
+    "Australia",
+    "United States",
+    "Netherlands",
+    "Germany"
+   ],
+   "cities": [
+    "Paris",
+    "London",
+    "Sydney",
+    "New York"
+   ],
+   "remoteShare": 0.18
+  },
+  {
+   "name": "Anthropic",
+   "ats": "greenhouse",
+   "slug": "anthropic",
+   "industry": "Software & AI",
+   "tags": [
+    "ai",
+    "python"
+   ],
+   "jobs": 645,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Japan",
+    "Germany",
+    "Australia",
+    "Singapore"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "Seattle",
+    "London",
+    "Tokyo",
+    "Munich",
+    "Sydney",
+    "Boston"
+   ],
+   "remoteShare": 0.09
+  },
+  {
+   "name": "Asana",
+   "ats": "greenhouse",
+   "slug": "asana",
+   "industry": "Software & AI",
+   "tags": [
+    "typescript",
+    "react"
+   ],
+   "jobs": 102,
+   "countries": [
+    "United States",
+    "Poland",
+    "Japan",
+    "Ireland",
+    "Germany",
+    "United Kingdom"
+   ],
+   "cities": [
+    "San Francisco",
+    "Warsaw",
+    "New York",
+    "Chicago",
+    "Tokyo",
+    "Dublin",
+    "Munich",
+    "London"
+   ],
+   "remoteShare": 0.04
+  },
+  {
+   "name": "AstraZeneca",
+   "ats": "workday",
+   "slug": "astrazeneca:wd3:Careers",
+   "industry": "Healthcare",
+   "tags": [
+    "pharma"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United Kingdom"
+   ],
+   "cities": [],
+   "remoteShare": 0
+  },
+  {
+   "name": "Attio",
+   "ats": "ashby",
+   "slug": "attio",
+   "industry": "Software & AI",
+   "tags": [
+    "typescript",
+    "react"
+   ],
+   "jobs": 36,
+   "countries": [
+    "United Kingdom",
+    "United States",
+    "Poland",
+    "Australia"
+   ],
+   "cities": [
+    "London",
+    "New York",
+    "San Francisco"
+   ],
+   "remoteShare": 0.97
   },
   {
    "name": "Automattic",
    "ats": "greenhouse",
    "slug": "automatticcareers",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "wordpress",
     "php",
     "react",
     "remote"
    ],
-   "jobs": 13
+   "jobs": 13,
+   "countries": [],
+   "cities": [],
+   "remoteShare": 1
   },
   {
    "name": "Bitpanda",
    "ats": "greenhouse",
    "slug": "bitpanda",
-   "hq": "Vienna",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "crypto",
@@ -50,61 +332,190 @@
     "go",
     "kotlin"
    ],
-   "jobs": 27
+   "jobs": 27,
+   "countries": [
+    "Austria",
+    "Spain",
+    "Germany",
+    "Romania"
+   ],
+   "cities": [
+    "Vienna",
+    "Barcelona",
+    "Berlin",
+    "Bucharest"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Blueground",
+   "ats": "workable",
+   "slug": "blueground",
+   "industry": "Travel",
+   "tags": [
+    "realestate"
+   ],
+   "jobs": 9,
+   "countries": [
+    "Greece",
+    "United States",
+    "Austria"
+   ],
+   "cities": [
+    "Athens",
+    "New York",
+    "Vienna"
+   ],
+   "remoteShare": 0.11
   },
   {
    "name": "Bosch",
    "ats": "smartrecruiters",
    "slug": "BoschGroup",
-   "hq": "Germany",
+   "industry": "Industry & manufacturing",
    "tags": [
     "industry",
     "java",
     "c++"
    ],
-   "jobs": 4950
+   "jobs": 100,
+   "countries": [
+    "India",
+    "Germany",
+    "Spain"
+   ],
+   "cities": [
+    "Bangalore",
+    "Bengaluru",
+    "Stuttgart",
+    "Madrid"
+   ],
+   "remoteShare": 0.02
+  },
+  {
+   "name": "Brex",
+   "ats": "greenhouse",
+   "slug": "brex",
+   "industry": "Finance",
+   "tags": [
+    "kotlin",
+    "react"
+   ],
+   "jobs": 277,
+   "countries": [
+    "United States",
+    "Canada"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "Seattle"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Bunq",
    "ats": "recruitee",
    "slug": "bunq",
-   "hq": "Amsterdam",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "java"
    ],
-   "jobs": 19
+   "jobs": 19,
+   "countries": [
+    "Netherlands",
+    "Belgium"
+   ],
+   "cities": [
+    "Amsterdam",
+    "Brussels"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Canonical",
    "ats": "greenhouse",
    "slug": "canonical",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "linux",
     "python",
     "go",
     "remote"
    ],
-   "jobs": 311
+   "jobs": 311,
+   "countries": [
+    "United Kingdom",
+    "Canada",
+    "Japan"
+   ],
+   "cities": [
+    "London",
+    "Toronto",
+    "Tokyo"
+   ],
+   "remoteShare": 0.31
   },
   {
    "name": "Celonis",
    "ats": "greenhouse",
    "slug": "celonis",
-   "hq": "Munich",
+   "industry": "Software & AI",
    "tags": [
     "data",
     "java",
     "angular"
    ],
-   "jobs": 226
+   "jobs": 226,
+   "countries": [
+    "Germany",
+    "India",
+    "Spain",
+    "United States",
+    "United Kingdom",
+    "Netherlands"
+   ],
+   "cities": [
+    "Munich",
+    "New York",
+    "Bangalore",
+    "Madrid",
+    "London",
+    "Amsterdam",
+    "Stockholm",
+    "Copenhagen"
+   ],
+   "remoteShare": 0.06
+  },
+  {
+   "name": "Chevron",
+   "ats": "workday",
+   "slug": "chevron:wd5:jobs",
+   "industry": "Energy",
+   "tags": [
+    "energy"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States",
+    "India",
+    "Spain",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Bengaluru",
+    "Barcelona",
+    "Bangalore",
+    "London"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Clerk",
    "ats": "ashby",
    "slug": "clerk",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "auth",
     "typescript",
@@ -112,138 +523,476 @@
     "nextjs",
     "remote"
    ],
-   "jobs": 2
+   "jobs": 2,
+   "countries": [
+    "United States"
+   ],
+   "cities": [
+    "San Francisco"
+   ],
+   "remoteShare": 1
   },
   {
    "name": "Cloudflare",
    "ats": "greenhouse",
    "slug": "cloudflare",
-   "hq": "Remote / Europe",
+   "industry": "Software & AI",
    "tags": [
     "network",
     "go",
     "rust",
     "typescript"
    ],
-   "jobs": 424
+   "jobs": 424,
+   "countries": [
+    "Japan",
+    "Portugal",
+    "United States",
+    "Singapore",
+    "India"
+   ],
+   "cities": [
+    "Tokyo",
+    "Lisbon",
+    "Austin"
+   ],
+   "remoteShare": 0.01
+  },
+  {
+   "name": "Coinbase",
+   "ats": "greenhouse",
+   "slug": "coinbase",
+   "industry": "Finance",
+   "tags": [
+    "crypto",
+    "go",
+    "react"
+   ],
+   "jobs": 222,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "India",
+    "Canada",
+    "Singapore",
+    "Ireland"
+   ],
+   "cities": [
+    "New York",
+    "San Francisco",
+    "Bangalore",
+    "London"
+   ],
+   "remoteShare": 0.83
   },
   {
    "name": "Contentful",
    "ats": "greenhouse",
    "slug": "contentful",
-   "hq": "Berlin",
+   "industry": "Software & AI",
    "tags": [
     "cms",
     "typescript",
     "react",
     "node"
    ],
-   "jobs": 19
+   "jobs": 19,
+   "countries": [
+    "United Kingdom",
+    "United States",
+    "Australia",
+    "Germany"
+   ],
+   "cities": [
+    "London",
+    "Sydney",
+    "San Francisco",
+    "Chicago",
+    "Berlin"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Continental",
+   "ats": "smartrecruiters",
+   "slug": "Continental",
+   "industry": "Industry & manufacturing",
+   "tags": [
+    "automotive"
+   ],
+   "jobs": 100,
+   "countries": [
+    "Austria",
+    "Japan",
+    "India"
+   ],
+   "cities": [
+    "Vienna",
+    "Tokyo",
+    "Bengaluru",
+    "Graz"
+   ],
+   "remoteShare": 0.02
   },
   {
    "name": "Cursor (Anysphere)",
    "ats": "ashby",
    "slug": "cursor",
-   "hq": "San Francisco",
+   "industry": "Software & AI",
    "tags": [
     "ai",
     "typescript"
    ],
-   "jobs": 137
+   "jobs": 137,
+   "countries": [
+    "United States",
+    "Singapore",
+    "Australia",
+    "United Kingdom",
+    "Japan",
+    "India"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "London",
+    "Bengaluru",
+    "Austin"
+   ],
+   "remoteShare": 0.42
+  },
+  {
+   "name": "Databricks",
+   "ats": "greenhouse",
+   "slug": "databricks",
+   "industry": "Software & AI",
+   "tags": [
+    "scala",
+    "python"
+   ],
+   "jobs": 892,
+   "countries": [
+    "United States",
+    "India",
+    "United Kingdom",
+    "Japan",
+    "Netherlands",
+    "Germany"
+   ],
+   "cities": [
+    "San Francisco",
+    "Bengaluru",
+    "New York",
+    "Seattle",
+    "London",
+    "Tokyo",
+    "Amsterdam",
+    "Chicago"
+   ],
+   "remoteShare": 0.08
   },
   {
    "name": "Datadog",
    "ats": "greenhouse",
    "slug": "datadog",
-   "hq": "New York / Europe",
+   "industry": "Software & AI",
    "tags": [
     "observability",
     "go",
     "python",
     "react"
    ],
-   "jobs": 435
+   "jobs": 435,
+   "countries": [
+    "United States",
+    "France",
+    "Japan",
+    "Ireland",
+    "United Kingdom",
+    "Netherlands"
+   ],
+   "cities": [
+    "New York",
+    "Boston",
+    "Paris",
+    "Tokyo",
+    "San Francisco",
+    "Dublin",
+    "Amsterdam",
+    "London"
+   ],
+   "remoteShare": 0.13
+  },
+  {
+   "name": "Dataiku",
+   "ats": "greenhouse",
+   "slug": "dataiku",
+   "industry": "Software & AI",
+   "tags": [
+    "data",
+    "python",
+    "react"
+   ],
+   "jobs": 17,
+   "countries": [
+    "United States",
+    "France",
+    "United Kingdom",
+    "Japan",
+    "Germany",
+    "Netherlands"
+   ],
+   "cities": [
+    "London",
+    "Tokyo",
+    "New York",
+    "Paris",
+    "Chicago"
+   ],
+   "remoteShare": 0.59
   },
   {
    "name": "DeepL",
    "ats": "ashby",
    "slug": "DeepL",
-   "hq": "Cologne",
+   "industry": "Software & AI",
    "tags": [
     "ai",
     "python",
     "typescript"
    ],
-   "jobs": 7
+   "jobs": 7,
+   "countries": [
+    "United Kingdom",
+    "Austria",
+    "United States",
+    "Germany"
+   ],
+   "cities": [
+    "London",
+    "Vienna",
+    "Austin",
+    "Munich"
+   ],
+   "remoteShare": 0.43
+  },
+  {
+   "name": "Deliveroo",
+   "ats": "greenhouse",
+   "slug": "deliveroo",
+   "industry": "Food & delivery",
+   "tags": [
+    "python",
+    "go"
+   ],
+   "jobs": 200,
+   "countries": [
+    "United Kingdom",
+    "Italy",
+    "France",
+    "Ireland",
+    "Belgium",
+    "India"
+   ],
+   "cities": [
+    "London",
+    "Manchester",
+    "Paris",
+    "Milan",
+    "Rome",
+    "Dublin",
+    "Edinburgh",
+    "Brussels"
+   ],
+   "remoteShare": 0.01
   },
   {
    "name": "Delivery Hero (SR)",
    "ats": "smartrecruiters",
    "slug": "DeliveryHero",
-   "hq": "Berlin",
+   "industry": "Food & delivery",
    "tags": [
     "foodtech",
     "go",
     "react"
    ],
-   "jobs": 946
+   "jobs": 100,
+   "countries": [
+    "Spain",
+    "Hungary",
+    "Greece",
+    "Singapore",
+    "Germany",
+    "Romania"
+   ],
+   "cities": [
+    "Barcelona",
+    "Budapest",
+    "Athens",
+    "Berlin",
+    "Madrid",
+    "Bucharest",
+    "Milan",
+    "Warsaw"
+   ],
+   "remoteShare": 0.01
   },
   {
    "name": "Discord",
    "ats": "greenhouse",
    "slug": "discord",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "social",
     "rust",
     "python",
     "react"
    ],
-   "jobs": 49
+   "jobs": 49,
+   "countries": [
+    "United States",
+    "Portugal"
+   ],
+   "cities": [
+    "San Francisco",
+    "Seattle",
+    "Lisbon"
+   ],
+   "remoteShare": 0.18
   },
   {
    "name": "Docker",
    "ats": "ashby",
    "slug": "docker",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "devops",
     "go",
     "typescript",
     "remote"
    ],
-   "jobs": 62
+   "jobs": 62,
+   "countries": [
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "Australia"
+   ],
+   "cities": [
+    "Seattle",
+    "San Francisco",
+    "London"
+   ],
+   "remoteShare": 0.97
   },
   {
    "name": "Doctolib",
    "ats": "greenhouse",
    "slug": "doctolib",
-   "hq": "Paris / Berlin",
+   "industry": "Healthcare",
    "tags": [
     "health",
     "ruby",
     "react"
    ],
-   "jobs": 151
+   "jobs": 151,
+   "countries": [
+    "France",
+    "Germany",
+    "Italy"
+   ],
+   "cities": [
+    "Paris",
+    "Berlin",
+    "Milan",
+    "KÖLn",
+    "Munich"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Dropbox",
+   "ats": "greenhouse",
+   "slug": "dropbox",
+   "industry": "Software & AI",
+   "tags": [
+    "go",
+    "python",
+    "react"
+   ],
+   "jobs": 32,
+   "countries": [
+    "Canada",
+    "Japan",
+    "United Kingdom",
+    "Ireland",
+    "Poland",
+    "Australia"
+   ],
+   "cities": [],
+   "remoteShare": 1
+  },
+  {
+   "name": "Duolingo",
+   "ats": "greenhouse",
+   "slug": "duolingo",
+   "industry": "Education",
+   "tags": [
+    "edtech",
+    "python",
+    "react"
+   ],
+   "jobs": 58,
+   "countries": [
+    "United States",
+    "Japan",
+    "United Kingdom"
+   ],
+   "cities": [
+    "New York",
+    "Tokyo",
+    "London",
+    "Seattle"
+   ],
+   "remoteShare": 0.03
   },
   {
    "name": "Elastic",
    "ats": "greenhouse",
    "slug": "elastic",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "search",
     "java",
     "typescript",
     "remote"
    ],
-   "jobs": 409
+   "jobs": 409,
+   "countries": [
+    "United States",
+    "Spain",
+    "Canada",
+    "India",
+    "Greece",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Bangalore",
+    "San Francisco",
+    "New York",
+    "Barcelona",
+    "Tokyo",
+    "Austin",
+    "Toronto",
+    "London"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "ElevenLabs",
    "ats": "ashby",
    "slug": "elevenlabs",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "ai",
     "python",
@@ -251,39 +1000,122 @@
     "react",
     "remote"
    ],
-   "jobs": 125
+   "jobs": 124,
+   "countries": [
+    "United Kingdom",
+    "United States",
+    "Sweden",
+    "Germany",
+    "Singapore",
+    "India"
+   ],
+   "cities": [
+    "New York",
+    "London",
+    "San Francisco"
+   ],
+   "remoteShare": 0.85
   },
   {
    "name": "Figma",
    "ats": "greenhouse",
    "slug": "figma",
-   "hq": "London",
+   "industry": "Software & AI",
    "tags": [
     "design",
     "typescript",
     "react",
     "c++"
    ],
-   "jobs": 150
+   "jobs": 150,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Germany",
+    "France",
+    "Japan",
+    "Australia"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "London",
+    "Berlin",
+    "Paris",
+    "Tokyo",
+    "Sydney",
+    "Bengaluru"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Flix",
+   "ats": "greenhouse",
+   "slug": "flix",
+   "industry": "Travel",
+   "tags": [
+    "mobility",
+    "java",
+    "react"
+   ],
+   "jobs": 140,
+   "countries": [
+    "Germany",
+    "Portugal",
+    "India",
+    "Poland",
+    "United States",
+    "Spain"
+   ],
+   "cities": [
+    "Berlin",
+    "Lisbon",
+    "Bangalore",
+    "Warsaw",
+    "Munich",
+    "New York",
+    "Frankfurt",
+    "Hamburg"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "GetYourGuide",
    "ats": "greenhouse",
    "slug": "getyourguide",
-   "hq": "Berlin / Zurich",
+   "industry": "Travel",
    "tags": [
     "travel",
     "react",
     "kotlin",
     "scala"
    ],
-   "jobs": 63
+   "jobs": 63,
+   "countries": [
+    "Germany",
+    "Switzerland",
+    "France",
+    "United States",
+    "Spain",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Berlin",
+    "Zurich",
+    "Paris",
+    "San Francisco",
+    "Barcelona",
+    "London",
+    "Tokyo",
+    "Amsterdam"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "GitLab",
    "ats": "greenhouse",
    "slug": "gitlab",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "devops",
     "ruby",
@@ -291,26 +1123,52 @@
     "vue",
     "remote"
    ],
-   "jobs": 221
+   "jobs": 221,
+   "countries": [
+    "United States",
+    "Canada",
+    "India",
+    "United Kingdom",
+    "Poland",
+    "Germany"
+   ],
+   "cities": [
+    "Bangalore"
+   ],
+   "remoteShare": 0.89
   },
   {
    "name": "GoStudent",
    "ats": "greenhouse",
    "slug": "gostudent",
-   "hq": "Vienna",
+   "industry": "Education",
    "tags": [
     "edtech",
     "react",
     "node",
     "typescript"
    ],
-   "jobs": 26
+   "jobs": 26,
+   "countries": [
+    "Austria",
+    "Spain",
+    "Germany",
+    "Italy"
+   ],
+   "cities": [
+    "Vienna",
+    "Milan",
+    "Madrid",
+    "Berlin",
+    "Innsbruck"
+   ],
+   "remoteShare": 0.31
   },
   {
    "name": "Grafana Labs",
    "ats": "greenhouse",
    "slug": "grafanalabs",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "observability",
     "go",
@@ -318,137 +1176,542 @@
     "typescript",
     "remote"
    ],
-   "jobs": 106
+   "jobs": 106,
+   "countries": [
+    "United States",
+    "Canada",
+    "Sweden",
+    "Spain",
+    "Germany",
+    "United Kingdom"
+   ],
+   "cities": [],
+   "remoteShare": 1
   },
   {
    "name": "HelloFresh",
    "ats": "greenhouse",
    "slug": "hellofresh",
-   "hq": "Berlin",
+   "industry": "Food & delivery",
    "tags": [
     "foodtech",
     "react",
     "go",
     "python"
    ],
-   "jobs": 415
+   "jobs": 415,
+   "countries": [
+    "Germany",
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "Poland",
+    "Netherlands"
+   ],
+   "cities": [
+    "Berlin",
+    "Toronto",
+    "New York",
+    "London",
+    "Amsterdam",
+    "Sydney",
+    "Dublin",
+    "Paris"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Helsing",
+   "ats": "ashby",
+   "slug": "helsing",
+   "industry": "Industry & manufacturing",
+   "tags": [
+    "defence",
+    "ai"
+   ],
+   "jobs": 159,
+   "countries": [
+    "Germany",
+    "United Kingdom",
+    "Spain",
+    "France",
+    "Sweden"
+   ],
+   "cities": [
+    "Munich",
+    "Berlin",
+    "London",
+    "Barcelona",
+    "Paris",
+    "Stockholm"
+   ],
+   "remoteShare": 0.99
   },
   {
    "name": "Hokify",
    "ats": "personio",
    "slug": "hokify",
-   "hq": "Vienna",
+   "industry": "HR & services",
    "tags": [
     "hr",
     "typescript",
     "vue"
    ],
-   "jobs": 1
+   "jobs": 1,
+   "countries": [
+    "Austria"
+   ],
+   "cities": [
+    "Vienna"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Holidu",
+   "ats": "personio",
+   "slug": "holidu",
+   "industry": "Travel",
+   "tags": [
+    "travel",
+    "react"
+   ],
+   "jobs": 2,
+   "countries": [
+    "Greece",
+    "Italy"
+   ],
+   "cities": [
+    "Athens"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "HP",
+   "ats": "workday",
+   "slug": "hp:wd5:ExternalCareerSite",
+   "industry": "Industry & manufacturing",
+   "tags": [
+    "hardware"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States",
+    "Canada"
+   ],
+   "cities": [],
+   "remoteShare": 0
   },
   {
    "name": "Hugging Face",
    "ats": "workable",
    "slug": "huggingface",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "ai",
     "python",
     "remote"
    ],
-   "jobs": 6
+   "jobs": 6,
+   "countries": [
+    "France",
+    "United States"
+   ],
+   "cities": [
+    "Paris",
+    "New York"
+   ],
+   "remoteShare": 1
+  },
+  {
+   "name": "Instabee",
+   "ats": "teamtailor",
+   "slug": "instabee",
+   "industry": "Logistics",
+   "tags": [
+    "logistics"
+   ],
+   "jobs": 56,
+   "countries": [
+    "Sweden",
+    "Netherlands",
+    "Finland",
+    "Norway"
+   ],
+   "cities": [
+    "Stockholm",
+    "Amsterdam",
+    "Helsinki",
+    "Oslo"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Instacart",
+   "ats": "greenhouse",
+   "slug": "instacart",
+   "industry": "Retail & e-commerce",
+   "tags": [
+    "ruby",
+    "react"
+   ],
+   "jobs": 119,
+   "countries": [
+    "United States",
+    "Canada"
+   ],
+   "cities": [
+    "Boston",
+    "Chicago"
+   ],
+   "remoteShare": 0.96
+  },
+  {
+   "name": "Intel",
+   "ats": "workday",
+   "slug": "intel:wd1:External",
+   "industry": "Industry & manufacturing",
+   "tags": [
+    "semiconductors"
+   ],
+   "jobs": 20,
+   "countries": [
+    "Ireland",
+    "United States"
+   ],
+   "cities": [
+    "Austin"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Intercom",
    "ats": "greenhouse",
    "slug": "intercom",
-   "hq": "Dublin / London",
+   "industry": "Software & AI",
    "tags": [
     "support",
     "ruby",
     "react"
    ],
-   "jobs": 106
+   "jobs": 106,
+   "countries": [
+    "Ireland",
+    "United States",
+    "United Kingdom",
+    "Australia",
+    "Germany"
+   ],
+   "cities": [
+    "Dublin",
+    "London",
+    "San Francisco",
+    "Chicago",
+    "Sydney",
+    "Berlin"
+   ],
+   "remoteShare": 0.04
+  },
+  {
+   "name": "Jobandtalent",
+   "ats": "lever",
+   "slug": "jobandtalent",
+   "industry": "HR & services",
+   "tags": [
+    "hr"
+   ],
+   "jobs": 29,
+   "countries": [
+    "United Kingdom",
+    "Spain",
+    "Sweden"
+   ],
+   "cities": [
+    "Madrid",
+    "Barcelona",
+    "Stockholm"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Linear",
    "ats": "ashby",
    "slug": "linear",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "productivity",
     "typescript",
     "react",
     "remote"
    ],
-   "jobs": 31
+   "jobs": 31,
+   "countries": [
+    "United Kingdom",
+    "Singapore"
+   ],
+   "cities": [
+    "London"
+   ],
+   "remoteShare": 1
+  },
+  {
+   "name": "LinkedIn",
+   "ats": "smartrecruiters",
+   "slug": "LinkedIn3",
+   "industry": "Software & AI",
+   "tags": [
+    "social"
+   ],
+   "jobs": 100,
+   "countries": [
+    "United States",
+    "Ireland",
+    "India",
+    "United Kingdom",
+    "Singapore",
+    "Sweden"
+   ],
+   "cities": [
+    "Dublin",
+    "New York",
+    "Bengaluru",
+    "San Francisco",
+    "Chicago",
+    "London",
+    "Stockholm",
+    "Berlin"
+   ],
+   "remoteShare": 0.04
+  },
+  {
+   "name": "Lovable",
+   "ats": "ashby",
+   "slug": "lovable",
+   "industry": "Software & AI",
+   "tags": [
+    "ai",
+    "typescript",
+    "react"
+   ],
+   "jobs": 81,
+   "countries": [
+    "Sweden",
+    "United Kingdom",
+    "United States"
+   ],
+   "cities": [
+    "Stockholm",
+    "London",
+    "New York",
+    "Boston",
+    "San Francisco"
+   ],
+   "remoteShare": 0.07
+  },
+  {
+   "name": "Lunar",
+   "ats": "teamtailor",
+   "slug": "lunar",
+   "industry": "Finance",
+   "tags": [
+    "fintech"
+   ],
+   "jobs": 23,
+   "countries": [
+    "Sweden"
+   ],
+   "cities": [
+    "Stockholm"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Lyft",
+   "ats": "greenhouse",
+   "slug": "lyft",
+   "industry": "Travel",
+   "tags": [
+    "python",
+    "go"
+   ],
+   "jobs": 187,
+   "countries": [
+    "Canada",
+    "United States"
+   ],
+   "cities": [
+    "Toronto",
+    "San Francisco",
+    "New York",
+    "Seattle",
+    "Boston"
+   ],
+   "remoteShare": 0.01
+  },
+  {
+   "name": "Mastercard",
+   "ats": "workday",
+   "slug": "mastercard:wd1:CorporateCareers",
+   "industry": "Finance",
+   "tags": [
+    "payments"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States",
+    "Portugal",
+    "Canada",
+    "France"
+   ],
+   "cities": [
+    "New York",
+    "Lisbon",
+    "Toronto",
+    "Paris"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Miro",
    "ats": "greenhouse",
    "slug": "realtimeboardglobal",
-   "hq": "Amsterdam / Berlin",
+   "industry": "Software & AI",
    "tags": [
     "collaboration",
     "react",
     "typescript",
     "java"
    ],
-   "jobs": 24
+   "jobs": 24,
+   "countries": [
+    "United States",
+    "Japan",
+    "Netherlands",
+    "United Kingdom",
+    "Germany"
+   ],
+   "cities": [
+    "Austin",
+    "Tokyo",
+    "New York",
+    "San Francisco",
+    "Amsterdam",
+    "Munich",
+    "London"
+   ],
+   "remoteShare": 0.13
   },
   {
    "name": "MongoDB",
    "ats": "greenhouse",
    "slug": "mongodb",
-   "hq": "Dublin / Europe",
+   "industry": "Software & AI",
    "tags": [
     "database",
     "typescript",
     "go"
    ],
-   "jobs": 391
+   "jobs": 391,
+   "countries": [
+    "United States",
+    "Ireland",
+    "Germany",
+    "India",
+    "Canada",
+    "France"
+   ],
+   "cities": [
+    "Dublin",
+    "New York",
+    "Austin",
+    "San Francisco",
+    "Chicago",
+    "Toronto",
+    "Bengaluru",
+    "Boston"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Monzo",
    "ats": "greenhouse",
    "slug": "monzo",
-   "hq": "London",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "go"
    ],
-   "jobs": 68
+   "jobs": 68,
+   "countries": [
+    "United Kingdom",
+    "Spain",
+    "Ireland"
+   ],
+   "cities": [
+    "London",
+    "Barcelona",
+    "Dublin",
+    "Madrid"
+   ],
+   "remoteShare": 0.59
   },
   {
    "name": "N26",
    "ats": "greenhouse",
    "slug": "n26",
-   "hq": "Berlin / Vienna",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "kotlin",
     "java",
     "react"
    ],
-   "jobs": 42
+   "jobs": 42,
+   "countries": [
+    "Germany",
+    "Spain",
+    "France",
+    "Austria"
+   ],
+   "cities": [
+    "Berlin",
+    "Barcelona",
+    "Madrid",
+    "Paris",
+    "Vienna"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "n8n",
    "ats": "ashby",
    "slug": "n8n",
-   "hq": "Berlin / Remote",
+   "industry": "Software & AI",
    "tags": [
     "automation",
     "typescript",
     "vue",
     "node"
    ],
-   "jobs": 38
+   "jobs": 38,
+   "countries": [
+    "Germany",
+    "United States",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Berlin",
+    "Boston",
+    "New York",
+    "London",
+    "San Francisco"
+   ],
+   "remoteShare": 1
   },
   {
    "name": "Neon",
    "ats": "ashby",
    "slug": "neon",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "database",
     "rust",
@@ -456,50 +1719,352 @@
     "postgres",
     "remote"
    ],
-   "jobs": 4
+   "jobs": 4,
+   "countries": [
+    "United States"
+   ],
+   "cities": [
+    "New York"
+   ],
+   "remoteShare": 0.25
   },
   {
    "name": "Notion",
    "ats": "ashby",
    "slug": "notion",
-   "hq": "Dublin",
+   "industry": "Software & AI",
    "tags": [
     "productivity",
     "typescript",
     "react"
    ],
-   "jobs": 132
+   "jobs": 132,
+   "countries": [
+    "United States",
+    "Japan",
+    "Ireland",
+    "France",
+    "United Kingdom",
+    "Germany"
+   ],
+   "cities": [
+    "San Francisco",
+    "Tokyo",
+    "Dublin",
+    "New York",
+    "Paris",
+    "London",
+    "Munich",
+    "Sydney"
+   ],
+   "remoteShare": 0.66
+  },
+  {
+   "name": "Novartis",
+   "ats": "workday",
+   "slug": "novartis:wd3:Novartis_Careers",
+   "industry": "Healthcare",
+   "tags": [
+    "pharma"
+   ],
+   "jobs": 20,
+   "countries": [
+    "Canada",
+    "United Kingdom",
+    "United States"
+   ],
+   "cities": [
+    "Toronto",
+    "London"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "NVIDIA",
+   "ats": "workday",
+   "slug": "nvidia:wd5:NVIDIAExternalCareerSite",
+   "industry": "Software & AI",
+   "tags": [
+    "ai",
+    "c++",
+    "python"
+   ],
+   "jobs": 20,
+   "countries": [
+    "India"
+   ],
+   "cities": [
+    "Bengaluru"
+   ],
+   "remoteShare": 0.05
+  },
+  {
+   "name": "Okta",
+   "ats": "greenhouse",
+   "slug": "okta",
+   "industry": "Software & AI",
+   "tags": [
+    "java",
+    "react"
+   ],
+   "jobs": 378,
+   "countries": [
+    "India",
+    "United States",
+    "Canada",
+    "Australia",
+    "United Kingdom",
+    "Ireland"
+   ],
+   "cities": [
+    "Bengaluru",
+    "Toronto",
+    "San Francisco",
+    "Chicago",
+    "New York",
+    "London",
+    "Dublin",
+    "Sydney"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "OpenAI",
+   "ats": "ashby",
+   "slug": "openai",
+   "industry": "Software & AI",
+   "tags": [
+    "ai",
+    "python"
+   ],
+   "jobs": 815,
+   "countries": [
+    "United States",
+    "Japan",
+    "United Kingdom",
+    "Singapore",
+    "Ireland",
+    "France"
+   ],
+   "cities": [
+    "San Francisco",
+    "Tokyo",
+    "London",
+    "Seattle",
+    "New York",
+    "Dublin",
+    "Paris",
+    "Munich"
+   ],
+   "remoteShare": 0.66
+  },
+  {
+   "name": "Ottonova",
+   "ats": "personio",
+   "slug": "ottonova",
+   "industry": "Finance",
+   "tags": [
+    "insurance"
+   ],
+   "jobs": 13,
+   "countries": [
+    "Germany"
+   ],
+   "cities": [
+    "Munich",
+    "KÖLn"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Palantir",
+   "ats": "lever",
+   "slug": "palantir",
+   "industry": "Software & AI",
+   "tags": [
+    "java",
+    "typescript"
+   ],
+   "jobs": 309,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Japan",
+    "France",
+    "Singapore",
+    "Lithuania"
+   ],
+   "cities": [
+    "New York",
+    "London",
+    "Seattle",
+    "Chicago",
+    "Tokyo",
+    "Paris",
+    "Vilnius",
+    "Oslo"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Perplexity",
+   "ats": "ashby",
+   "slug": "perplexity",
+   "industry": "Software & AI",
+   "tags": [
+    "ai"
+   ],
+   "jobs": 132,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Germany"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "London",
+    "Berlin"
+   ],
+   "remoteShare": 0.45
+  },
+  {
+   "name": "Philips",
+   "ats": "workday",
+   "slug": "philips:wd3:jobs-and-careers",
+   "industry": "Healthcare",
+   "tags": [
+    "medtech"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States"
+   ],
+   "cities": [
+    "New York"
+   ],
+   "remoteShare": 0.05
   },
   {
    "name": "Pigment",
    "ats": "lever",
    "slug": "pigment",
-   "hq": "Paris",
+   "industry": "Software & AI",
    "tags": [
     "saas",
     "typescript",
     "react"
    ],
-   "jobs": 141
+   "jobs": 141,
+   "countries": [
+    "France",
+    "United States",
+    "United Kingdom",
+    "Canada",
+    "Germany",
+    "Netherlands"
+   ],
+   "cities": [
+    "Paris",
+    "London",
+    "New York",
+    "Toronto",
+    "San Francisco",
+    "Frankfurt",
+    "Austin",
+    "Amsterdam"
+   ],
+   "remoteShare": 0.01
+  },
+  {
+   "name": "Pinterest",
+   "ats": "greenhouse",
+   "slug": "pinterest",
+   "industry": "Media",
+   "tags": [
+    "java",
+    "python",
+    "react"
+   ],
+   "jobs": 180,
+   "countries": [
+    "United States",
+    "Singapore",
+    "Canada",
+    "Ireland",
+    "United Kingdom",
+    "Germany"
+   ],
+   "cities": [
+    "San Francisco",
+    "Seattle",
+    "New York",
+    "Toronto",
+    "Chicago",
+    "Dublin",
+    "London",
+    "Zurich"
+   ],
+   "remoteShare": 0.43
   },
   {
    "name": "Pleo",
    "ats": "ashby",
    "slug": "pleo",
-   "hq": "Copenhagen",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "typescript",
     "react",
     "kotlin"
    ],
-   "jobs": 34
+   "jobs": 34,
+   "countries": [
+    "United Kingdom",
+    "Portugal",
+    "Spain",
+    "Netherlands",
+    "Denmark",
+    "Germany"
+   ],
+   "cities": [
+    "London",
+    "Lisbon",
+    "Madrid",
+    "Amsterdam",
+    "Copenhagen",
+    "Berlin"
+   ],
+   "remoteShare": 0.85
+  },
+  {
+   "name": "Polestar",
+   "ats": "teamtailor",
+   "slug": "polestar",
+   "industry": "Industry & manufacturing",
+   "tags": [
+    "automotive"
+   ],
+   "jobs": 22,
+   "countries": [
+    "Germany",
+    "Belgium",
+    "Austria",
+    "Norway"
+   ],
+   "cities": [
+    "Cologne",
+    "Brussels",
+    "Vienna",
+    "Oslo"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "PostHog",
    "ats": "ashby",
    "slug": "posthog",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "analytics",
     "python",
@@ -507,37 +2072,219 @@
     "react",
     "remote"
    ],
-   "jobs": 10
+   "jobs": 10,
+   "countries": [
+    "United Kingdom",
+    "United States"
+   ],
+   "cities": [
+    "San Francisco"
+   ],
+   "remoteShare": 0.9
   },
   {
    "name": "Prewave",
    "ats": "personio",
    "slug": "prewave",
-   "hq": "Vienna",
+   "industry": "Software & AI",
    "tags": [
     "ai",
     "python",
     "react"
    ],
-   "jobs": 8
+   "jobs": 9,
+   "countries": [
+    "Austria",
+    "Ireland"
+   ],
+   "cities": [
+    "Vienna"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "PwC",
+   "ats": "workday",
+   "slug": "pwc:wd3:Global_Experienced_Careers",
+   "industry": "Finance",
+   "tags": [
+    "consulting"
+   ],
+   "jobs": 20,
+   "countries": [
+    "India",
+    "Canada",
+    "Ireland"
+   ],
+   "cities": [
+    "Bengaluru",
+    "Toronto",
+    "Dublin"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Qonto",
    "ats": "lever",
    "slug": "qonto",
-   "hq": "Paris",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "go",
     "react"
    ],
-   "jobs": 49
+   "jobs": 49,
+   "countries": [
+    "France",
+    "Spain",
+    "Germany",
+    "Italy",
+    "Netherlands"
+   ],
+   "cities": [
+    "Paris",
+    "Barcelona",
+    "Berlin",
+    "Milan",
+    "Amsterdam"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Raisin",
+   "ats": "greenhouse",
+   "slug": "raisin",
+   "industry": "Finance",
+   "tags": [
+    "fintech",
+    "java",
+    "react"
+   ],
+   "jobs": 41,
+   "countries": [
+    "Germany",
+    "United Kingdom",
+    "United States",
+    "Spain"
+   ],
+   "cities": [
+    "Berlin",
+    "Hamburg",
+    "Frankfurt",
+    "Munich",
+    "London",
+    "Manchester",
+    "Madrid"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Ramp",
+   "ats": "ashby",
+   "slug": "ramp",
+   "industry": "Finance",
+   "tags": [
+    "fintech",
+    "typescript",
+    "react"
+   ],
+   "jobs": 165,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Canada"
+   ],
+   "cities": [
+    "New York",
+    "London",
+    "San Francisco",
+    "Toronto"
+   ],
+   "remoteShare": 0.9
+  },
+  {
+   "name": "Red Bull",
+   "ats": "smartrecruiters",
+   "slug": "RedBull",
+   "industry": "Media",
+   "tags": [
+    "beverage"
+   ],
+   "jobs": 100,
+   "countries": [
+    "United States",
+    "France",
+    "Germany",
+    "Romania",
+    "United Kingdom",
+    "Austria"
+   ],
+   "cities": [
+    "Munich",
+    "Paris",
+    "Bucharest",
+    "Seattle",
+    "London",
+    "New York",
+    "Salzburg",
+    "Warsaw"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Reddit",
+   "ats": "greenhouse",
+   "slug": "reddit",
+   "industry": "Media",
+   "tags": [
+    "python",
+    "go",
+    "react"
+   ],
+   "jobs": 147,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Canada",
+    "Netherlands",
+    "Ireland",
+    "Germany"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "Chicago",
+    "London",
+    "Amsterdam",
+    "Toronto"
+   ],
+   "remoteShare": 0.76
+  },
+  {
+   "name": "Replit",
+   "ats": "ashby",
+   "slug": "replit",
+   "industry": "Software & AI",
+   "tags": [
+    "typescript"
+   ],
+   "jobs": 69,
+   "countries": [
+    "Japan",
+    "United Kingdom",
+    "Singapore",
+    "United States"
+   ],
+   "cities": [
+    "London"
+   ],
+   "remoteShare": 1
   },
   {
    "name": "Resend",
    "ats": "ashby",
    "slug": "resend",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "email",
     "typescript",
@@ -545,76 +2292,306 @@
     "nextjs",
     "remote"
    ],
-   "jobs": 14
+   "jobs": 14,
+   "countries": [],
+   "cities": [],
+   "remoteShare": 1
+  },
+  {
+   "name": "Robinhood",
+   "ats": "greenhouse",
+   "slug": "robinhood",
+   "industry": "Finance",
+   "tags": [
+    "python",
+    "react"
+   ],
+   "jobs": 182,
+   "countries": [
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "Lithuania",
+    "Singapore"
+   ],
+   "cities": [
+    "New York",
+    "Chicago",
+    "Toronto",
+    "London",
+    "Vilnius"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Salesforce",
+   "ats": "workday",
+   "slug": "salesforce:wd12:External_Career_Site",
+   "industry": "Software & AI",
+   "tags": [
+    "crm",
+    "java"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States",
+    "Italy"
+   ],
+   "cities": [
+    "San Francisco",
+    "Rome"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Sanity",
    "ats": "ashby",
    "slug": "sanity",
-   "hq": "Oslo / Remote",
+   "industry": "Software & AI",
    "tags": [
     "cms",
     "typescript",
     "react"
    ],
-   "jobs": 36
+   "jobs": 36,
+   "countries": [
+    "United Kingdom",
+    "United States",
+    "Canada",
+    "Germany"
+   ],
+   "cities": [
+    "London",
+    "New York"
+   ],
+   "remoteShare": 1
   },
   {
    "name": "Sentry",
    "ats": "ashby",
    "slug": "sentry",
-   "hq": "Vienna / Remote",
+   "industry": "Software & AI",
    "tags": [
     "observability",
     "python",
     "react",
     "typescript"
    ],
-   "jobs": 46
+   "jobs": 46,
+   "countries": [
+    "United States",
+    "Canada",
+    "Austria",
+    "Netherlands"
+   ],
+   "cities": [
+    "San Francisco",
+    "Toronto",
+    "Vienna",
+    "Amsterdam",
+    "New York"
+   ],
+   "remoteShare": 0.98
+  },
+  {
+   "name": "Sixt",
+   "ats": "smartrecruiters",
+   "slug": "Sixt",
+   "industry": "Travel",
+   "tags": [
+    "mobility"
+   ],
+   "jobs": 100,
+   "countries": [
+    "Germany",
+    "Portugal",
+    "United States",
+    "Austria",
+    "Italy",
+    "Spain"
+   ],
+   "cities": [
+    "Munich",
+    "Berlin",
+    "Lisbon",
+    "Leipzig",
+    "Boston",
+    "New York",
+    "Innsbruck",
+    "Salzburg"
+   ],
+   "remoteShare": 0.01
+  },
+  {
+   "name": "Skroutz",
+   "ats": "workable",
+   "slug": "skroutz",
+   "industry": "Retail & e-commerce",
+   "tags": [
+    "ecommerce",
+    "ruby"
+   ],
+   "jobs": 9,
+   "countries": [
+    "Greece"
+   ],
+   "cities": [
+    "Athens"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Sodexo",
+   "ats": "smartrecruiters",
+   "slug": "Sodexo",
+   "industry": "Food & delivery",
+   "tags": [
+    "hospitality"
+   ],
+   "jobs": 100,
+   "countries": [
+    "Australia"
+   ],
+   "cities": [
+    "Sydney"
+   ],
+   "remoteShare": 0.07
   },
   {
    "name": "Spotify",
    "ats": "lever",
    "slug": "spotify",
-   "hq": "Stockholm / London",
+   "industry": "Media",
    "tags": [
     "music",
     "java",
     "react",
     "python"
    ],
-   "jobs": 85
+   "jobs": 85,
+   "countries": [
+    "United Kingdom",
+    "United States",
+    "Sweden",
+    "Canada",
+    "Singapore",
+    "France"
+   ],
+   "cities": [
+    "London",
+    "New York",
+    "Stockholm",
+    "Toronto",
+    "Paris",
+    "Brussels"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Squarespace",
+   "ats": "greenhouse",
+   "slug": "squarespace",
+   "industry": "Software & AI",
+   "tags": [
+    "java",
+    "react"
+   ],
+   "jobs": 33,
+   "countries": [
+    "United States",
+    "Ireland"
+   ],
+   "cities": [
+    "New York",
+    "Dublin"
+   ],
+   "remoteShare": 0.06
+  },
+  {
+   "name": "Storytel",
+   "ats": "teamtailor",
+   "slug": "storytel",
+   "industry": "Media",
+   "tags": [
+    "books"
+   ],
+   "jobs": 4,
+   "countries": [
+    "Sweden"
+   ],
+   "cities": [
+    "Stockholm"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Stripe",
    "ats": "greenhouse",
    "slug": "stripe",
-   "hq": "Dublin / Remote",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "ruby",
     "react",
     "typescript"
    ],
-   "jobs": 728
+   "jobs": 728,
+   "countries": [
+    "United States",
+    "Ireland",
+    "Canada",
+    "United Kingdom",
+    "Singapore",
+    "India"
+   ],
+   "cities": [
+    "San Francisco",
+    "Seattle",
+    "Chicago",
+    "New York",
+    "Dublin",
+    "London",
+    "Toronto",
+    "Bengaluru"
+   ],
+   "remoteShare": 0.15
   },
   {
    "name": "SumUp",
    "ats": "greenhouse",
    "slug": "sumup",
-   "hq": "Berlin",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "go",
     "react"
    ],
-   "jobs": 347
+   "jobs": 347,
+   "countries": [
+    "United Kingdom",
+    "Germany",
+    "Italy",
+    "France",
+    "Spain",
+    "Ireland"
+   ],
+   "cities": [
+    "Berlin",
+    "London",
+    "Barcelona",
+    "Dublin",
+    "Vilnius",
+    "Cologne",
+    "Amsterdam",
+    "Paris"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Supabase",
    "ats": "ashby",
    "slug": "supabase",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "database",
     "typescript",
@@ -622,107 +2599,322 @@
     "postgres",
     "remote"
    ],
-   "jobs": 54
+   "jobs": 54,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Singapore"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "London"
+   ],
+   "remoteShare": 1
   },
   {
    "name": "Swile",
    "ats": "lever",
    "slug": "swile",
-   "hq": "Paris",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "react"
    ],
-   "jobs": 32
+   "jobs": 32,
+   "countries": [
+    "France"
+   ],
+   "cities": [
+    "Paris"
+   ],
+   "remoteShare": 0.13
   },
   {
    "name": "Synthesia",
    "ats": "ashby",
    "slug": "synthesia",
-   "hq": "London",
+   "industry": "Software & AI",
    "tags": [
     "ai",
     "python",
     "react"
    ],
-   "jobs": 46
+   "jobs": 46,
+   "countries": [
+    "United Kingdom",
+    "United States",
+    "Germany"
+   ],
+   "cities": [
+    "London",
+    "New York",
+    "Seattle",
+    "Austin",
+    "Munich"
+   ],
+   "remoteShare": 0.96
+  },
+  {
+   "name": "Thermo Fisher",
+   "ats": "workday",
+   "slug": "thermofisher:wd5:ThermoFisherCareers",
+   "industry": "Healthcare",
+   "tags": [
+    "lab"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States",
+    "Canada",
+    "India"
+   ],
+   "cities": [
+    "Boston",
+    "Bengaluru"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Tibber",
+   "ats": "teamtailor",
+   "slug": "tibber",
+   "industry": "Energy",
+   "tags": [
+    "energy"
+   ],
+   "jobs": 7,
+   "countries": [
+    "Germany",
+    "Sweden",
+    "Netherlands"
+   ],
+   "cities": [
+    "Berlin",
+    "Stockholm",
+    "Amsterdam"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Toast",
+   "ats": "greenhouse",
+   "slug": "toast",
+   "industry": "Food & delivery",
+   "tags": [
+    "java",
+    "react"
+   ],
+   "jobs": 318,
+   "countries": [
+    "United States",
+    "Ireland",
+    "Canada",
+    "India",
+    "United Kingdom",
+    "Australia"
+   ],
+   "cities": [
+    "Dublin",
+    "Boston",
+    "London",
+    "Chicago",
+    "Toronto",
+    "Bangalore",
+    "Bengaluru",
+    "San Francisco"
+   ],
+   "remoteShare": 0.17
   },
   {
    "name": "Trade Republic",
    "ats": "greenhouse",
    "slug": "traderepublicbank",
-   "hq": "Berlin",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "kotlin",
     "typescript"
    ],
-   "jobs": 42
+   "jobs": 42,
+   "countries": [
+    "Germany",
+    "United Kingdom",
+    "France"
+   ],
+   "cities": [
+    "Berlin",
+    "London",
+    "Paris"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Trivago",
    "ats": "greenhouse",
    "slug": "trivago",
-   "hq": "D\u00fcsseldorf",
+   "industry": "Travel",
    "tags": [
     "travel",
     "php",
     "react"
    ],
-   "jobs": 16
+   "jobs": 16,
+   "countries": [
+    "Germany"
+   ],
+   "cities": [
+    "DÜSseldorf"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Twilio",
    "ats": "greenhouse",
    "slug": "twilio",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "api",
     "java",
     "typescript",
     "remote"
    ],
-   "jobs": 144
+   "jobs": 144,
+   "countries": [
+    "India",
+    "Ireland",
+    "United Kingdom",
+    "Canada",
+    "Estonia",
+    "Singapore"
+   ],
+   "cities": [],
+   "remoteShare": 1
   },
   {
    "name": "Typeform",
    "ats": "greenhouse",
    "slug": "typeform",
-   "hq": "Barcelona",
+   "industry": "Software & AI",
    "tags": [
     "saas",
     "react",
     "typescript"
    ],
-   "jobs": 13
+   "jobs": 13,
+   "countries": [
+    "United Kingdom",
+    "Netherlands",
+    "Ireland",
+    "Spain",
+    "Portugal",
+    "Germany"
+   ],
+   "cities": [],
+   "remoteShare": 1
   },
   {
    "name": "Ubisoft",
    "ats": "smartrecruiters",
    "slug": "Ubisoft2",
-   "hq": "Paris",
+   "industry": "Media",
    "tags": [
     "games",
     "c++"
    ],
-   "jobs": 339
+   "jobs": 100,
+   "countries": [
+    "France",
+    "Romania",
+    "Germany",
+    "Spain",
+    "Canada",
+    "Singapore"
+   ],
+   "cities": [
+    "Paris",
+    "Bucharest",
+    "Berlin",
+    "Barcelona",
+    "Lyon",
+    "Toronto"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Vanta",
+   "ats": "ashby",
+   "slug": "vanta",
+   "industry": "Software & AI",
+   "tags": [
+    "security",
+    "typescript"
+   ],
+   "jobs": 83,
+   "countries": [
+    "United Kingdom",
+    "Ireland",
+    "Canada",
+    "Japan",
+    "United States"
+   ],
+   "cities": [
+    "London",
+    "Dublin",
+    "Tokyo",
+    "Austin"
+   ],
+   "remoteShare": 0.93
   },
   {
    "name": "Vapi",
    "ats": "ashby",
    "slug": "vapi",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "ai",
     "typescript"
    ],
-   "jobs": 24
+   "jobs": 24,
+   "countries": [
+    "United States"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York"
+   ],
+   "remoteShare": 0.92
+  },
+  {
+   "name": "Veepee",
+   "ats": "lever",
+   "slug": "veepee",
+   "industry": "Retail & e-commerce",
+   "tags": [
+    "ecommerce"
+   ],
+   "jobs": 96,
+   "countries": [
+    "Spain",
+    "France",
+    "Italy",
+    "Belgium",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Barcelona",
+    "Paris",
+    "Milan",
+    "Brussels",
+    "London"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Vercel",
    "ats": "greenhouse",
    "slug": "vercel",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "frontend",
     "nextjs",
@@ -730,57 +2922,242 @@
     "typescript",
     "remote"
    ],
-   "jobs": 89
+   "jobs": 89,
+   "countries": [
+    "United States",
+    "United Kingdom",
+    "Germany",
+    "Australia",
+    "India"
+   ],
+   "cities": [
+    "San Francisco",
+    "New York",
+    "Austin",
+    "London",
+    "Berlin",
+    "Sydney"
+   ],
+   "remoteShare": 0.09
+  },
+  {
+   "name": "Visa",
+   "ats": "workday",
+   "slug": "visa:wd5:Visa",
+   "industry": "Finance",
+   "tags": [
+    "payments"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States",
+    "India",
+    "Singapore",
+    "Canada"
+   ],
+   "cities": [
+    "San Francisco",
+    "Bengaluru",
+    "Toronto"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Wayflyer",
    "ats": "ashby",
    "slug": "wayflyer",
-   "hq": "Dublin",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "python",
     "react"
    ],
-   "jobs": 19
+   "jobs": 19,
+   "countries": [
+    "Ireland",
+    "United Kingdom",
+    "Australia",
+    "Germany"
+   ],
+   "cities": [
+    "Dublin",
+    "London",
+    "Sydney",
+    "Berlin"
+   ],
+   "remoteShare": 0.89
+  },
+  {
+   "name": "Webflow",
+   "ats": "greenhouse",
+   "slug": "webflow",
+   "industry": "Software & AI",
+   "tags": [
+    "typescript",
+    "react"
+   ],
+   "jobs": 23,
+   "countries": [
+    "United Kingdom",
+    "United States"
+   ],
+   "cities": [
+    "London",
+    "Chicago",
+    "San Francisco"
+   ],
+   "remoteShare": 0.78
   },
   {
    "name": "Wise",
    "ats": "smartrecruiters",
    "slug": "Wise",
-   "hq": "London / Tallinn",
+   "industry": "Finance",
    "tags": [
     "fintech",
     "java",
     "react"
    ],
-   "jobs": 400
+   "jobs": 100,
+   "countries": [
+    "United Kingdom",
+    "Estonia",
+    "United States",
+    "Singapore",
+    "Hungary",
+    "Japan"
+   ],
+   "cities": [
+    "London",
+    "Tallinn",
+    "Austin",
+    "Budapest",
+    "New York",
+    "Tokyo"
+   ],
+   "remoteShare": 0.03
   },
   {
    "name": "Wolt",
    "ats": "greenhouse",
    "slug": "wolt",
-   "hq": "Helsinki / Berlin",
+   "industry": "Food & delivery",
    "tags": [
     "delivery",
     "python",
     "kotlin",
     "react"
    ],
-   "jobs": 222
+   "jobs": 222,
+   "countries": [
+    "Germany",
+    "Finland",
+    "Hungary",
+    "Greece",
+    "Poland",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Helsinki",
+    "Berlin",
+    "Budapest",
+    "Athens",
+    "Warsaw",
+    "London",
+    "Tallinn",
+    "Stockholm"
+   ],
+   "remoteShare": 0.01
+  },
+  {
+   "name": "Workday",
+   "ats": "workday",
+   "slug": "workday:wd5:Workday",
+   "industry": "Software & AI",
+   "tags": [
+    "hr"
+   ],
+   "jobs": 20,
+   "countries": [
+    "United States",
+    "France",
+    "United Kingdom",
+    "Poland",
+    "Canada"
+   ],
+   "cities": [
+    "Paris",
+    "London",
+    "Austin",
+    "Warsaw"
+   ],
+   "remoteShare": 0
   },
   {
    "name": "Zapier",
    "ats": "ashby",
    "slug": "zapier",
-   "hq": "Remote",
+   "industry": "Software & AI",
    "tags": [
     "automation",
     "python",
     "react",
     "remote"
    ],
-   "jobs": 11
+   "jobs": 11,
+   "countries": [],
+   "cities": [],
+   "remoteShare": 1
+  },
+  {
+   "name": "Zoox",
+   "ats": "lever",
+   "slug": "zoox",
+   "industry": "Industry & manufacturing",
+   "tags": [
+    "robotics",
+    "c++"
+   ],
+   "jobs": 239,
+   "countries": [
+    "United States",
+    "United Kingdom"
+   ],
+   "cities": [
+    "Boston",
+    "Seattle",
+    "San Francisco"
+   ],
+   "remoteShare": 0
+  },
+  {
+   "name": "Zscaler",
+   "ats": "greenhouse",
+   "slug": "zscaler",
+   "industry": "Software & AI",
+   "tags": [
+    "security"
+   ],
+   "jobs": 378,
+   "countries": [
+    "United States",
+    "India",
+    "Japan",
+    "United Kingdom",
+    "Germany",
+    "Singapore"
+   ],
+   "cities": [
+    "Bangalore",
+    "Tokyo",
+    "New York",
+    "London",
+    "Sydney",
+    "Boston",
+    "Madrid",
+    "Paris"
+   ],
+   "remoteShare": 0.42
   }
  ]
 }

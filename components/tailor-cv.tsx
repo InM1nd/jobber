@@ -27,8 +27,21 @@ function List({ title, items, tone = 'accent' }: { title: string; items: string[
 }
 
 /** "Tailor CV": AI compares the CV with this job. Results are cached server-side per match. */
-export function TailorCv({ matchId, initialAdvice, initialCv }: { matchId: string; initialAdvice: CvAdvice | null; initialCv: string | null }) {
+export function TailorCv({
+  matchId,
+  initialAdvice,
+  initialCv,
+  cvs = [],
+  cvId,
+}: {
+  matchId: string;
+  initialAdvice: CvAdvice | null;
+  initialCv: string | null;
+  cvs?: Array<{ id: string; label: string }>;
+  cvId?: string | null;
+}) {
   const [advice, setAdvice] = useState(initialAdvice);
+  const [chosen, setChosen] = useState(cvId || cvs[0]?.id || null);
   const [cv, setCv] = useState(initialCv || '');
   const [loading, setLoading] = useState<'advice' | 'cv' | null>(null);
   const [error, setError] = useState('');
@@ -40,7 +53,7 @@ export function TailorCv({ matchId, initialAdvice, initialCv }: { matchId: strin
     const res = await fetch(`/api/matches/${matchId}/advice`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind, refresh }),
+      body: JSON.stringify({ kind, refresh, cvId: chosen }),
     }).catch(() => null);
     const body = res ? await res.json().catch(() => ({})) : {};
     setLoading(null);
@@ -58,6 +71,16 @@ export function TailorCv({ matchId, initialAdvice, initialCv }: { matchId: strin
     <section className="overflow-hidden rounded-[var(--radius-card)] border border-line">
       <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
         <p className="text-[14px] font-medium">Tailor CV</p>
+        {cvs.length > 1 && (
+          <select
+            aria-label="Which CV"
+            value={chosen || ''}
+            onChange={(e) => { setChosen(e.target.value); setAdvice(null); setCv(''); }}
+            className="ml-auto max-w-[190px] truncate rounded-full border border-line bg-surface-2 px-3 py-1 text-[13px] outline-none"
+          >
+            {cvs.map((c) => <option key={c.id} value={c.id}>{c.id === cvId ? `★ ${c.label}` : c.label}</option>)}
+          </select>
+        )}
         {advice && (
           <Button size="sm" variant="ghost" onClick={() => run('advice', true)} disabled={loading !== null} aria-label="Refresh advice">
             <RefreshCw className={cn(loading === 'advice' && 'animate-spin')} />

@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { AiUnavailableError } from './gemini';
 import { QuotaExceededError } from './quota';
+import { BudgetExhaustedError } from './budget';
 
 /** Maps AI failures to friendly JSON responses; never leaks keys or raw bodies. */
 export function aiErrorResponse(error: unknown) {
   if (error instanceof QuotaExceededError) {
     return NextResponse.json({ error: error.message, code: 'quota' }, { status: 429 });
+  }
+  if (error instanceof BudgetExhaustedError) {
+    return NextResponse.json({ error: error.message, code: 'budget' }, { status: 429 });
   }
   if (error instanceof AiUnavailableError) {
     return NextResponse.json(
