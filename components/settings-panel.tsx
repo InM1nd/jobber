@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Group, Notice, Row, fieldClass } from '@/components/ui/kit';
 import { GeminiKeyCard } from '@/components/gemini-key';
 import { haptic, insideTelegram } from '@/components/telegram-ui';
-import { TelegramLoginButton } from '@/components/telegram-login-button';
 import type { LinkedAccounts } from '@/lib/data/service';
 
 export function SettingsPanel({
@@ -149,8 +148,6 @@ export function SettingsPanel({
         />
         {!accounts.telegram && showTelegramOptions && (
           <div className="animate-in space-y-3 p-4">
-            <TelegramLoginButton bot={botUsername} mode="link" size="medium" onDone={() => router.refresh()} onError={setError} />
-            <p className="text-center text-[12px] text-subtle">or</p>
             <Button variant="outline" className="w-full" onClick={linkTelegramViaBot}>
               <Send /> Open @{botUsername}
             </Button>

@@ -133,7 +133,8 @@ The script prints an invite code and seeds job sources. It does not create an em
 
 1. Talk to [@BotFather](https://t.me/botfather) and send `/newbot`. Put the token in `TELEGRAM_BOT_TOKEN`. The same token validates Mini App `initData`.
 2. Send `/newapp`, pick the bot, and set the Web App URL to `https://YOUR_DOMAIN/dashboard/matches`. Note the short name. Put the bot username in `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` and the short name in `TELEGRAM_MINI_APP_SHORT_NAME`.
-3. Optional: `/setmenubutton` with the same URL and the text `Open`. `/start` also sets that menu button for the chat.
+3. Web sign-in uses the bot too (no Login Widget, no `/setdomain`): “Sign in with Telegram” opens `t.me/<bot>?start=login_<token>`, the user taps “Yes, sign me in”, and the web tab signs in by itself (the bot also sends a one-time link for other browsers).
+4. Optional: `/setmenubutton` with the same URL and the text `Open`. `/start` also sets that menu button for the chat.
 4. `/setcommands`:
 
 ```

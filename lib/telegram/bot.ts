@@ -2,7 +2,9 @@ import { Bot, webhookCallback } from 'grammy';
 import { getPrisma } from '@/lib/db/prisma';
 import { miniAppUrl } from '@/lib/telegram/mini-app';
 import { readLinkCode } from '@/lib/auth/link-code';
-import { linkTelegramToUser } from '@/lib/data/service';
+import { linkTelegramToUser, signInWithTelegram } from '@/lib/data/service';
+import { confirmLogin, loginInvite } from '@/lib/auth/bot-login';
+import { loginStore } from '@/lib/auth/bot-login-store';
 
 let botInstance: Bot | null = null;
 
@@ -32,6 +34,19 @@ async function publishMenuButton(bot: Bot, chatId?: number) {
 function setupBotCommands(bot: Bot) {
   bot.command('start', async (ctx) => {
     const payload = String(ctx.match || '').trim();
+    if (payload.startsWith('login_')) {
+      const token = payload.slice(6);
+      const req = await loginInvite(loginStore(), token);
+      if (!req.ok) {
+        await ctx.reply('This sign-in request has expired. Go back to the Jobber website and tap “Sign in with Telegram” again.');
+        return;
+      }
+      await ctx.reply(
+        'Sign in to Jobber on the web as this Telegram account?\n\nOnly tap “Yes” if you just pressed “Sign in with Telegram” on jobber-check.vercel.app yourself.',
+        { reply_markup: { inline_keyboard: [[{ text: 'Yes, sign me in', callback_data: `L:${token}` }]] } },
+      );
+      return;
+    }
     if (payload.startsWith('link_')) {
       const userId = readLinkCode(payload.slice(5));
       if (!userId || !ctx.from) {
@@ -65,6 +80,36 @@ function setupBotCommands(bot: Bot) {
         inline_keyboard: [[{ text: 'Open Jobber', web_app: { url } }]],
       },
     });
+  });
+
+  bot.callbackQuery(/^L:(.+)$/, async (ctx) => {
+    const token = ctx.match[1];
+    const store = loginStore();
+    const req = await loginInvite(store, token);
+    if (!req.ok || !ctx.from) {
+      await ctx.answerCallbackQuery({ text: 'This request has expired — start again on the website.', show_alert: true });
+      return;
+    }
+    const result = await signInWithTelegram({ telegramId: String(ctx.from.id), username: ctx.from.username, startParam: req.invite });
+    if ('error' in result) {
+      await ctx.answerCallbackQuery();
+      await ctx.editMessageText('You don’t have a Jobber account yet. Jobber is invite-only for now — ask the person who told you about it for an invite link, open it, then sign in again.');
+      return;
+    }
+    const link = await confirmLogin(store, token, result.user.id);
+    if (!link) {
+      await ctx.answerCallbackQuery({ text: 'This request was already used or expired.', show_alert: true });
+      return;
+    }
+    const base = process.env.NEXT_PUBLIC_APP_URL || 'https://jobber-check.vercel.app';
+    const url = new URL('/auth/telegram-link', base);
+    url.searchParams.set('token', link.token);
+    url.searchParams.set('sig', link.sig);
+    await ctx.answerCallbackQuery({ text: 'Signed in' });
+    await ctx.editMessageText(
+      'Done — the Jobber tab you came from will sign in by itself in a few seconds.\n\nOn another device or browser? Use this button (works once, for 5 minutes):',
+      { reply_markup: { inline_keyboard: [[{ text: 'Sign in to Jobber', url: url.toString() }]] } },
+    );
   });
 
   bot.command('help', async (ctx) => {

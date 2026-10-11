@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { TelegramLoginButton } from '@/components/telegram-login-button';
 import { createClient } from '@/lib/db/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import Link from 'next/link';
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  useEffect(() => { const c = new URLSearchParams(window.location.search).get('invite'); if (c) setInviteCode(c); }, []);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -58,6 +60,12 @@ export default function SignUpPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {inviteCode.trim().length >= 4 && (
+            <div className="mb-5 space-y-3">
+              <TelegramLoginButton invite={inviteCode.trim()} onDone={() => (window.location.href = '/dashboard/matches')} onError={setError} />
+              <p className="text-center text-xs text-muted">or with email</p>
+            </div>
+          )}
           <form onSubmit={handleSignUp} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">

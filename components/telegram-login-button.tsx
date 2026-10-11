@@ -1,71 +1,65 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-
-type Payload = Record<string, string | number>;
-
-declare global {
-  interface Window {
-    __jobberTelegramAuth?: (user: Payload) => void;
-  }
-}
+import { useEffect, useRef, useState } from 'react';
+import { Loader2, Send } from 'lucide-react';
 
 /**
- * Official Telegram Login Widget. Requires BotFather /setdomain for this host.
- * mode="link" attaches Telegram to the signed-in account instead of signing in.
+ * "Sign in with Telegram" via the bot (no Login Widget / BotFather domain needed):
+ * creates a one-time request, opens t.me/<bot>?start=login_<token>, then polls until the
+ * user confirms in Telegram. The bot also offers a one-time link for other browsers.
  */
-export function TelegramLoginButton({
-  bot,
-  mode = 'signin',
-  invite,
-  onDone,
-  onError,
-  size = 'large',
-}: {
-  bot: string;
-  mode?: 'signin' | 'link';
-  invite?: string;
-  onDone: () => void;
-  onError: (message: string) => void;
-  size?: 'large' | 'medium' | 'small';
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const done = useRef(onDone);
-  const fail = useRef(onError);
-  done.current = onDone;
-  fail.current = onError;
+export function TelegramLoginButton({ invite, onDone, onError }: { invite?: string; onDone: () => void; onError: (message: string) => void }) {
+  const [state, setState] = useState<'idle' | 'waiting'>('idle');
+  const [url, setUrl] = useState('');
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
 
-  useEffect(() => {
-    window.__jobberTelegramAuth = async (user) => {
-      const response = await fetch('/api/auth/telegram-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...user, mode, invite }),
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        fail.current(body.error === 'invite' ? 'You need an invite code to join. Ask the person who shared Jobber.' : body.error || 'Telegram sign-in failed');
-        return;
+  async function start() {
+    onError('');
+    // Open synchronously-ish to avoid popup blockers; fill the URL once we have it.
+    const win = window.open('', '_blank');
+    const res = await fetch('/api/auth/telegram-bot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ invite }) }).catch(() => null);
+    const data = res?.ok ? await res.json() : null;
+    if (!data?.url) {
+      win?.close();
+      onError('Could not start Telegram sign-in. Try again.');
+      return;
+    }
+    setUrl(data.url);
+    if (win) win.location.href = data.url;
+    else window.location.href = data.url;
+    setState('waiting');
+    const started = Date.now();
+    if (timer.current) clearInterval(timer.current);
+    timer.current = setInterval(async () => {
+      const r = await fetch(`/api/auth/telegram-bot?token=${encodeURIComponent(data.token)}`, { cache: 'no-store' }).then((x) => x.json()).catch(() => null);
+      if (r?.state === 'done') {
+        clearInterval(timer.current!);
+        onDone();
+      } else if (r?.state === 'expired' || Date.now() - started > 5.5 * 60_000) {
+        clearInterval(timer.current!);
+        setState('idle');
+        onError('Sign-in timed out or was already used. Tap the button to try again.');
       }
-      done.current();
-    };
-    const host = ref.current;
-    if (!host) return;
-    host.innerHTML = '';
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.setAttribute('data-telegram-login', bot);
-    script.setAttribute('data-size', size);
-    script.setAttribute('data-radius', '12');
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-userpic', 'false');
-    script.setAttribute('data-onauth', '__jobberTelegramAuth(user)');
-    host.appendChild(script);
-    return () => {
-      host.innerHTML = '';
-    };
-  }, [bot, mode, invite, size]);
+    }, 2000);
+  }
 
-  return <div ref={ref} className="flex min-h-10 justify-center" />;
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={start}
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#2AABEE] text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        {state === 'waiting' ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+        {state === 'waiting' ? 'Waiting for Telegram…' : 'Sign in with Telegram'}
+      </button>
+      {state === 'waiting' && (
+        <p className="text-center text-[12.5px] leading-snug text-muted">
+          In Telegram, tap <b>Start</b>, then <b>Yes, sign me in</b>. This page continues by itself.{' '}
+          {url && <a href={url} target="_blank" rel="noreferrer" className="text-accent">Open Telegram again</a>}
+        </p>
+      )}
+    </div>
+  );
 }

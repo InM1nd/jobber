@@ -8,7 +8,6 @@ import { Logo, Notice } from '@/components/ui/kit';
 import { EmailLinkForm } from '@/components/email-link-form';
 import { TelegramLoginButton } from '@/components/telegram-login-button';
 
-const BOT = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'JobberCheck_bot').replace(/^@/, '');
 
 export default function SignInPage() {
   const router = useRouter();
@@ -38,7 +37,7 @@ export default function SignInPage() {
           <p className="mt-1.5 text-center text-[15px] text-muted">Same account as the Jobber app in Telegram.</p>
 
           <div className="mt-8 rounded-[var(--radius-card)] border border-line p-6">
-            <TelegramLoginButton bot={BOT} onDone={() => router.push('/dashboard/matches')} onError={setError} />
+            <TelegramLoginButton onDone={() => router.push('/dashboard/matches')} onError={setError} />
             {error && <div className="mt-3"><Notice tone="danger">{error}</Notice></div>}
             <div className="my-5 flex items-center gap-3 text-[12px] text-subtle">
               <span className="h-px flex-1 bg-line" /> or with email <span className="h-px flex-1 bg-line" />
