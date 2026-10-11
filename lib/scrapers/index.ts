@@ -14,6 +14,9 @@ export function scraperAllowlist() {
 
 /** Feature flag: OWNER_SCRAPERS=true AND the user's Telegram id is on the allowlist. */
 export function scrapersEnabledFor(user: { telegramId?: string | null } | null | undefined) {
+  // Temporary: SCRAPER_ALLOW_ALL=true opens scrapers to every user (shared caps/cache still apply).
+  // Revert: SCRAPER_ALLOW_ALL=false and list ids in SCRAPER_TELEGRAM_IDS.
+  if (process.env.OWNER_SCRAPERS === 'true' && process.env.SCRAPER_ALLOW_ALL === 'true') return Boolean(user);
   return process.env.OWNER_SCRAPERS === 'true' && Boolean(user?.telegramId) && scraperAllowlist().has(user!.telegramId!);
 }
 
