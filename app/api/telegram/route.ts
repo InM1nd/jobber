@@ -1,16 +1,12 @@
 import { NextRequest } from 'next/server';
 import { handleTelegramWebhook } from '@/lib/telegram/bot';
 
+export const instant = false;
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.text();
-    
-    const response = await handleTelegramWebhook(req as any);
-    
-    return new Response(response.body, {
-      status: response.status,
-      headers: response.headers,
-    });
+    // grammY reads the body itself; reading it here first made every update fail.
+    return await handleTelegramWebhook(req);
   } catch (error) {
     console.error('Telegram webhook error:', error);
     return new Response('Internal Server Error', { status: 500 });
