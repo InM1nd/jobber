@@ -15,7 +15,14 @@ export default function SignInPage() {
   const [error, setError] = useState('');
   // ?preview=sent renders the sent state for screenshots.
   const [preview, setPreview] = useState(false);
-  useEffect(() => setPreview(new URLSearchParams(window.location.search).get('preview') === 'sent'), []);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    setPreview(q.get('preview') === 'sent');
+    // Errors from /auth/callback (?error=) or straight from Supabase (#error_description=).
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const msg = q.get('error') || hash.get('error_description');
+    if (msg) setError(msg === 'callback' ? 'The sign-in link did not work. Request a new one.' : msg);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-bg px-5">

@@ -11,10 +11,32 @@ export const instant = false;
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const tokenHash = requestUrl.searchParams.get('token_hash');
+  const otpType = (requestUrl.searchParams.get('type') || 'email') as 'email' | 'magiclink' | 'signup';
+  const fail = (reason: string) => {
+    const target = new URL('/auth/signin', requestUrl.origin);
+    target.searchParams.set('error', reason.slice(0, 200));
+    return NextResponse.redirect(target);
+  };
+  const upstream = requestUrl.searchParams.get('error_description');
+  if (upstream) return fail(upstream);
 
-  if (code) {
+  if (code || tokenHash) {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    // token_hash works even when the link opens in a different browser than the one that asked
+    // (e.g. requested in Telegram, opened in Gmail); the PKCE code needs the same browser.
+    const { data, error } = tokenHash
+      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType })
+      : await supabase.auth.exchangeCodeForSession(code!);
+    if (error) {
+      return fail(
+        /verifier|code challenge/i.test(error.message)
+          ? 'Open the sign-in link in the same browser where you requested it, or request a new link here.'
+          : /expired|invalid/i.test(error.message)
+            ? 'This sign-in link has expired or was already used. Request a new one.'
+            : error.message,
+      );
+    }
 
     if (!error && data.user) {
       // Linking an email from Settings: attach it to the signed-in account.
@@ -68,5 +90,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}/auth/signin?error=callback`);
+  return fail('The sign-in link was incomplete. Request a new one.');
 }
