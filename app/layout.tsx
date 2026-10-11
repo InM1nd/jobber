@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { TelegramBoot } from "@/components/telegram-ui";
+import { TELEGRAM_WEB_APP_SDK } from "@/lib/telegram/web-app-launch";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,6 +31,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen antialiased">
+        <Script src={TELEGRAM_WEB_APP_SDK} strategy="beforeInteractive" />
         <TelegramBoot />
         {children}
       </body>

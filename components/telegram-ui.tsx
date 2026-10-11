@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { waitForTelegramInitData, waitForTelegramSdk } from '@/lib/telegram/web-app-launch';
 
 type ThemeParams = Record<string, string | undefined>;
 
@@ -95,7 +96,7 @@ function applyTheme(webApp: WebApp) {
   }
 }
 
-function boot(webApp: WebApp, pathname: string, refresh: () => void) {
+function boot(webApp: WebApp) {
   webApp.ready();
   webApp.expand();
   applyTheme(webApp);
@@ -103,17 +104,6 @@ function boot(webApp: WebApp, pathname: string, refresh: () => void) {
   webApp.onEvent('themeChanged', onChange);
   webApp.onEvent('viewportChanged', onChange);
   webApp.onEvent('safeAreaChanged', onChange);
-
-  if (webApp.initData && (pathname === '/' || pathname.startsWith('/dashboard'))) {
-    const invite = new URLSearchParams(window.location.search).get('invite') || undefined;
-    void fetch('/api/auth/telegram', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData: webApp.initData, invite }),
-    }).then((response) => {
-      if (response.ok) refresh();
-    });
-  }
 
   return () => {
     webApp.offEvent('themeChanged', onChange);
@@ -123,39 +113,32 @@ function boot(webApp: WebApp, pathname: string, refresh: () => void) {
 }
 
 export function TelegramBoot() {
-  const router = useRouter();
-  const pathname = usePathname();
-
   useEffect(() => {
     let cancelled = false;
     let cleanup = () => {};
     const existing = getWebApp();
     if (existing) {
-      cleanup = boot(existing, pathname, () => router.refresh());
+      cleanup = boot(existing);
       return () => {
         cancelled = true;
         cleanup();
       };
     }
 
-    // Telegram injects the SDK in its webview. Loading it in a normal browser
-    // writes viewport CSS variables onto <html> before hydration and reloads the page.
-    if (!/Telegram/i.test(navigator.userAgent)) return;
-
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-web-app.js';
-    script.async = true;
-    script.onload = () => {
-      if (cancelled) return;
+    // The root layout loads telegram-web-app.js before hydration. Telegram
+    // does not inject the SDK, and the webview user agent often lacks
+    // "Telegram". Sign-in is not started here; AuthGate owns that POST.
+    void waitForTelegramSdk({ isReady: () => getWebApp() !== null }).then((ready) => {
+      if (cancelled || !ready) return;
       const webApp = getWebApp();
-      if (webApp) cleanup = boot(webApp, pathname, () => router.refresh());
-    };
-    document.head.appendChild(script);
+      if (webApp) cleanup = boot(webApp);
+    });
+
     return () => {
       cancelled = true;
       cleanup();
     };
-  }, [pathname, router]);
+  }, []);
 
   return null;
 }
@@ -242,27 +225,47 @@ export function BottomNav() {
   );
 }
 
+const OPEN_FROM_TELEGRAM = 'Open Jobber from the Telegram chat. The menu button is under the message field.';
+
+let signInFlight: Promise<Response> | null = null;
+let signInKey = '';
+
+function postTelegramSignIn(initData: string, invite?: string): Promise<Response> {
+  const key = `${initData}\0${invite || ''}`;
+  if (signInFlight && signInKey === key) return signInFlight;
+  signInKey = key;
+  const request = fetch('/api/auth/telegram', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData, invite: invite || undefined }),
+  });
+  signInFlight = request.finally(() => {
+    if (signInKey === key) {
+      signInFlight = null;
+      signInKey = '';
+    }
+  });
+  return signInFlight;
+}
+
 export function AuthGate() {
   const router = useRouter();
   const [invite, setInvite] = useState('');
   const [error, setError] = useState('');
   const [waiting, setWaiting] = useState(true);
   const [needsInvite, setNeedsInvite] = useState(false);
+  const initDataRef = useRef('');
 
   async function submit(code?: string) {
-    const webApp = getWebApp();
-    if (!webApp?.initData) {
+    const initData = initDataRef.current.trim();
+    if (!initData) {
       setWaiting(false);
-      setError('Open Jobber from the Telegram chat. The menu button is under the message field.');
+      setError(OPEN_FROM_TELEGRAM);
       return;
     }
     setWaiting(true);
     setError('');
-    const response = await fetch('/api/auth/telegram', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData: webApp.initData, invite: code || undefined }),
-    });
+    const response = await postTelegramSignIn(initData, code);
     const body = await response.json().catch(() => ({}));
     setWaiting(false);
     if (response.status === 403 && body.error === 'invite') {
@@ -279,11 +282,26 @@ export function AuthGate() {
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void submit(new URLSearchParams(window.location.search).get('invite') || undefined);
-    }, 50);
-    return () => window.clearTimeout(timer);
-    // Run once on mount. submit reads the latest invite from the argument.
+    let cancelled = false;
+    const inviteFromUrl = new URLSearchParams(window.location.search).get('invite') || undefined;
+    void waitForTelegramInitData({
+      readSdkInitData: () => getWebApp()?.initData,
+      readHash: () => window.location.hash,
+      isSdkReady: () => getWebApp() !== null,
+    }).then((initData) => {
+      if (cancelled) return;
+      initDataRef.current = initData;
+      if (!initData) {
+        setWaiting(false);
+        setError(OPEN_FROM_TELEGRAM);
+        return;
+      }
+      void submit(inviteFromUrl);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Sign in once, after the SDK or the launch hash can supply initData.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
