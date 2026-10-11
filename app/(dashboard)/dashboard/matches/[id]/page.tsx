@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { connection } from 'next/server';
 import { ArrowUpRight, ChevronLeft } from 'lucide-react';
 import { LetterPanel } from '@/components/letter-panel';
+import { TailorCv } from '@/components/tailor-cv';
 import { TelegramBack } from '@/components/telegram-ui';
 import { FIT_LABEL, FIT_TEXT, Note, ScoreRing, fitOf } from '@/components/ui/kit';
 import { getMatch, requireUser } from '@/lib/data/service';
@@ -10,6 +12,7 @@ import { formatSalaryRange } from '@/lib/text';
 export const instant = false;
 
 export default async function MatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await connection();
   const user = await requireUser();
   if (!user) return null;
   const { id } = await params;
@@ -50,6 +53,8 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           {match.redFlags.map((f) => <Note key={f} tone="warning">{f}</Note>)}
         </div>
       )}
+
+      <TailorCv matchId={match.id} initialAdvice={match.cvAdvice ?? null} initialCv={match.tailoredCv ?? null} />
 
       <LetterPanel matchId={match.id} initial={match.coverLetter} />
 

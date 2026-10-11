@@ -24,6 +24,8 @@ model User {
   apiKeys           ApiKey[]
   matches           JobMatch[]
   applications      Application[]
+  aiUsage           AiUsage[]
+  searchRuns        SearchRun[]
   
   @@index([email])
   @@index([telegramId])
@@ -53,6 +55,15 @@ model Profile {
   
   // Company watchlist
   watchedCompanies  String[]
+
+  // CV-first onboarding (extracted by AI, edited by the user)
+  fullName          String?
+  targetRoles       String[]
+  seniority         String?
+  yearsExperience   Int?
+  searchKeywords    String[]
+  sourceIds         String[]
+  onboardedAt       DateTime?
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -105,6 +116,8 @@ model Job {
   source            JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   
   externalId        String    // ID from the job board
+  // Hiring company when the source is an aggregator (Remotive, Arbeitnow…); null = source.company
+  company           String?
   title             String
   location          String?
   remote            Boolean   @default(false)
@@ -144,6 +157,10 @@ model JobMatch {
   priority          String    // "high", "medium", "low"
   
   coverLetter       String?   @db.Text
+  cvAdvice          Json?
+  tailoredCv        String?   @db.Text
+  // true = rejected by the rule pre-filter, never sent to the model, hidden in the UI
+  filtered          Boolean   @default(false)
   
   notifiedAt        DateTime?
   viewedAt          DateTime?
@@ -153,6 +170,7 @@ model JobMatch {
   
   @@unique([userId, jobId])
   @@index([userId, score])
+  @@index([userId, filtered])
 }
 
 model Application {
@@ -210,4 +228,37 @@ model CronJob {
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+/// Per-user daily AI usage counters (shared Gemini key quotas).
+model AiUsage {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String   // YYYY-MM-DD (UTC)
+  kind      String   // "score" | "write" | "parse"
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, day, kind])
+}
+
+/// One onboarding / manual search run, advanced in small serverless-safe steps.
+model SearchRun {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       String    @default("fetching") // fetching | scoring | done | error
+  sourceIds    String[]
+  sourcesDone  Int       @default(0)
+  jobsFound    Int       @default(0)
+  filtered     Int       @default(0)
+  scored       Int       @default(0)
+  queued       Int       @default(0)
+  note         String?
+  notifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, createdAt])
 }

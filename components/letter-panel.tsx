@@ -50,7 +50,7 @@ export function LetterPanel({ matchId, initial }: { matchId: string; initial: st
       {letter ? (
         <div className="whitespace-pre-wrap px-4 py-4 text-[14px] leading-[1.65]">{letter}</div>
       ) : (
-        <p className="px-4 py-6 text-center text-[13px] text-muted">No letter yet. It follows your writing rules and uses your own AI key.</p>
+        <p className="px-4 py-6 text-center text-[13px] text-muted">No letter yet. It sticks to facts from your CV and follows your writing rules.</p>
       )}
     </section>
   );

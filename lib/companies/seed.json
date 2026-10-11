@@ -1,0 +1,786 @@
+{
+ "verifiedAt": "2026-10-11",
+ "companies": [
+  {
+   "name": "Adyen",
+   "ats": "greenhouse",
+   "slug": "adyen",
+   "hq": "Amsterdam",
+   "tags": [
+    "fintech",
+    "java",
+    "python"
+   ],
+   "jobs": 237
+  },
+  {
+   "name": "Airtable",
+   "ats": "greenhouse",
+   "slug": "airtable",
+   "hq": "London",
+   "tags": [
+    "productivity",
+    "typescript",
+    "react"
+   ],
+   "jobs": 4
+  },
+  {
+   "name": "Automattic",
+   "ats": "greenhouse",
+   "slug": "automatticcareers",
+   "hq": "Remote",
+   "tags": [
+    "wordpress",
+    "php",
+    "react",
+    "remote"
+   ],
+   "jobs": 13
+  },
+  {
+   "name": "Bitpanda",
+   "ats": "greenhouse",
+   "slug": "bitpanda",
+   "hq": "Vienna",
+   "tags": [
+    "fintech",
+    "crypto",
+    "react",
+    "go",
+    "kotlin"
+   ],
+   "jobs": 27
+  },
+  {
+   "name": "Bosch",
+   "ats": "smartrecruiters",
+   "slug": "BoschGroup",
+   "hq": "Germany",
+   "tags": [
+    "industry",
+    "java",
+    "c++"
+   ],
+   "jobs": 4950
+  },
+  {
+   "name": "Bunq",
+   "ats": "recruitee",
+   "slug": "bunq",
+   "hq": "Amsterdam",
+   "tags": [
+    "fintech",
+    "java"
+   ],
+   "jobs": 19
+  },
+  {
+   "name": "Canonical",
+   "ats": "greenhouse",
+   "slug": "canonical",
+   "hq": "Remote",
+   "tags": [
+    "linux",
+    "python",
+    "go",
+    "remote"
+   ],
+   "jobs": 311
+  },
+  {
+   "name": "Celonis",
+   "ats": "greenhouse",
+   "slug": "celonis",
+   "hq": "Munich",
+   "tags": [
+    "data",
+    "java",
+    "angular"
+   ],
+   "jobs": 226
+  },
+  {
+   "name": "Clerk",
+   "ats": "ashby",
+   "slug": "clerk",
+   "hq": "Remote",
+   "tags": [
+    "auth",
+    "typescript",
+    "react",
+    "nextjs",
+    "remote"
+   ],
+   "jobs": 2
+  },
+  {
+   "name": "Cloudflare",
+   "ats": "greenhouse",
+   "slug": "cloudflare",
+   "hq": "Remote / Europe",
+   "tags": [
+    "network",
+    "go",
+    "rust",
+    "typescript"
+   ],
+   "jobs": 424
+  },
+  {
+   "name": "Contentful",
+   "ats": "greenhouse",
+   "slug": "contentful",
+   "hq": "Berlin",
+   "tags": [
+    "cms",
+    "typescript",
+    "react",
+    "node"
+   ],
+   "jobs": 19
+  },
+  {
+   "name": "Cursor (Anysphere)",
+   "ats": "ashby",
+   "slug": "cursor",
+   "hq": "San Francisco",
+   "tags": [
+    "ai",
+    "typescript"
+   ],
+   "jobs": 137
+  },
+  {
+   "name": "Datadog",
+   "ats": "greenhouse",
+   "slug": "datadog",
+   "hq": "New York / Europe",
+   "tags": [
+    "observability",
+    "go",
+    "python",
+    "react"
+   ],
+   "jobs": 435
+  },
+  {
+   "name": "DeepL",
+   "ats": "ashby",
+   "slug": "DeepL",
+   "hq": "Cologne",
+   "tags": [
+    "ai",
+    "python",
+    "typescript"
+   ],
+   "jobs": 7
+  },
+  {
+   "name": "Delivery Hero (SR)",
+   "ats": "smartrecruiters",
+   "slug": "DeliveryHero",
+   "hq": "Berlin",
+   "tags": [
+    "foodtech",
+    "go",
+    "react"
+   ],
+   "jobs": 946
+  },
+  {
+   "name": "Discord",
+   "ats": "greenhouse",
+   "slug": "discord",
+   "hq": "Remote",
+   "tags": [
+    "social",
+    "rust",
+    "python",
+    "react"
+   ],
+   "jobs": 49
+  },
+  {
+   "name": "Docker",
+   "ats": "ashby",
+   "slug": "docker",
+   "hq": "Remote",
+   "tags": [
+    "devops",
+    "go",
+    "typescript",
+    "remote"
+   ],
+   "jobs": 62
+  },
+  {
+   "name": "Doctolib",
+   "ats": "greenhouse",
+   "slug": "doctolib",
+   "hq": "Paris / Berlin",
+   "tags": [
+    "health",
+    "ruby",
+    "react"
+   ],
+   "jobs": 151
+  },
+  {
+   "name": "Elastic",
+   "ats": "greenhouse",
+   "slug": "elastic",
+   "hq": "Remote",
+   "tags": [
+    "search",
+    "java",
+    "typescript",
+    "remote"
+   ],
+   "jobs": 409
+  },
+  {
+   "name": "ElevenLabs",
+   "ats": "ashby",
+   "slug": "elevenlabs",
+   "hq": "Remote",
+   "tags": [
+    "ai",
+    "python",
+    "typescript",
+    "react",
+    "remote"
+   ],
+   "jobs": 125
+  },
+  {
+   "name": "Figma",
+   "ats": "greenhouse",
+   "slug": "figma",
+   "hq": "London",
+   "tags": [
+    "design",
+    "typescript",
+    "react",
+    "c++"
+   ],
+   "jobs": 150
+  },
+  {
+   "name": "GetYourGuide",
+   "ats": "greenhouse",
+   "slug": "getyourguide",
+   "hq": "Berlin / Zurich",
+   "tags": [
+    "travel",
+    "react",
+    "kotlin",
+    "scala"
+   ],
+   "jobs": 63
+  },
+  {
+   "name": "GitLab",
+   "ats": "greenhouse",
+   "slug": "gitlab",
+   "hq": "Remote",
+   "tags": [
+    "devops",
+    "ruby",
+    "go",
+    "vue",
+    "remote"
+   ],
+   "jobs": 221
+  },
+  {
+   "name": "GoStudent",
+   "ats": "greenhouse",
+   "slug": "gostudent",
+   "hq": "Vienna",
+   "tags": [
+    "edtech",
+    "react",
+    "node",
+    "typescript"
+   ],
+   "jobs": 26
+  },
+  {
+   "name": "Grafana Labs",
+   "ats": "greenhouse",
+   "slug": "grafanalabs",
+   "hq": "Remote",
+   "tags": [
+    "observability",
+    "go",
+    "react",
+    "typescript",
+    "remote"
+   ],
+   "jobs": 106
+  },
+  {
+   "name": "HelloFresh",
+   "ats": "greenhouse",
+   "slug": "hellofresh",
+   "hq": "Berlin",
+   "tags": [
+    "foodtech",
+    "react",
+    "go",
+    "python"
+   ],
+   "jobs": 415
+  },
+  {
+   "name": "Hokify",
+   "ats": "personio",
+   "slug": "hokify",
+   "hq": "Vienna",
+   "tags": [
+    "hr",
+    "typescript",
+    "vue"
+   ],
+   "jobs": 1
+  },
+  {
+   "name": "Hugging Face",
+   "ats": "workable",
+   "slug": "huggingface",
+   "hq": "Remote",
+   "tags": [
+    "ai",
+    "python",
+    "remote"
+   ],
+   "jobs": 6
+  },
+  {
+   "name": "Intercom",
+   "ats": "greenhouse",
+   "slug": "intercom",
+   "hq": "Dublin / London",
+   "tags": [
+    "support",
+    "ruby",
+    "react"
+   ],
+   "jobs": 106
+  },
+  {
+   "name": "Linear",
+   "ats": "ashby",
+   "slug": "linear",
+   "hq": "Remote",
+   "tags": [
+    "productivity",
+    "typescript",
+    "react",
+    "remote"
+   ],
+   "jobs": 31
+  },
+  {
+   "name": "Miro",
+   "ats": "greenhouse",
+   "slug": "realtimeboardglobal",
+   "hq": "Amsterdam / Berlin",
+   "tags": [
+    "collaboration",
+    "react",
+    "typescript",
+    "java"
+   ],
+   "jobs": 24
+  },
+  {
+   "name": "MongoDB",
+   "ats": "greenhouse",
+   "slug": "mongodb",
+   "hq": "Dublin / Europe",
+   "tags": [
+    "database",
+    "typescript",
+    "go"
+   ],
+   "jobs": 391
+  },
+  {
+   "name": "Monzo",
+   "ats": "greenhouse",
+   "slug": "monzo",
+   "hq": "London",
+   "tags": [
+    "fintech",
+    "go"
+   ],
+   "jobs": 68
+  },
+  {
+   "name": "N26",
+   "ats": "greenhouse",
+   "slug": "n26",
+   "hq": "Berlin / Vienna",
+   "tags": [
+    "fintech",
+    "kotlin",
+    "java",
+    "react"
+   ],
+   "jobs": 42
+  },
+  {
+   "name": "n8n",
+   "ats": "ashby",
+   "slug": "n8n",
+   "hq": "Berlin / Remote",
+   "tags": [
+    "automation",
+    "typescript",
+    "vue",
+    "node"
+   ],
+   "jobs": 38
+  },
+  {
+   "name": "Neon",
+   "ats": "ashby",
+   "slug": "neon",
+   "hq": "Remote",
+   "tags": [
+    "database",
+    "rust",
+    "typescript",
+    "postgres",
+    "remote"
+   ],
+   "jobs": 4
+  },
+  {
+   "name": "Notion",
+   "ats": "ashby",
+   "slug": "notion",
+   "hq": "Dublin",
+   "tags": [
+    "productivity",
+    "typescript",
+    "react"
+   ],
+   "jobs": 132
+  },
+  {
+   "name": "Pigment",
+   "ats": "lever",
+   "slug": "pigment",
+   "hq": "Paris",
+   "tags": [
+    "saas",
+    "typescript",
+    "react"
+   ],
+   "jobs": 141
+  },
+  {
+   "name": "Pleo",
+   "ats": "ashby",
+   "slug": "pleo",
+   "hq": "Copenhagen",
+   "tags": [
+    "fintech",
+    "typescript",
+    "react",
+    "kotlin"
+   ],
+   "jobs": 34
+  },
+  {
+   "name": "PostHog",
+   "ats": "ashby",
+   "slug": "posthog",
+   "hq": "Remote",
+   "tags": [
+    "analytics",
+    "python",
+    "typescript",
+    "react",
+    "remote"
+   ],
+   "jobs": 10
+  },
+  {
+   "name": "Prewave",
+   "ats": "personio",
+   "slug": "prewave",
+   "hq": "Vienna",
+   "tags": [
+    "ai",
+    "python",
+    "react"
+   ],
+   "jobs": 8
+  },
+  {
+   "name": "Qonto",
+   "ats": "lever",
+   "slug": "qonto",
+   "hq": "Paris",
+   "tags": [
+    "fintech",
+    "go",
+    "react"
+   ],
+   "jobs": 49
+  },
+  {
+   "name": "Resend",
+   "ats": "ashby",
+   "slug": "resend",
+   "hq": "Remote",
+   "tags": [
+    "email",
+    "typescript",
+    "react",
+    "nextjs",
+    "remote"
+   ],
+   "jobs": 14
+  },
+  {
+   "name": "Sanity",
+   "ats": "ashby",
+   "slug": "sanity",
+   "hq": "Oslo / Remote",
+   "tags": [
+    "cms",
+    "typescript",
+    "react"
+   ],
+   "jobs": 36
+  },
+  {
+   "name": "Sentry",
+   "ats": "ashby",
+   "slug": "sentry",
+   "hq": "Vienna / Remote",
+   "tags": [
+    "observability",
+    "python",
+    "react",
+    "typescript"
+   ],
+   "jobs": 46
+  },
+  {
+   "name": "Spotify",
+   "ats": "lever",
+   "slug": "spotify",
+   "hq": "Stockholm / London",
+   "tags": [
+    "music",
+    "java",
+    "react",
+    "python"
+   ],
+   "jobs": 85
+  },
+  {
+   "name": "Stripe",
+   "ats": "greenhouse",
+   "slug": "stripe",
+   "hq": "Dublin / Remote",
+   "tags": [
+    "fintech",
+    "ruby",
+    "react",
+    "typescript"
+   ],
+   "jobs": 728
+  },
+  {
+   "name": "SumUp",
+   "ats": "greenhouse",
+   "slug": "sumup",
+   "hq": "Berlin",
+   "tags": [
+    "fintech",
+    "go",
+    "react"
+   ],
+   "jobs": 347
+  },
+  {
+   "name": "Supabase",
+   "ats": "ashby",
+   "slug": "supabase",
+   "hq": "Remote",
+   "tags": [
+    "database",
+    "typescript",
+    "react",
+    "postgres",
+    "remote"
+   ],
+   "jobs": 54
+  },
+  {
+   "name": "Swile",
+   "ats": "lever",
+   "slug": "swile",
+   "hq": "Paris",
+   "tags": [
+    "fintech",
+    "react"
+   ],
+   "jobs": 32
+  },
+  {
+   "name": "Synthesia",
+   "ats": "ashby",
+   "slug": "synthesia",
+   "hq": "London",
+   "tags": [
+    "ai",
+    "python",
+    "react"
+   ],
+   "jobs": 46
+  },
+  {
+   "name": "Trade Republic",
+   "ats": "greenhouse",
+   "slug": "traderepublicbank",
+   "hq": "Berlin",
+   "tags": [
+    "fintech",
+    "kotlin",
+    "typescript"
+   ],
+   "jobs": 42
+  },
+  {
+   "name": "Trivago",
+   "ats": "greenhouse",
+   "slug": "trivago",
+   "hq": "D\u00fcsseldorf",
+   "tags": [
+    "travel",
+    "php",
+    "react"
+   ],
+   "jobs": 16
+  },
+  {
+   "name": "Twilio",
+   "ats": "greenhouse",
+   "slug": "twilio",
+   "hq": "Remote",
+   "tags": [
+    "api",
+    "java",
+    "typescript",
+    "remote"
+   ],
+   "jobs": 144
+  },
+  {
+   "name": "Typeform",
+   "ats": "greenhouse",
+   "slug": "typeform",
+   "hq": "Barcelona",
+   "tags": [
+    "saas",
+    "react",
+    "typescript"
+   ],
+   "jobs": 13
+  },
+  {
+   "name": "Ubisoft",
+   "ats": "smartrecruiters",
+   "slug": "Ubisoft2",
+   "hq": "Paris",
+   "tags": [
+    "games",
+    "c++"
+   ],
+   "jobs": 339
+  },
+  {
+   "name": "Vapi",
+   "ats": "ashby",
+   "slug": "vapi",
+   "hq": "Remote",
+   "tags": [
+    "ai",
+    "typescript"
+   ],
+   "jobs": 24
+  },
+  {
+   "name": "Vercel",
+   "ats": "greenhouse",
+   "slug": "vercel",
+   "hq": "Remote",
+   "tags": [
+    "frontend",
+    "nextjs",
+    "react",
+    "typescript",
+    "remote"
+   ],
+   "jobs": 89
+  },
+  {
+   "name": "Wayflyer",
+   "ats": "ashby",
+   "slug": "wayflyer",
+   "hq": "Dublin",
+   "tags": [
+    "fintech",
+    "python",
+    "react"
+   ],
+   "jobs": 19
+  },
+  {
+   "name": "Wise",
+   "ats": "smartrecruiters",
+   "slug": "Wise",
+   "hq": "London / Tallinn",
+   "tags": [
+    "fintech",
+    "java",
+    "react"
+   ],
+   "jobs": 400
+  },
+  {
+   "name": "Wolt",
+   "ats": "greenhouse",
+   "slug": "wolt",
+   "hq": "Helsinki / Berlin",
+   "tags": [
+    "delivery",
+    "python",
+    "kotlin",
+    "react"
+   ],
+   "jobs": 222
+  },
+  {
+   "name": "Zapier",
+   "ats": "ashby",
+   "slug": "zapier",
+   "hq": "Remote",
+   "tags": [
+    "automation",
+    "python",
+    "react",
+    "remote"
+   ],
+   "jobs": 11
+  }
+ ]
+}

@@ -2,9 +2,9 @@ import crypto from 'crypto';
 import { cache } from 'react';
 import { isDemoMode } from '@/lib/demo/mode';
 import { demoStore, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
-import { decryptApiKey, encryptApiKey } from '@/lib/crypto/encryption';
 import { getPrisma } from '@/lib/db/prisma';
 import { readSessionUserId } from '@/lib/auth/session';
+import type { CvAdvice } from '@/lib/ai/cv-advice';
 
 export interface SessionUser {
   id: string;
@@ -86,6 +86,13 @@ export async function getProfile(userId: string): Promise<DemoProfile> {
       skillGaps: [],
       writingRules: null,
       watchedCompanies: [],
+      fullName: null,
+      targetRoles: [],
+      seniority: null,
+      yearsExperience: null,
+      searchKeywords: [],
+      sourceIds: [],
+      onboardedAt: null,
     };
   }
 
@@ -103,6 +110,13 @@ export async function getProfile(userId: string): Promise<DemoProfile> {
     skillGaps: profile.skillGaps,
     writingRules: profile.writingRules,
     watchedCompanies: profile.watchedCompanies,
+    fullName: profile.fullName,
+    targetRoles: profile.targetRoles,
+    seniority: profile.seniority,
+    yearsExperience: profile.yearsExperience,
+    searchKeywords: profile.searchKeywords,
+    sourceIds: profile.sourceIds,
+    onboardedAt: profile.onboardedAt?.toISOString() ?? null,
   };
 }
 
@@ -110,7 +124,8 @@ export async function saveProfile(userId: string, patch: Partial<DemoProfile>) {
   if (isDemoMode()) return demoStore.saveProfile(patch);
 
   const current = await getProfile(userId);
-  const next = { ...current, ...patch };
+  const merged = { ...current, ...patch };
+  const next = { ...merged, onboardedAt: merged.onboardedAt ? new Date(merged.onboardedAt) : null };
   const prisma = getPrisma();
   await prisma.profile.upsert({
     where: { userId },
@@ -125,7 +140,7 @@ export async function getMatches(userId: string) {
 
   const prisma = getPrisma();
   const matches = await prisma.jobMatch.findMany({
-    where: { userId },
+    where: { userId, filtered: false },
     include: { job: { include: { source: true } } },
     orderBy: { score: 'desc' },
     take: 80,
@@ -138,10 +153,12 @@ export async function getMatches(userId: string) {
     reasons: match.reasons,
     redFlags: match.redFlags,
     coverLetter: match.coverLetter,
+    cvAdvice: (match.cvAdvice as CvAdvice | null) ?? null,
+    tailoredCv: match.tailoredCv,
     job: {
       id: match.job.id,
       title: match.job.title,
-      company: match.job.source.company,
+      company: match.job.company || match.job.source.company,
       sector: match.job.source.sector,
       location: match.job.location,
       remote: match.job.remote,
@@ -294,69 +311,6 @@ export async function updateApplication(
       followUpSent: patch.followUpSent,
     },
   });
-}
-
-export async function listApiKeys(userId: string) {
-  if (isDemoMode()) return demoStore.keys();
-  const prisma = getPrisma();
-  const keys = await prisma.apiKey.findMany({
-    where: { userId, isActive: true },
-    orderBy: { createdAt: 'desc' },
-  });
-  return keys.map((key) => ({
-    id: key.id,
-    provider: key.provider,
-    createdAt: key.createdAt.toISOString(),
-  }));
-}
-
-export async function saveApiKey(userId: string, provider: string, apiKey: string) {
-  if (isDemoMode()) return demoStore.saveKey(provider, apiKey);
-  const encrypted = encryptApiKey(apiKey);
-
-  const prisma = getPrisma();
-  await prisma.apiKey.updateMany({
-    where: { userId, isActive: true },
-    data: { isActive: false },
-  });
-  const created = await prisma.apiKey.create({
-    data: { userId, provider, ...encrypted, isActive: true },
-  });
-  return { id: created.id, provider: created.provider, createdAt: created.createdAt.toISOString() };
-}
-
-export async function deleteApiKey(userId: string, id: string) {
-  if (isDemoMode()) {
-    demoStore.deleteKey(id);
-    return;
-  }
-  const prisma = getPrisma();
-  await prisma.apiKey.updateMany({
-    where: { id, userId },
-    data: { isActive: false },
-  });
-}
-
-export async function getActiveKey(userId: string): Promise<{ provider: string; apiKey: string } | null> {
-  if (isDemoMode()) {
-    const key = demoStore.activeKey();
-    if (!key) return null;
-    return {
-      provider: key.provider,
-      apiKey: decryptApiKey(key.encryptedKey, key.iv, key.authTag),
-    };
-  }
-
-  const prisma = getPrisma();
-  const key = await prisma.apiKey.findFirst({
-    where: { userId, isActive: true },
-    orderBy: { createdAt: 'desc' },
-  });
-  if (!key) return null;
-  return {
-    provider: key.provider,
-    apiKey: decryptApiKey(key.encryptedKey, key.iv, key.authTag),
-  };
 }
 
 export async function signInWithTelegram(input: {
@@ -569,4 +523,19 @@ export async function unlinkAccount(userId: string, kind: 'telegram' | 'email'):
     data: { email: `tg${user.telegramId}@users.jobber.local`, supabaseId: null },
   });
   return { ok: true };
+}
+
+export async function saveMatchExtras(
+  userId: string,
+  matchId: string,
+  data: { cvAdvice?: CvAdvice; tailoredCv?: string },
+) {
+  if (isDemoMode()) return null;
+  const prisma = getPrisma();
+  const match = await prisma.jobMatch.findFirst({ where: { id: matchId, userId } });
+  if (!match) return null;
+  return prisma.jobMatch.update({
+    where: { id: matchId },
+    data: { ...(data.cvAdvice ? { cvAdvice: data.cvAdvice } : {}), ...(data.tailoredCv ? { tailoredCv: data.tailoredCv } : {}) },
+  });
 }

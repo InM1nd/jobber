@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Copy, KeyRound, Mail, Send, Ticket, Trash2 } from 'lucide-react';
+import { ChevronRight, Copy, Gauge, Mail, PenLine, Send, Sparkles, Ticket } from 'lucide-react';
 import { EmailLinkForm } from '@/components/email-link-form';
 import { InstallApp } from '@/components/pwa';
 import { ThemeSegmented } from '@/components/theme-toggle';
@@ -12,34 +12,20 @@ import { haptic, insideTelegram } from '@/components/telegram-ui';
 import { TelegramLoginButton } from '@/components/telegram-login-button';
 import type { LinkedAccounts } from '@/lib/data/service';
 
-const PROVIDERS = [
-  ['openai', 'OpenAI'],
-  ['anthropic', 'Anthropic'],
-  ['gemini', 'Gemini'],
-  ['xai', 'xAI'],
-] as const;
-
-function providerName(id: string) {
-  return PROVIDERS.find(([key]) => key === id)?.[1] || id;
-}
-
 export function SettingsPanel({
-  keys,
+  usage,
   accounts,
   botUsername,
   isOwner,
   demo,
 }: {
-  keys: { id: string; provider: string; createdAt: string }[];
+  usage: { limits: { score: number; write: number; parse: number }; used: { score: number; write: number; parse: number } };
   accounts: LinkedAccounts;
   botUsername: string;
   isOwner: boolean;
   demo?: boolean;
 }) {
   const router = useRouter();
-  const [provider, setProvider] = useState('openai');
-  const [apiKey, setApiKey] = useState('');
-  const [showKeyForm, setShowKeyForm] = useState(false);
   const [invite, setInvite] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showTelegramOptions, setShowTelegramOptions] = useState(false);
@@ -71,32 +57,6 @@ export function SettingsPanel({
   function reset() {
     setError('');
     setMessage('');
-  }
-
-  async function saveKey(event: React.FormEvent) {
-    event.preventDefault();
-    reset();
-    const response = await fetch('/api/keys', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, apiKey }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setError(body.error || 'Could not save the key');
-      haptic('error');
-      return;
-    }
-    setApiKey('');
-    setShowKeyForm(false);
-    setMessage('Key saved. It’s encrypted and never shown again.');
-    haptic('success');
-    router.refresh();
-  }
-
-  async function removeKey(id: string) {
-    await fetch(`/api/keys?id=${id}`, { method: 'DELETE' });
-    router.refresh();
   }
 
   async function linkTelegramViaBot() {
@@ -147,48 +107,12 @@ export function SettingsPanel({
       {error && <Notice tone="danger">{error}</Notice>}
 
       <Group
-        title="AI key"
-        footer="Your key pays for scoring and letters. It’s encrypted with AES-256-GCM and never shown again."
+        title="AI"
+        footer="Jobber runs on a shared free Gemini quota, so there are daily limits per person. If the shared AI is busy, the rest is scored automatically in the next run."
       >
-        {keys.map((key) => (
-          <Row
-            key={key.id}
-            icon={KeyRound}
-            iconTone="success"
-            label={providerName(key.provider)}
-            detail={`Connected ${new Date(key.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-            trailing={
-              <button type="button" onClick={() => removeKey(key.id)} className="rounded-full p-2 text-subtle hover:bg-danger-soft hover:text-danger" aria-label="Remove key">
-                <Trash2 className="size-4" />
-              </button>
-            }
-          />
-        ))}
-        {showKeyForm ? (
-          <form onSubmit={saveKey} className="animate-in space-y-2.5 p-4">
-            <div className="grid grid-cols-4 gap-1 rounded-[8px] bg-surface-2 p-0.5">
-              {PROVIDERS.map(([id, name]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setProvider(id)}
-                  className={`truncate rounded-[6px] px-1 py-1.5 text-[11.5px] font-medium transition-all ${provider === id ? 'bg-bg text-fg' : 'text-muted'}`}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-            <input className={fieldClass} type="password" autoComplete="off" placeholder={`${providerName(provider)} API key`} value={apiKey} onChange={(e) => setApiKey(e.target.value)} required />
-            <div className="flex gap-2">
-              <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowKeyForm(false)}>Cancel</Button>
-              <Button type="submit" className="flex-1">Save key</Button>
-            </div>
-          </form>
-        ) : (
-          <button type="button" onClick={() => setShowKeyForm(true)} className="block w-full text-left transition-colors hover:bg-surface-2">
-            <Row icon={KeyRound} label={keys.length ? "Replace API key" : "Add your API key"} detail="OpenAI, Anthropic, Gemini or xAI" trailing={<ChevronRight className="size-4 text-subtle" />} />
-          </button>
-        )}
+        <Row icon={Sparkles} iconTone="success" label="Shared Gemini" detail="No key needed — it’s included" />
+        <Row icon={Gauge} label="Job scores today" detail="Pre-filtered first, so only plausible jobs use AI" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.score} / {usage.limits.score}</span>} />
+        <Row icon={PenLine} label="Letters & CV advice today" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.write} / {usage.limits.write}</span>} />
       </Group>
 
       <Group title="Appearance" footer="System follows your device on the web and your Telegram theme in the app.">

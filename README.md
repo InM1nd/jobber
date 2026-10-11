@@ -1,8 +1,8 @@
 # Jobber
 
-Jobber is a Telegram Mini App for job search. The same Next.js app on Vercel holds the UI, the bot webhook, and the cron routes. It fetches vacancies from public ATS APIs, scores them with **your** model key, drafts cover letters from your writing rules, and reminds you to follow up in the chat.
+Jobber is a Telegram Mini App for job search. The same Next.js app on Vercel holds the UI, the bot webhook, and the cron routes. It fetches vacancies from public ATS APIs, scores them on the owner's shared Gemini key (`GEMINI_API_KEY`, free tier), drafts cover letters and per-job CV advice, and reminds you to follow up in the chat, and reminds you to follow up in the chat.
 
-The owner tests it first. Friends get in with an invite code. Jobber does not pay for LLM calls.
+The owner tests it first. Friends get in with an invite code. Nobody pastes keys: AI runs server-side on one shared Gemini key with per-user daily quotas.
 
 ## What works in this version
 
@@ -12,8 +12,13 @@ The owner tests it first. Friends get in with an invite code. Jobber does not pa
 - Deduping the same company + title + location across sources.
 - Daily Vercel cron: fetch a few sources per run, then score a few new vacancies per user, then send Telegram follow-ups. Progress for the fetch loop is stored in `CronJob`.
 - Match scores (0–100), reasons, and red flags. Daily digest to Telegram for scores of 70+.
-- Cover letters through one provider interface: OpenAI, Anthropic, Gemini, or xAI, using a key the user pastes.
-- API keys encrypted with AES-256-GCM. The ciphertext is not returned to the browser and is not written to logs on purpose.
+- CV-first onboarding (`/dashboard/onboarding`): upload a PDF or paste text → Gemini extracts a structured profile (validated with zod) → the user edits a "Here's what I understood" card → Jobber builds a search plan (titles, keywords, and companies picked **only** from `lib/companies/seed.json`, a curated list of boards verified to return jobs by `scripts/verify-seed.mjs`) → the first fetch + score runs immediately in small steps (`/api/search/step`), with a progress card. A Telegram message with the top matches goes out when the first run finishes.
+- Keyword boards without a watchlist: Remotive, Jobicy, Himalayas (search API) and Arbeitnow (keyword-filtered).
+- Rule pre-filter before any AI call (`lib/jobs/prefilter.ts`): title/role family, seniority, German-language requirements, on-site city, region-locked remote.
+- Shared Gemini (`lib/ai/gemini.ts`): smart model (`GEMINI_MODEL`, default `gemini-3.5-flash`) for CV parsing, plans, letters and CV advice; lite model (`GEMINI_MODEL_LITE`, default `gemini-3.5-flash-lite`) for bulk scoring. Per-model sliding-window limiter (`GEMINI_RPM_SMART`=5, `GEMINI_RPM_LITE`=15), retries with RetryInfo backoff on 429, a cross-instance backoff row after long 429s, fallback smart→lite on 503/404. Whatever isn't scored waits for the next cron run.
+- Per-user daily quotas (`AiUsage` table): `AI_DAILY_SCORES` (60), `AI_DAILY_WRITES` (12, letters + CV advice + tailored CV), `AI_DAILY_CV_PARSES` (4).
+- "Tailor CV" on each match: concrete emphasise/add/reword suggestions, missing keywords, and a "don't claim" list; optional tailored CV text. Cached per user+job on `JobMatch`.
+- Database change for this version: run `supabase/migrations/002_shared_ai_onboarding.sql` in the Supabase SQL editor (idempotent).
 - Application tracker with statuses and a 7-day follow-up date.
 - `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
 - Local demo mode when Supabase is not configured, so the screens can be clicked through with sample matches.

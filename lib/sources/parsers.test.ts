@@ -161,3 +161,28 @@ describe('job source parsers', () => {
     expect(isSupportedSourceType('join')).toBe(false);
   });
 });
+
+import { parseArbeitnowJobs, parseHimalayasJobs, parseJobicyJobs, keywordSourceUrl } from './boards';
+
+describe('keyword boards', () => {
+  it('parses Jobicy with per-job company', () => {
+    const [j] = parseJobicyJobs({ jobs: [{ id: 7, jobTitle: 'React Dev', companyName: 'Acme', jobGeo: 'Europe', jobDescription: '<p>Hi</p>', url: 'https://x/7' }] });
+    expect(j).toMatchObject({ externalId: 'jobicy:7', company: 'Acme', remote: true, location: 'Remote (Europe)', description: 'Hi' });
+  });
+  it('parses Himalayas restrictions', () => {
+    const [j] = parseHimalayasJobs({ jobs: [{ guid: 'g1', title: 'FE', companyName: 'B', locationRestrictions: ['Germany'], applicationLink: 'https://y', pubDate: 1700000000 }] });
+    expect(j.location).toBe('Remote (Germany)');
+    expect(j.postedAt?.getUTCFullYear()).toBe(2023);
+  });
+  it('filters Arbeitnow by keyword in title/tags', () => {
+    const data = { data: [
+      { slug: 'a', title: 'Frontend Engineer', company_name: 'A', url: 'https://a', tags: [] },
+      { slug: 'b', title: 'Lagerist', company_name: 'B', url: 'https://b', tags: ['logistik'] },
+      { slug: 'c', title: 'Engineer', company_name: 'C', url: 'https://c', tags: ['Front-End'] },
+    ] };
+    expect(parseArbeitnowJobs(data, 'frontend').map((j) => j.company)).toEqual(['A', 'C']);
+  });
+  it('builds keyword URLs', () => {
+    expect(keywordSourceUrl('remotive', 'React Developer')).toBe('https://remotive.com/api/remote-jobs?search=react%20developer&limit=50');
+  });
+});

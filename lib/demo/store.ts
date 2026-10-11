@@ -15,6 +15,13 @@ export interface DemoProfile {
   skillGaps: string[];
   writingRules: string | null;
   watchedCompanies: string[];
+  fullName?: string | null;
+  targetRoles?: string[];
+  seniority?: string | null;
+  yearsExperience?: number | null;
+  searchKeywords?: string[];
+  sourceIds?: string[];
+  onboardedAt?: string | null;
 }
 
 export interface DemoMatch {
@@ -24,6 +31,8 @@ export interface DemoMatch {
   reasons: string[];
   redFlags: string[];
   coverLetter: string | null;
+  cvAdvice?: import('@/lib/ai/cv-advice').CvAdvice | null;
+  tailoredCv?: string | null;
   /** When Jobber scored it; drives the "new" badge. */
   createdAt?: string;
   job: {

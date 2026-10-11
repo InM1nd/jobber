@@ -1,7 +1,8 @@
 import { SettingsPanel } from '@/components/settings-panel';
 import { PageHeader } from '@/components/ui/kit';
-import { isOwner, linkedAccounts, listApiKeys, requireUser } from '@/lib/data/service';
+import { isOwner, linkedAccounts, requireUser } from '@/lib/data/service';
 import { isDemoMode } from '@/lib/demo/mode';
+import { usageSummary } from '@/lib/ai/quota';
 
 export const instant = false;
 
@@ -10,8 +11,8 @@ export const instant = false;
 export default async function SettingsPage() {
   const user = await requireUser();
   if (!user) return null;
-  const [keys, owner] = await Promise.all([
-    listApiKeys(user.id),
+  const [usage, owner] = await Promise.all([
+    usageSummary(user.id),
     isDemoMode() ? Promise.resolve(true) : isOwner(user),
   ]);
   const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME?.replace(/^@/, '') || 'JobberCheck_bot';
@@ -20,7 +21,7 @@ export default async function SettingsPage() {
     <div>
       <PageHeader title="Settings" />
       <SettingsPanel
-        keys={keys}
+        usage={usage}
         accounts={linkedAccounts(user)}
         botUsername={bot}
         isOwner={owner}

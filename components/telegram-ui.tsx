@@ -187,6 +187,7 @@ function useOptimisticPath() {
 
 export function BottomNav() {
   const { path: pathname, go } = useOptimisticPath();
+  if (pathname.startsWith('/dashboard/onboarding')) return null;
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(12px+var(--safe-bottom))] md:hidden">
       <div className="pointer-events-auto mx-auto flex h-16 max-w-md items-center gap-1 rounded-full bg-[#111111] px-2 shadow-[0_8px_28px_-6px_rgb(0_0_0/0.35)] dark:bg-[#1c1c1f]">
@@ -221,6 +222,7 @@ export function BottomNav() {
 
 export function Sidebar({ account }: { account: string }) {
   const { path: pathname, go } = useOptimisticPath();
+  if (pathname.startsWith('/dashboard/onboarding')) return null;
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
       <Link href="/" className="px-3 pb-6"><Logo /></Link>

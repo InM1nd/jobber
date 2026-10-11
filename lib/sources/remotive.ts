@@ -12,6 +12,7 @@ export function parseRemotiveJobs(data: unknown): RawJob[] {
     const location = job.candidate_required_location ? String(job.candidate_required_location) : 'Remote';
     return {
       externalId: `${company}:${job.id}`,
+      company,
       title: String(job.title || 'Untitled'),
       location,
       remote: true,

@@ -1,4 +1,9 @@
-import { LLMClient, LLMMessage } from './provider';
+import type { LLMMessage, LLMResponse } from './provider';
+
+/** Anything that can answer a chat: the shared Gemini client or a provider client. */
+export interface ChatClient {
+  chat(messages: LLMMessage[], options?: { temperature?: number; maxTokens?: number }): Promise<LLMResponse>;
+}
 
 export interface JobMatchResult {
   score: number;
@@ -154,7 +159,7 @@ const fallbackMatch: JobMatchResult = {
 };
 
 export async function matchJob(
-  llmClient: LLMClient,
+  llmClient: ChatClient,
   profile: UserProfile,
   job: JobData,
 ): Promise<JobMatchResult> {
@@ -172,7 +177,7 @@ export async function matchJob(
 }
 
 export async function generateCoverLetter(
-  llmClient: LLMClient,
+  llmClient: ChatClient,
   profile: UserProfile,
   job: JobData,
 ): Promise<string> {

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db/prisma';
-import { makeDedupeKey } from '@/lib/jobs/dedupe';
-import { isSupportedSourceType } from '@/lib/sources/factory';
-import { fetchJobsFromSource } from '@/lib/sources/factory';
+import { ingestSource } from '@/lib/jobs/ingest';
 import { sendDailyDigest } from '@/lib/telegram/bot';
 
 export const maxDuration = 60;
@@ -64,95 +62,7 @@ export async function GET(req: NextRequest) {
     let totalJobs = 0;
 
     for (const source of sources) {
-      try {
-        if (!isSupportedSourceType(source.sourceType)) {
-          throw new Error(`No public API adapter for source type "${source.sourceType}"`);
-        }
-
-        const jobs = (await fetchJobsFromSource({
-          company: source.company,
-          sector: source.sector || undefined,
-          sourceType: source.sourceType,
-          sourceUrl: source.sourceUrl,
-          careersUrl: source.careersUrl || undefined,
-        })).slice(0, 80);
-
-        for (const job of jobs) {
-          const dedupeKey = makeDedupeKey(source.company, job.title, job.location);
-          const existing = await getPrisma().job.findUnique({
-            where: {
-              sourceId_externalId: {
-                sourceId: source.id,
-                externalId: job.externalId,
-              },
-            },
-          });
-
-          if (!existing) {
-            const duplicate = await getPrisma().job.findFirst({ where: { dedupeKey } });
-            if (duplicate) continue;
-          }
-
-          await getPrisma().job.upsert({
-            where: {
-              sourceId_externalId: {
-                sourceId: source.id,
-                externalId: job.externalId,
-              },
-            },
-            create: {
-              sourceId: source.id,
-              externalId: job.externalId,
-              title: job.title,
-              location: job.location,
-              remote: job.remote,
-              description: job.description.slice(0, 20000),
-              requirements: job.requirements,
-              salaryMin: job.salaryMin,
-              salaryMax: job.salaryMax,
-              currency: job.currency,
-              postedAt: job.postedAt,
-              url: job.url,
-              dedupeKey,
-            },
-            update: {
-              title: job.title,
-              location: job.location,
-              remote: job.remote,
-              description: job.description.slice(0, 20000),
-              requirements: job.requirements,
-              salaryMin: job.salaryMin,
-              salaryMax: job.salaryMax,
-              currency: job.currency,
-              postedAt: job.postedAt,
-              url: job.url,
-              dedupeKey,
-              isActive: true,
-            },
-          });
-        }
-
-        totalJobs += jobs.length;
-
-        await getPrisma().jobSource.update({
-          where: { id: source.id },
-          data: {
-            lastFetchedAt: new Date(),
-            lastSuccessAt: new Date(),
-            lastError: null,
-          },
-        });
-      } catch (error) {
-        console.error(`Error fetching from ${source.company}:`, error);
-        
-        await getPrisma().jobSource.update({
-          where: { id: source.id },
-          data: {
-            lastFetchedAt: new Date(),
-            lastError: error instanceof Error ? error.message : 'Unknown error',
-          },
-        });
-      }
+      totalJobs += await ingestSource(source);
     }
 
     await getPrisma().cronJob.update({

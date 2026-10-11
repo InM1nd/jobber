@@ -1,9 +1,12 @@
-import { KeyRound, Sparkles, UserRound } from 'lucide-react';
+import { Sparkles, UserRound } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { SearchProgress } from '@/components/search-progress';
+import { latestRun, runView } from '@/lib/search/pipeline';
 import { MatchRow, isNew } from '@/components/app/match-card';
 import { EmptyState, FIT_LABEL, FitDot, PageHeader, CtaLink, capsClass, fitOf, type Fit } from '@/components/ui/kit';
 import { cn } from '@/lib/utils';
 import { connection } from 'next/server';
-import { getMatches, getProfile, listApiKeys, requireUser } from '@/lib/data/service';
+import { getMatches, getProfile, requireUser } from '@/lib/data/service';
 import { isDemoMode } from '@/lib/demo/mode';
 
 export const instant = false;
@@ -12,17 +15,20 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   await connection();
   const user = await requireUser();
   if (!user) return null;
-  const [allMatches, profile, keys, query] = await Promise.all([
+  const demo = isDemoMode();
+  const [allMatches, profile, run, query] = await Promise.all([
     getMatches(user.id),
     getProfile(user.id),
-    listApiKeys(user.id),
+    demo ? Promise.resolve(null) : latestRun(user.id),
     searchParams,
   ]);
+  // First-time users only have a CV: send them to the CV-first onboarding.
+  if (!demo && !profile.onboardedAt && !profile.cvText && allMatches.length === 0) redirect('/dashboard/onboarding');
+  const activeRun = run && (run.status === 'fetching' || run.status === 'scoring') ? runView(run) : null;
   // ?view=empty previews the first-run state in demo mode.
-  const forceEmpty = isDemoMode() && query.view === 'empty';
+  const forceEmpty = demo && query.view === 'empty';
   const matches = forceEmpty ? [] : allMatches;
   const hasProfile = !forceEmpty && Boolean(profile.cvText || profile.skills.length);
-  const hasKey = !forceEmpty && keys.length > 0;
 
   const now = Date.now();
   const fits: Fit[] = ['strong', 'good', 'ok', 'weak'];
@@ -46,6 +52,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         title={matches.length ? greeting : 'Matches'}
         subtitle={matches.length ? undefined : 'New roles are scored every morning'}
       />
+
+      {activeRun && <SearchProgress initial={activeRun} className="mb-8" />}
 
       {matches.length > 0 && (
         <div className="relative mb-9 pt-3">
@@ -71,22 +79,16 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         (!hasProfile ? (
           <EmptyState
             icon={UserRound}
-            title="Set up your profile"
-            text="Add your CV and a few filters. Matches start arriving the next morning."
-            action={<CtaLink href="/dashboard/profile">Set up profile</CtaLink>}
+            title="Start with your CV"
+            text="Upload it and Jobber finds matching jobs in a couple of minutes."
+            action={<CtaLink href="/dashboard/onboarding">Upload CV</CtaLink>}
           />
-        ) : !hasKey ? (
-          <EmptyState
-            icon={KeyRound}
-            title="Connect your AI"
-            text="Scoring and letters run on your own OpenAI, Anthropic, Gemini or xAI key, so you stay in control of cost."
-            action={<CtaLink href="/dashboard/settings">Connect AI key</CtaLink>}
-          />
-        ) : (
+        ) : activeRun ? null : (
           <EmptyState
             icon={Sparkles}
             title="No matches yet"
             text="The next fetch runs tomorrow morning. You’ll get a Telegram message when something fits."
+            action={!demo ? <CtaLink href="/dashboard/onboarding">Update CV &amp; search</CtaLink> : undefined}
           />
         ))}
 

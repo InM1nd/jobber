@@ -1,5 +1,7 @@
 export interface RawJob {
   externalId: string;
+  /** Set by aggregators where each job has its own employer. */
+  company?: string;
   title: string;
   location?: string;
   remote: boolean;
