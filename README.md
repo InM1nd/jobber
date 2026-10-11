@@ -41,7 +41,7 @@ npm install
 2. In **Authentication → Providers → Email**, keep email enabled. Magic links are the login method.
 3. In **Authentication → URL configuration**, add `https://<your-domain>/auth/callback` and `http://127.0.0.1:43123/auth/callback`.
 4. Copy the project URL, anon key, and service role key.
-5. In **Project Settings → Database**, copy both pooler strings (see the next section). Prisma Client talks to the transaction pooler. `prisma db push` talks to the session pooler.
+5. In **Project Settings → Database**, copy both pooler strings (see the next section). Prisma Client talks to the transaction pooler. The session pooler string still belongs in `DIRECT_URL` because `prisma generate` reads it. The tables themselves are created by pasting `supabase/setup.sql` in the SQL Editor, not by `prisma db push`.
 
 ### 3. Environment
 
@@ -52,7 +52,7 @@ cp .env.example .env.local
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | Supabase transaction pooler, port 6543, with `?pgbouncer=true`. Prisma Client uses this for every query |
-| `DIRECT_URL` | Supabase session pooler, port 5432. Prisma uses this only for `db push` and migrations |
+| `DIRECT_URL` | Supabase session pooler, port 5432. Prisma reads this at `prisma generate`. The schema is applied from `supabase/setup.sql`, not from a database connection |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser auth key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Reserved for server tasks. Not used by the browser |
@@ -73,13 +73,19 @@ openssl rand -hex 32   # CRON_SECRET
 
 ### 4. Database
 
-`DATABASE_URL` is the transaction pooler (`:6543/postgres?pgbouncer=true`). `DIRECT_URL` is the session pooler (`:5432/postgres`). Prisma Client reads `DATABASE_URL`. `prisma db push` and migrations read `DIRECT_URL`, because the transaction pooler cannot run them.
+The Supabase database starts empty, and this project does not open a Postgres connection to push the schema. In the Supabase **SQL Editor**, paste `supabase/setup.sql` and run it once.
+
+That file is the full schema from:
 
 ```bash
-npx prisma db push
+npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
 ```
 
-Then run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL editor. That enables row level security. The Next.js server uses `DATABASE_URL` and bypasses RLS; the policies stop the public Supabase API from reading another user's rows. `ApiKey`, invite codes, and cron rows have RLS on and no client policy, so the browser cannot select them.
+followed by the row level security statements in `supabase/migrations/001_initial_schema.sql`. Tables and indexes are created only when they are missing, existing foreign keys are left in place, and each policy is dropped and recreated, so pasting it again does not duplicate them. Do not run `001_initial_schema.sql` on its own afterward. It is already included, and by itself it expects the tables to exist.
+
+The script does not insert an invite code. Set `OWNER_TELEGRAM_ID` to your numeric Telegram id. That account is the owner and can open the Mini App without an invite.
+
+`DATABASE_URL` is the transaction pooler (`:6543/postgres?pgbouncer=true`). The Next.js server uses it and bypasses RLS. The policies stop the public Supabase API from reading another user's rows. `ApiKey`, invite codes, and cron rows have RLS on and no client policy, so the browser cannot select them. `DIRECT_URL` stays set because `prisma generate` reads it. Queries do not use it.
 
 ### 5. Your profile (kept out of git)
 
