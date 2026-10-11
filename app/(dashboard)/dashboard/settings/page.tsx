@@ -1,3 +1,4 @@
+import { connection } from 'next/server';
 import { SettingsPanel } from '@/components/settings-panel';
 import { PageHeader } from '@/components/ui/kit';
 import { isOwner, linkedAccounts, listApiKeys, requireUser } from '@/lib/data/service';
@@ -19,6 +20,7 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ error?: string; connected?: string }>;
 }) {
+  await connection();
   const user = await requireUser();
   if (!user) return null;
   const [keys, query, owner] = await Promise.all([
