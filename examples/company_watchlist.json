@@ -1,0 +1,422 @@
+[
+ {
+  "company": "Bitpanda",
+  "sector": "Fintech / investing",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/bitpanda/jobs",
+  "careers_url": "https://www.bitpanda.com/en/career"
+ },
+ {
+  "company": "GoStudent",
+  "sector": "Edtech",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/gostudent/jobs",
+  "careers_url": "https://www.gostudent.org/en-gb/all-jobs/"
+ },
+ {
+  "company": "Eversports",
+  "sector": "Sports / booking SaaS",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/eversports/jobs",
+  "careers_url": "https://www.eversportsmanager.com/career"
+ },
+ {
+  "company": "PlanRadar",
+  "sector": "Proptech / construction SaaS",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/planradar/jobs",
+  "careers_url": "https://www.planradar.com/careers/"
+ },
+ {
+  "company": "Gropyus",
+  "sector": "Proptech / construction tech",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/gropyus/jobs",
+  "careers_url": "https://www.gropyus.com/careers"
+ },
+ {
+  "company": "Bitmovin",
+  "sector": "Video / media tech",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/bitmovin/jobs",
+  "careers_url": "https://bitmovin.com/careers/"
+ },
+ {
+  "company": "fiskaly",
+  "sector": "Fintech / compliance",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/fiskaly/jobs",
+  "careers_url": "https://www.fiskaly.com/jobs"
+ },
+ {
+  "company": "Sentry",
+  "sector": "Devtools",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/sentry?includeCompensation=true",
+  "careers_url": "https://sentry.io/careers/"
+ },
+ {
+  "company": "DeepL",
+  "sector": "AI / language",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/deepl?includeCompensation=true",
+  "careers_url": "https://jobs.deepl.com/"
+ },
+ {
+  "company": "Ketryx",
+  "sector": "Healthtech / medtech compliance",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/ketryx/jobs",
+  "careers_url": "https://www.ketryx.com/careers"
+ },
+ {
+  "company": "refurbed",
+  "sector": "E-commerce / circular economy",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/refurbed/jobs",
+  "careers_url": "https://www.refurbed.com/jobs/"
+ },
+ {
+  "company": "Adverity",
+  "sector": "Marketing data / analytics",
+  "source_type": "workable",
+  "source_url": "https://apply.workable.com/api/v1/widget/accounts/adverity",
+  "careers_url": "https://apply.workable.com/adverity/"
+ },
+ {
+  "company": "Prewave",
+  "sector": "Supply chain / ESG AI",
+  "source_type": "personio",
+  "source_url": "https://prewave.jobs.personio.de/xml",
+  "careers_url": "https://prewave.jobs.personio.de/"
+ },
+ {
+  "company": "Anyline",
+  "sector": "AI / computer vision",
+  "source_type": "personio",
+  "source_url": "https://anyline-gmbh.jobs.personio.de/xml",
+  "careers_url": "https://anyline.com/jobs"
+ },
+ {
+  "company": "XUND",
+  "sector": "Healthtech / AI",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/xund/jobs",
+  "careers_url": "https://job-boards.eu.greenhouse.io/xund"
+ },
+ {
+  "company": "nyra health",
+  "sector": "Healthtech / AI",
+  "source_type": "recruitee",
+  "source_url": "https://nyrahealth.recruitee.com/api/offers",
+  "careers_url": "https://nyrahealth.recruitee.com/"
+ },
+ {
+  "company": "Flinn",
+  "sector": "Healthtech / regulatory AI",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/flinn?includeCompensation=true",
+  "careers_url": "https://jobs.ashbyhq.com/flinn"
+ },
+ {
+  "company": "Instahelp",
+  "sector": "Healthtech / mental health",
+  "source_type": "recruitee",
+  "source_url": "https://instahelp.recruitee.com/api/offers",
+  "careers_url": "https://instahelp.recruitee.com/"
+ },
+ {
+  "company": "enspired",
+  "sector": "Climate / energy trading",
+  "source_type": "recruitee",
+  "source_url": "https://enspired.recruitee.com/api/offers",
+  "careers_url": "https://enspired.recruitee.com/"
+ },
+ {
+  "company": "kununu",
+  "sector": "HR tech / reviews",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/kununu/jobs",
+  "careers_url": "https://job-boards.eu.greenhouse.io/kununu"
+ },
+ {
+  "company": "Bikemap",
+  "sector": "Mobility / consumer app",
+  "source_type": "personio",
+  "source_url": "https://bikemap.jobs.personio.de/xml",
+  "careers_url": "https://bikemap.jobs.personio.de/"
+ },
+ {
+  "company": "Sportradar",
+  "sector": "Sports data / iGaming",
+  "source_type": "smartrecruiters",
+  "source_url": "https://api.smartrecruiters.com/v1/companies/Sportradar/postings?limit=100",
+  "careers_url": "https://jobs.smartrecruiters.com/Sportradar"
+ },
+ {
+  "company": "Greentube",
+  "sector": "iGaming",
+  "source_type": "html",
+  "source_url": "https://careers.greentube.com/job-offers.html",
+  "careers_url": "https://careers.greentube.com/"
+ },
+ {
+  "company": "Ribbon Bio",
+  "sector": "Biotech / data",
+  "source_type": "join",
+  "source_url": "https://join.com/companies/ribbonbiolabs",
+  "careers_url": "https://join.com/companies/ribbonbiolabs"
+ },
+ {
+  "company": "Sprad",
+  "sector": "HR tech / AI",
+  "source_type": "join",
+  "source_url": "https://join.com/companies/sprad",
+  "careers_url": "https://join.com/companies/sprad"
+ },
+ {
+  "company": "Senseven",
+  "sector": "Industrial AI / IoT",
+  "source_type": "join",
+  "source_url": "https://join.com/companies/senseven",
+  "careers_url": "https://join.com/companies/senseven"
+ },
+ {
+  "company": "Foreus",
+  "sector": "Security / AI",
+  "source_type": "join",
+  "source_url": "https://join.com/companies/foreus",
+  "careers_url": "https://join.com/companies/foreus"
+ },
+ {
+  "company": "Calmar",
+  "sector": "Fintech / startup investing",
+  "source_type": "join",
+  "source_url": "https://join.com/companies/calmarvc",
+  "careers_url": "https://join.com/companies/calmarvc"
+ },
+ {
+  "company": "Talentir",
+  "sector": "Fintech / creator payouts",
+  "source_type": "html",
+  "source_url": "https://www.talentir.com/careers",
+  "careers_url": "https://www.talentir.com/careers"
+ },
+ {
+  "company": "Lystio",
+  "sector": "Proptech",
+  "source_type": "html",
+  "source_url": "https://lystio.at/en/careers",
+  "careers_url": "https://lystio.at/en/careers"
+ },
+ {
+  "company": "Tensar",
+  "sector": "Defence / security tech",
+  "source_type": "html",
+  "source_url": "https://tensar.systems/careers/",
+  "careers_url": "https://tensar.systems/careers/"
+ },
+ {
+  "company": "Rankscale",
+  "sector": "AI / GEO (AI search visibility)",
+  "source_type": "html",
+  "source_url": "https://rankscale.ai/careers",
+  "careers_url": "https://rankscale.ai/careers"
+ },
+ {
+  "company": "Storyblok",
+  "sector": "Devtools / headless CMS",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/storyblok/jobs",
+  "careers_url": "https://www.storyblok.com/jobs"
+ },
+ {
+  "company": "Linear",
+  "sector": "Productivity / devtools",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/linear?includeCompensation=true",
+  "careers_url": "https://linear.app/careers"
+ },
+ {
+  "company": "PostHog",
+  "sector": "Devtools / analytics",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/posthog?includeCompensation=true",
+  "careers_url": "https://posthog.com/careers"
+ },
+ {
+  "company": "ElevenLabs",
+  "sector": "AI / voice",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/elevenlabs?includeCompensation=true",
+  "careers_url": "https://elevenlabs.io/careers"
+ },
+ {
+  "company": "Checkly",
+  "sector": "Devtools / monitoring",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/checkly?includeCompensation=true",
+  "careers_url": "https://www.checklyhq.com/careers/"
+ },
+ {
+  "company": "Paperpile",
+  "sector": "Research / productivity",
+  "source_type": "workable",
+  "source_url": "https://apply.workable.com/api/v1/widget/accounts/paperpile",
+  "careers_url": "https://apply.workable.com/paperpile/"
+ },
+ {
+  "company": "n8n",
+  "sector": "Devtools / AI automation",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/n8n?includeCompensation=true",
+  "careers_url": "https://jobs.ashbyhq.com/n8n"
+ },
+ {
+  "company": "Supabase",
+  "sector": "Devtools / database",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+  "careers_url": "https://supabase.com/careers"
+ },
+ {
+  "company": "RevenueCat",
+  "sector": "Mobile monetisation SaaS",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/revenuecat?includeCompensation=true",
+  "careers_url": "https://www.revenuecat.com/careers/"
+ },
+ {
+  "company": "Restream",
+  "sector": "Video / creator tools",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/restream?includeCompensation=true",
+  "careers_url": "https://restream.io/careers"
+ },
+ {
+  "company": "Railway",
+  "sector": "Devtools / cloud",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/railway?includeCompensation=true",
+  "careers_url": "https://railway.com/careers"
+ },
+ {
+  "company": "Resend",
+  "sector": "Devtools / email",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/resend?includeCompensation=true",
+  "careers_url": "https://resend.com/careers"
+ },
+ {
+  "company": "StackBlitz",
+  "sector": "Devtools / AI (Bolt.new)",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/stackblitz/jobs",
+  "careers_url": "https://stackblitz.com/careers"
+ },
+ {
+  "company": "ClickHouse",
+  "sector": "Data / databases",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/clickhouse?includeCompensation=true",
+  "careers_url": "https://clickhouse.com/company/careers"
+ },
+ {
+  "company": "Elastic",
+  "sector": "Data / search / observability",
+  "source_type": "greenhouse",
+  "source_url": "https://boards-api.greenhouse.io/v1/boards/elastic/jobs",
+  "careers_url": "https://www.elastic.co/careers"
+ },
+ {
+  "company": "GitBook",
+  "sector": "Docs / devtools",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/gitbook?includeCompensation=true",
+  "careers_url": "https://www.gitbook.com/careers"
+ },
+ {
+  "company": "Trigger.dev",
+  "sector": "Devtools / background jobs",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/triggerdev?includeCompensation=true",
+  "careers_url": "https://trigger.dev/careers"
+ },
+ {
+  "company": "Ashby",
+  "sector": "HR tech / recruiting SaaS",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/ashby?includeCompensation=true",
+  "careers_url": "https://www.ashbyhq.com/careers"
+ },
+ {
+  "company": "Hostaway",
+  "sector": "Travel / proptech SaaS",
+  "source_type": "recruitee",
+  "source_url": "https://hostaway.recruitee.com/api/offers",
+  "careers_url": "https://careers.hostaway.com/"
+ },
+ {
+  "company": "Spacelift",
+  "sector": "Devtools / infrastructure",
+  "source_type": "teamtailor",
+  "source_url": "https://careers.spacelift.io/jobs.rss",
+  "careers_url": "https://careers.spacelift.io/jobs"
+ },
+ {
+  "company": "Modash",
+  "sector": "Creator marketing / influencer SaaS",
+  "source_type": "workable",
+  "source_url": "https://apply.workable.com/api/v1/widget/accounts/modash",
+  "careers_url": "https://apply.workable.com/modash/"
+ },
+ {
+  "company": "Duvo",
+  "sector": "AI / automation",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/duvo?includeCompensation=true",
+  "careers_url": "https://jobs.ashbyhq.com/duvo"
+ },
+ {
+  "company": "Restate",
+  "sector": "Devtools / infrastructure",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/restate?includeCompensation=true",
+  "careers_url": "https://jobs.ashbyhq.com/restate"
+ },
+ {
+  "company": "Dash0",
+  "sector": "Devtools / observability",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/dash0?includeCompensation=true",
+  "careers_url": "https://www.dash0.com/careers"
+ },
+ {
+  "company": "Mindly",
+  "sector": "Health / AI companion",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/mindly?includeCompensation=true",
+  "careers_url": "https://jobs.ashbyhq.com/mindly"
+ },
+ {
+  "company": "Zapier",
+  "sector": "Productivity / AI automation",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/zapier?includeCompensation=true",
+  "careers_url": "https://zapier.com/jobs"
+ },
+ {
+  "company": "Polar",
+  "sector": "Fintech / devtools",
+  "source_type": "ashby",
+  "source_url": "https://api.ashbyhq.com/posting-api/job-board/polar?includeCompensation=true",
+  "careers_url": "https://polar.sh/careers"
+ },
+ {
+  "company": "Raycast",
+  "sector": "Productivity / design tools",
+  "source_type": "html",
+  "source_url": "https://www.raycast.com/careers",
+  "careers_url": "https://www.raycast.com/careers"
+ }
+]

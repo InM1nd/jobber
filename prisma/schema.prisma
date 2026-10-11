@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  supabaseId        String?   @unique
+  telegramId        String?   @unique
+  telegramUsername  String?
+  invitedBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  profile           Profile?
+  apiKeys           ApiKey[]
+  matches           JobMatch[]
+  applications      Application[]
+  linkCodes         LinkCode[]
+  
+  @@index([email])
+  @@index([telegramId])
+}
+
+model Profile {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  cvText            String?   @db.Text
+  cvFileName        String?
+  skills            String[]
+  
+  // Job filters
+  location          String?
+  remoteOnly        Boolean   @default(false)
+  countryEligible   String?
+  languages         String[]
+  salaryMin         Int?
+  salaryMax         Int?
+  stackKeywords     String[]
+  skillGaps         String[]
+  
+  // Writing rules for cover letters
+  writingRules      String?   @db.Text
+  
+  // Company watchlist
+  watchedCompanies  String[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model ApiKey {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  provider          String    // "openrouter", "openai", "anthropic", "gemini", "xai"
+  encryptedKey      String    @db.Text
+  iv                String
+  authTag           String
+  
+  isActive          Boolean   @default(true)
+  expiresAt         DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([userId])
+}
+
+model JobSource {
+  id                String    @id @default(uuid())
+  company           String
+  sector            String?
+  sourceType        String    // "greenhouse", "lever", "ashby", "workable", etc.
+  sourceUrl         String
+  careersUrl        String?
+  isActive          Boolean   @default(true)
+  
+  lastFetchedAt     DateTime?
+  lastSuccessAt     DateTime?
+  lastError         String?
+  
+  jobs              Job[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@unique([company, sourceUrl])
+  @@index([isActive])
+}
+
+model Job {
+  id                String    @id @default(uuid())
+  sourceId          String
+  source            JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  
+  externalId        String    // ID from the job board
+  title             String
+  location          String?
+  remote            Boolean   @default(false)
+  description       String    @db.Text
+  requirements      String?   @db.Text
+  salaryMin         Int?
+  salaryMax         Int?
+  currency          String?
+  postedAt          DateTime?
+  url               String
+  dedupeKey         String?
+
+  isActive          Boolean   @default(true)
+  
+  matches           JobMatch[]
+  applications      Application[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@unique([sourceId, externalId])
+  @@index([isActive])
+  @@index([postedAt])
+  @@index([dedupeKey])
+}
+
+model LinkCode {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model JobMatch {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId             String
+  job               Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  score             Int       // 0-100
+  reasons           String[]
+  redFlags          String[]
+  priority          String    // "high", "medium", "low"
+  
+  coverLetter       String?   @db.Text
+  
+  notifiedAt        DateTime?
+  viewedAt          DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@unique([userId, jobId])
+  @@index([userId, score])
+}
+
+model Application {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId             String?
+  job               Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  
+  company           String
+  role              String
+  url               String?
+  
+  status            String    @default("to_apply") // "to_apply", "applied", "on_hold", "rejected", "interview", "offer", "skip"
+  
+  appliedAt         DateTime?
+  followUpAt        DateTime?
+  followUpSent      Boolean   @default(false)
+  
+  contact           String?
+  salaryExpectation String?
+  notes             String?   @db.Text
+  
+  coverLetter       String?   @db.Text
+  cvVersion         String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([userId, status])
+  @@index([followUpAt])
+}
+
+model InviteCode {
+  id                String    @id @default(uuid())
+  code              String    @unique
+  createdBy         String    // admin user ID
+  usedBy            String?
+  usedAt            DateTime?
+  expiresAt         DateTime?
+  
+  createdAt         DateTime  @default(now())
+  
+  @@index([code])
+}
+
+model CronJob {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  lastRunAt         DateTime?
+  lastStatus        String?   // "success", "error"
+  lastError         String?   @db.Text
+  currentBatch      Int       @default(0)
+  totalBatches      Int       @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
