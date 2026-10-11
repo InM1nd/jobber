@@ -13,10 +13,12 @@ import { cn } from '@/lib/utils';
 import { connection } from 'next/server';
 import { countSkipped, getMatches, getProfile, getSkipped, requireUser, skippedReasons } from '@/lib/data/service';
 import { isDemoMode } from '@/lib/demo/mode';
+import { MatchDetail } from '@/components/app/match-detail';
+import { getPrisma } from '@/lib/db/prisma';
 
 export const instant = false;
 
-export default async function MatchesPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+export default async function MatchesPage({ searchParams }: { searchParams: Promise<{ view?: string; m?: string }> }) {
   await connection();
   const user = await requireUser();
   if (!user) return null;
@@ -34,7 +36,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
     const [skipped, reasons] = await Promise.all([getSkipped(user.id), skippedReasons(user.id)]);
     return (
       <div>
-        <PageHeader eyebrow={<Link href="/dashboard/matches" className="text-accent">← Matches</Link>} title="Skipped by filters" subtitle={`${skippedCount} jobs didn’t pass your rules, so no AI was spent on them. Disagree? Score one anyway.`} />
+        <PageHeader eyebrow={<Link href="/dashboard/matches" className="text-accent">← Matches</Link>} title="Skipped by filters" subtitle={`${skippedCount} jobs were ruled out or ranked below the AI cut, so no AI was spent on them. Disagree? Score one anyway.`} />
         <SkippedList items={skipped} reasons={reasons} />
       </div>
     );
@@ -66,8 +68,16 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const greeting = hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
   const headline = newCount || matches.length;
 
+  const ordered = groups.flatMap((g) => g.items);
+  const selected = ordered.find((m) => m.id === query.m) || ordered[0] || null;
+  const cvs = selected && !demo
+    ? await getPrisma().cv.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }, select: { id: true, label: true } })
+    : [];
+  const sendable = matches.filter((m) => fitOf(m.score) === 'strong' || fitOf(m.score) === 'good').length;
+
   return (
-    <div>
+    <div data-wide className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(440px,1.08fr)] lg:items-start lg:gap-8">
+    <div className="min-w-0">
       <PageHeader
         eyebrow={today}
         eyebrowRight={matches.length ? <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-accent" />{strongCount} strong</span> : undefined}
@@ -80,7 +90,24 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       {!isDemoMode() && <AddJobLink />}
 
       {matches.length > 0 && (
-        <div className="relative mb-9 pt-3">
+        <div className="mb-6 hidden items-center gap-5 rounded-[var(--radius-card)] border border-line px-5 py-3.5 lg:flex">
+          <span className="text-[30px] font-semibold leading-none tracking-[-0.05em] tabular-nums">{headline}</span>
+          <span className="text-[13px] leading-tight text-muted">{newCount ? 'new' : 'roles'}<br />{newCount ? 'today' : 'scored'}</span>
+          <span className="h-8 w-px bg-line" aria-hidden />
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px]">
+            <span className="inline-flex items-center gap-1.5"><FitDot fit="strong" />{strongCount} strong</span>
+            <span className="text-muted">{sendable} worth applying</span>
+            <span className="text-muted">{matches.length} total</span>
+            {skippedCount > 0 && <Link href="/dashboard/matches?view=skipped" className="text-muted underline-offset-2 hover:text-fg hover:underline">{skippedCount} skipped</Link>}
+          </span>
+          {groups[0].items[0] && (
+            <span className="ml-auto truncate text-[13px] text-muted">Top <span className="font-semibold text-accent">{groups[0].items[0].score}</span> {groups[0].items[0].job.company}</span>
+          )}
+        </div>
+      )}
+
+      {matches.length > 0 && (
+        <div className="relative mb-9 pt-3 lg:hidden">
           <div className="absolute inset-x-5 top-0 h-10 rounded-[var(--radius-card)] border border-line bg-bg" aria-hidden />
           <div className="relative rounded-[var(--radius-card)] border border-line bg-bg px-6 py-6">
             <div className="flex items-end gap-4">
@@ -124,8 +151,13 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                 <span className="inline-flex items-center gap-2"><FitDot fit={fit} />{FIT_LABEL[fit]}</span>
                 <span className="tabular-nums">{items.length}</span>
               </h2>
-              <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">
+              <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line lg:hidden">
                 {items.map((match) => <MatchRow key={match.id} match={match} now={now} place={place} />)}
+              </div>
+              <div className="hidden divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line lg:block">
+                {items.map((match) => (
+                  <MatchRow key={match.id} match={match} now={now} place={place} compact href={`/dashboard/matches?m=${match.id}`} selected={match.id === selected?.id} />
+                ))}
               </div>
             </section>
           ),
@@ -142,6 +174,12 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
           <ChevronRight className="size-4 text-subtle" />
         </Link>
       )}
+    </div>
+    {selected && (
+      <aside className="sticky top-6 hidden max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto rounded-[var(--radius-card)] border border-line p-5 lg:block" aria-label="Selected match">
+        <MatchDetail match={selected} profile={profile} cvs={cvs} />
+      </aside>
+    )}
     </div>
   );
 }

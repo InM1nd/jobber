@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             Demo mode · sample data
           </div>
         )}
-        <main className="mx-auto max-w-lg animate-in pb-[calc(112px+var(--safe-bottom))] pt-[calc(20px+var(--safe-top))] px-5 md:max-w-2xl md:px-10 md:pb-16 md:pt-14">
+        <main className="mx-auto max-w-lg animate-in pb-[calc(112px+var(--safe-bottom))] pt-[calc(20px+var(--safe-top))] px-5 md:max-w-2xl md:px-10 md:pb-16 md:pt-14 lg:has-[[data-wide]]:max-w-[1500px] lg:has-[[data-wide]]:px-8 lg:has-[[data-wide]]:pt-8">
           {children}
         </main>
       </div>

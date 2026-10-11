@@ -62,7 +62,7 @@ async function ownerScraperSources(userId: string, keywords: string[], city?: st
   const user = await getPrisma().user.findUnique({ where: { id: userId }, select: { telegramId: true } });
   if (!scrapersEnabledFor(user)) return [];
   // Normalised so identical keyword+city queries map to ONE shared source row across users.
-  const where = (city?.trim() || 'Wien').toLowerCase().replace(/^vienna$/, 'wien');
+  const where = (city?.split(',')[0]?.trim() || 'Wien').toLowerCase().replace(/^vienna$/, 'wien');
   const kws = [...new Set(keywords.map((k) => k.trim().toLowerCase()).filter(Boolean))];
   const specs = kws.slice(0, 3).flatMap((k) =>
     PLATFORMS.filter((p) => p.status === 'enabled').map((p) => ({

@@ -7,6 +7,8 @@ import { BudgetExhaustedError } from '@/lib/ai/budget';
 import { QuotaExceededError, quotaAllowance } from '@/lib/ai/quota';
 import { SCORE_BATCH } from '@/lib/ai/limiter';
 import { getGeminiKey } from '@/lib/data/keys';
+import { scrapeDetail } from '@/lib/scrapers';
+import { fetchByHost } from './hosts';
 import { priorityFromScore } from '@/lib/llm/matcher';
 import {
   RUBRIC_SYSTEM, combine, languageScore, locationScore, parseAiScores, salaryScore, seniorityScore, type SubScores,
@@ -90,7 +92,7 @@ ${cvs.map((c, i) => cvDigest(c, i, per)).join('\n\n')}
 
 JOBS
 ${jobs
-  .map(({ key, job }) => `<${key}> ${job.title} — ${job.company || job.source.company} (${job.location || (job.remote ? 'Remote' : 'n/a')})\n${job.description.replace(/\s+/g, ' ').slice(0, 1500)}`)
+  .map(({ key, job }) => `<${key}> ${job.title} — ${job.company || job.source.company} (${job.location || (job.remote ? 'Remote' : 'n/a')})\n${job.description.replace(/\s+/g, ' ').slice(0, 1200)}`)
   .join('\n\n')}
 
 Return {"results":[{"id":"<job id>","roleFit":0-100,"skills":0-100,"cv":"letter of best CV","reasons":["2 short concrete reasons"],"redFlags":["0-2 concrete concerns, e.g. missing must-have"]}]} with one entry per job.`;
@@ -99,17 +101,26 @@ Return {"results":[{"id":"<job id>","roleFit":0-100,"skills":0-100,"cv":"letter 
 export interface ScoreBatchResult {
   filtered: number;
   scored: number;
-  /** passed the filter but still waiting for an AI score (quota/rate/time) */
+  /** good pre-score, still waiting for an AI score (quota/rate/time/per-run cap) */
   queued: number;
+  /** AI requests made */
+  calls: number;
   stoppedBy: 'quota' | 'budget' | 'rate' | 'time' | 'no-ai' | null;
 }
+
+/** Skipped-list marker for jobs that passed the rules and wait for an AI score. */
+export const QUEUED_FLAG = 'Queued for AI scoring';
+/** Minimum deterministic pre-score to be worth an AI request. */
+export const PRE_MIN = Number(process.env.AI_PRESCORE_MIN || 40);
+/** Max jobs sent to AI per search run (2 requests at SCORE_BATCH=12). */
+export const TOP_PER_RUN = Number(process.env.AI_TOP_CANDIDATES || 24);
 
 /** Scores up to SCORE_BATCH jobs in ONE AI request and stores the matches. */
 export async function scoreJobs(
   userId: string,
   profile: Profile,
   cvs: CvLite[],
-  items: Array<{ job: PoolJob; tier: LocationTier }>,
+  items: Array<{ job: PoolJob; tier: LocationTier; preScore?: number | null }>,
 ) {
   const prisma = getPrisma();
   const keyed = items.map((it, i) => ({ ...it, key: `j${i + 1}` }));
@@ -118,12 +129,19 @@ export async function scoreJobs(
     system: RUBRIC_SYSTEM,
     json: true,
     temperature: 0.1,
-    maxTokens: 400 + 260 * items.length,
+    maxTokens: 400 + 230 * items.length,
     maxWaitMs: 8_000,
   });
-  const scores = new Map(parseAiScores(parseJsonLoose(reply)).map((s) => [s.id.replace(/[<>]/g, ''), s]));
+  let parsed: unknown = null;
+  try {
+    parsed = parseJsonLoose(reply);
+  } catch {
+    parsed = salvageResults(reply); // truncated/invalid JSON → keep the complete entries, rest stays queued
+  }
+  const scores = new Map(parseAiScores(parsed).map((s) => [s.id.replace(/[<>\s]/g, ''), s]));
+  if (scores.size < items.length) console.warn(`AI returned ${scores.size}/${items.length} valid scores (reply ${reply.length} chars): ${reply.slice(-160).replace(/\s+/g, ' ')}`);
   let stored = 0;
-  for (const { key, job, tier } of keyed) {
+  for (const { key, job, tier, preScore } of keyed) {
     const ai = scores.get(key);
     if (!ai) continue; // stays unscored → retried next time
     const sub: SubScores = {
@@ -146,6 +164,7 @@ export async function scoreJobs(
       cvId: cv?.id || null,
       locationTier: tier,
       subScores: sub,
+      preScore: preScore ?? null,
     };
     await prisma.jobMatch.upsert({
       where: { userId_jobId: { userId, jobId: job.id } },
@@ -157,59 +176,142 @@ export async function scoreJobs(
   return stored;
 }
 
+/** Pulls complete {"id":…} objects out of a truncated or malformed JSON reply. */
+export function salvageResults(reply: string) {
+  const out: unknown[] = [];
+  for (const m of reply.matchAll(/\{[^{}]*"id"\s*:[^{}]*\}/g)) {
+    try {
+      out.push(JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1')));
+    } catch {
+      /* skip broken entry */
+    }
+  }
+  return { results: out };
+}
+
+/** Fetches job pages for thin scraped candidates (per-host polite, parallel across hosts). Returns the ones updated. */
+async function enrichThin(list: Candidate[], deadline: number): Promise<Candidate[]> {
+  if (process.env.OWNER_SCRAPERS !== 'true') return [];
+  const thin = list.filter((c) => c.job.source.sourceType.startsWith('scrape:') && c.job.description.trim().length < 300 && c.job.url);
+  if (!thin.length) return [];
+  const updated: Candidate[] = [];
+  await fetchByHost(
+    thin.slice(0, Number(process.env.SCRAPER_DETAILS_PER_RUN || 12)),
+    (c) => c.job.source.sourceType,
+    async (c) => {
+      const text = await scrapeDetail(c.job.source.sourceType.replace(/^scrape:/, ''), c.job.url!).catch(() => '');
+      if (text.length <= c.job.description.length) return;
+      c.job = { ...c.job, description: text };
+      await getPrisma().job.update({ where: { id: c.job.id }, data: { description: text } });
+      updated.push(c);
+    },
+    deadline,
+  );
+  return updated;
+}
+
+type Candidate = { job: PoolJob; tier: LocationTier; preScore: number };
+
 /**
- * Pre-filters every unseen job in the user's pool (free), then scores the most
- * relevant survivors (local first) in batches of SCORE_BATCH per AI request,
+ * Rules (free) drop clear mismatches; a deterministic pre-score ranks the rest.
+ * Only the top candidates above PRE_MIN go to AI (SCORE_BATCH per request),
  * within the user's daily quota, the shared daily budget and a deadline.
+ * Low pre-scores and not-yet-scored candidates are visible in Skipped
+ * ("Score anyway"); queued ones are picked up by later runs/cron.
  */
 export async function scoreUserBatch(
   userId: string,
-  opts: { maxCalls: number; deadline: number; concurrency?: number },
+  opts: { maxCalls: number; deadline: number; concurrency?: number; maxJobs?: number; minCandidates?: number },
 ): Promise<ScoreBatchResult> {
   const prisma = getPrisma();
+  const empty: ScoreBatchResult = { filtered: 0, scored: 0, queued: 0, calls: 0, stoppedBy: null };
   const profile = await prisma.profile.findUnique({ where: { userId } });
-  if (!profile) return { filtered: 0, scored: 0, queued: 0, stoppedBy: null };
+  if (!profile) return empty;
   const where = poolWhere(profile);
-  if (!where.OR.length) return { filtered: 0, scored: 0, queued: 0, stoppedBy: null };
+  if (!where.OR.length) return empty;
 
-  const unseen = await prisma.job.findMany({
-    where: { ...where, matches: { none: { userId } } },
-    include: { source: true },
-    orderBy: { createdAt: 'desc' },
-    take: 600,
-  });
+  const [unseen, waiting] = await Promise.all([
+    prisma.job.findMany({ where: { ...where, matches: { none: { userId } } }, include: { source: true }, orderBy: { createdAt: 'desc' }, take: 800 }),
+    prisma.jobMatch.findMany({ where: { userId, filtered: true, redFlags: { has: QUEUED_FLAG } }, include: { job: { include: { source: true } } }, take: 300 }),
+  ]);
 
   const filterProfile = profileForFilter(profile);
-  const passing: Array<{ job: PoolJob; tier: LocationTier; relevance: number }> = [];
-  const rejected: Array<{ jobId: string; reason: string; tier: LocationTier }> = [];
-  for (const job of unseen) {
+  const candidates: Candidate[] = [];
+  const rejected: Array<{ jobId: string; reason: string; tier: LocationTier; preScore?: number }> = [];
+  for (const job of [...unseen, ...waiting.map((w) => w.job)]) {
     const r = prefilterJob(filterProfile, { ...job, company: job.company || job.source.company });
-    if (r.pass) passing.push({ job, tier: r.tier, relevance: r.relevance + (job.company ? 0 : 2) });
-    else rejected.push({ jobId: job.id, reason: r.reason || 'Filtered', tier: r.tier });
+    if (!r.pass) rejected.push({ jobId: job.id, reason: r.reason || 'Filtered', tier: r.tier });
+    else if ((r.preScore ?? 0) < PRE_MIN) rejected.push({ jobId: job.id, reason: `Low pre-score (${r.preScore})`, tier: r.tier, preScore: r.preScore });
+    else candidates.push({ job, tier: r.tier, preScore: r.preScore! });
   }
+  candidates.sort((a, b) => b.preScore - a.preScore);
+  const rows = (list: typeof rejected) =>
+    list.map((r) => ({ userId, jobId: r.jobId, score: 0, reasons: [], redFlags: [r.reason], priority: 'low', filtered: true, locationTier: r.tier, preScore: r.preScore ?? null }));
   if (rejected.length) {
+    await prisma.jobMatch.createMany({ data: rows(rejected), skipDuplicates: true });
+    const waitingIds = new Set(waiting.map((w) => w.jobId));
+    const changed = rejected.filter((r) => waitingIds.has(r.jobId));
+    for (const r of changed) {
+      await prisma.jobMatch.update({ where: { userId_jobId: { userId, jobId: r.jobId } }, data: { redFlags: [r.reason], preScore: r.preScore ?? null } });
+    }
+  }
+  let newlyRejectedLate = 0;
+  const newlyRejected = rejected.length - rejected.filter((r) => waiting.some((w) => w.jobId === r.jobId)).length;
+
+  /** Leaves good-but-unscored candidates visible in Skipped and queued for later. */
+  const park = async (list: Candidate[]) => {
+    const fresh = list.filter((c) => !waiting.some((w) => w.jobId === c.job.id));
+    if (!fresh.length) return;
     await prisma.jobMatch.createMany({
-      data: rejected.map((r) => ({
-        userId, jobId: r.jobId, score: 0, reasons: [], redFlags: [r.reason], priority: 'low', filtered: true, locationTier: r.tier,
-      })),
+      data: fresh.map((c) => ({ userId, jobId: c.job.id, score: 0, reasons: [], redFlags: [QUEUED_FLAG], priority: 'low', filtered: true, locationTier: c.tier, preScore: c.preScore })),
       skipDuplicates: true,
     });
+  };
+
+  const cap = Math.max(0, opts.maxJobs ?? TOP_PER_RUN);
+  // Scraped list entries carry only title/company/city: fetch the job page for the ones about to be scored, then re-check the rules.
+  const enriched = await enrichThin(candidates.slice(0, cap), Math.min(opts.deadline - 12_000, Date.now() + (cap <= SCORE_BATCH ? 8_000 : 15_000)));
+  for (const c of enriched) {
+    const r = prefilterJob(filterProfile, { ...c.job, company: c.job.company || c.job.source.company });
+    const i = candidates.indexOf(c);
+    if (!r.pass || (r.preScore ?? 0) < PRE_MIN) {
+      candidates.splice(i, 1);
+      const reason = r.pass ? `Low pre-score (${r.preScore})` : r.reason || 'Filtered';
+      await prisma.jobMatch.upsert({
+        where: { userId_jobId: { userId, jobId: c.job.id } },
+        create: { userId, jobId: c.job.id, score: 0, reasons: [], redFlags: [reason], priority: 'low', filtered: true, locationTier: r.tier, preScore: r.preScore ?? null },
+        update: { redFlags: [reason], preScore: r.preScore ?? null },
+      });
+      newlyRejectedLate++;
+    } else c.preScore = r.preScore!;
   }
-  passing.sort((a, b) => b.relevance - a.relevance);
+  candidates.sort((a, b) => b.preScore - a.preScore);
+  const take = candidates.slice(0, cap);
+  const result = (scored: number, calls: number, stoppedBy: ScoreBatchResult['stoppedBy']): ScoreBatchResult => ({
+    filtered: newlyRejected + newlyRejectedLate, scored, calls, queued: Math.max(0, candidates.length - scored), stoppedBy,
+  });
+  if (!take.length || take.length < (opts.minCandidates ?? 0)) {
+    if (!opts.minCandidates) await park(candidates);
+    return result(0, 0, null);
+  }
 
   const ownKey = Boolean(await getGeminiKey(userId));
-  if (!ownKey && !hasSharedAi()) return { filtered: rejected.length, scored: 0, queued: passing.length, stoppedBy: 'no-ai' };
-  if (!ownKey && (await sharedBackoffUntil())) return { filtered: rejected.length, scored: 0, queued: passing.length, stoppedBy: 'rate' };
+  if (!ownKey && !hasSharedAi()) { await park(candidates); return result(0, 0, 'no-ai'); }
+  if (!ownKey && (await sharedBackoffUntil())) { await park(candidates); return result(0, 0, 'rate'); }
 
   const cvs = await userCvs(userId, profile);
-  const wantCalls = Math.min(opts.maxCalls, Math.ceil(passing.length / SCORE_BATCH));
+  const wantCalls = Math.min(opts.maxCalls, Math.ceil(take.length / SCORE_BATCH));
   const calls = await quotaAllowance(userId, 'score', wantCalls, ownKey);
-  const batches: Array<typeof passing> = [];
-  for (let i = 0; i < calls; i++) batches.push(passing.slice(i * SCORE_BATCH, (i + 1) * SCORE_BATCH));
+  // Spread evenly so 13 jobs become 7+6, not 12+1.
+  const per = calls ? Math.ceil(Math.min(take.length, calls * SCORE_BATCH) / calls) : 0;
+  const batches: Candidate[][] = [];
+  for (let i = 0; i < calls; i++) batches.push(take.slice(i * per, (i + 1) * per));
   let stoppedBy: ScoreBatchResult['stoppedBy'] = calls < wantCalls ? 'quota' : null;
   let scored = 0;
+  let made = 0;
   let index = 0;
   let halt = false;
+  const done = new Set<string>();
 
   async function worker() {
     while (!halt && index < batches.length) {
@@ -219,10 +321,13 @@ export async function scoreUserBatch(
       }
       const batch = batches[index++];
       try {
-        scored += await scoreJobs(userId, profile!, cvs, batch);
+        made++;
+        const n = await scoreJobs(userId, profile!, cvs, batch);
+        scored += n;
+        if (n) batch.forEach((c) => done.add(c.job.id));
       } catch (error) {
-        if (error instanceof QuotaExceededError) { halt = true; stoppedBy = 'quota'; return; }
-        if (error instanceof BudgetExhaustedError) { halt = true; stoppedBy = 'budget'; return; }
+        if (error instanceof QuotaExceededError) { made--; halt = true; stoppedBy = 'quota'; return; }
+        if (error instanceof BudgetExhaustedError) { made--; halt = true; stoppedBy = 'budget'; return; }
         if (error instanceof AiUnavailableError) {
           console.warn('scoring paused:', error.message, error.retryAfterMs ?? '');
           halt = true;
@@ -235,8 +340,8 @@ export async function scoreUserBatch(
     }
   }
   await Promise.all(Array.from({ length: opts.concurrency ?? 2 }, worker));
-
-  return { filtered: rejected.length, scored, queued: Math.max(0, passing.length - scored), stoppedBy };
+  if (!opts.minCandidates || stoppedBy) await park(candidates.filter((c) => !done.has(c.job.id)));
+  return result(scored, made, stoppedBy);
 }
 
 /** "Score anyway" for a job the filter skipped. One AI request. */

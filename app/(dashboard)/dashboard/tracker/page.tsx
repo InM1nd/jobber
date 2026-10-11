@@ -9,7 +9,7 @@ export default async function TrackerPage() {
   if (!user) return null;
   const applications = await getApplications(user.id);
   return (
-    <div>
+    <div data-wide>
       <PageHeader title="Tracker" subtitle={`${applications.length} application${applications.length === 1 ? '' : 's'}`} />
       <TrackerBoard applications={applications} />
     </div>

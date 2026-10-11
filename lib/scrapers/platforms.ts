@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import type { RawJob } from '@/lib/sources/types';
 import { jobFromJsonLd, pageText } from '@/lib/jobs/extract';
+import { bestRoleSimilarity } from '@/lib/jobs/prefilter';
 import { politeGet, scrubPersonal, slug } from './polite';
 
 /**
@@ -19,7 +20,9 @@ export interface Platform {
   detail?: (html: string) => string;
 }
 
-const DETAILS_PER_RUN = Number(process.env.SCRAPER_DETAILS_PER_RUN || 6);
+/** Titles that look like the searched kind of role (tech keywords) — only these get a detail page. */
+const ROLE_TITLE = /front[\s-]?end|full[\s-]?stack|web|react|next|typescript|javascript|software|developer|engineer|entwickler|programmier/i;
+const DETAILS_PER_RUN = Number(process.env.SCRAPER_DETAILS_PER_RUN || 4);
 const textOf = ($: cheerio.CheerioAPI, el: cheerio.Cheerio<any>) => {
   el.find('style,script').remove();
   return el.text().replace(/\s+/g, ' ').trim();
@@ -146,14 +149,26 @@ export const PLATFORMS: Platform[] = [
 
 const PERSONAL_SAFE = (j: RawJob): RawJob => ({ ...j, description: scrubPersonal(j.description) });
 
-/** One list page + a few detail pages (for descriptions/language). */
+/** Description for one job page (public). Used lazily, only for jobs that are about to be AI-scored. */
+export async function scrapeDetail(id: string, url: string): Promise<string> {
+  const p = PLATFORMS.find((x) => x.id === id);
+  if (!p?.detail || p.status !== 'enabled') return '';
+  return scrubPersonal(p.detail(await politeGet(p.id, url))).slice(0, 15000);
+}
+
+/** One list page + (optionally) a few detail pages. Search runs pass details: 0 and enrich lazily. */
 export async function scrapePlatform(id: string, keyword: string, city: string, opts: { details?: number } = {}): Promise<RawJob[]> {
   const p = PLATFORMS.find((x) => x.id === id);
   if (!p || p.status !== 'enabled' || !p.searchUrl || !p.parseList) return [];
   const url = p.searchUrl(keyword, city);
   const jobs = p.parseList(await politeGet(p.id, url), url);
-  const n = Math.min(opts.details ?? DETAILS_PER_RUN, jobs.length);
-  for (const job of jobs.slice(0, n)) {
+  // Detail pages only for titles that look like the searched role (cheap check; saves 2.5s per skipped page).
+  const rank = (title: string) => bestRoleSimilarity([keyword], title) + (ROLE_TITLE.test(title) ? 0.5 : 0);
+  const thin = jobs.filter((j) => j.description.trim().length < 300);
+  const ranked = thin.map((j) => ({ j, r: rank(j.title) })).filter((x) => x.r > 0).sort((a, b) => b.r - a.r).map((x) => x.j);
+  const wanted = ranked.length ? ranked : thin;
+  const n = Math.min(opts.details ?? DETAILS_PER_RUN, wanted.length);
+  for (const job of wanted.slice(0, n)) {
     if (!p.detail) break;
     try {
       const text = p.detail(await politeGet(p.id, job.url));

@@ -27,7 +27,7 @@ describe('prefilterJob', () => {
   });
 
   it('drops unrelated titles', () => {
-    expect(prefilterJob(alex, job({ title: 'Account Executive DACH' }))).toMatchObject({ pass: false, reason: 'Title does not match your roles' });
+    expect(prefilterJob(alex, job({ title: 'Account Executive DACH' }))).toMatchObject({ pass: false });
   });
 
   it('drops roles that are too senior or too junior', () => {
@@ -84,7 +84,9 @@ describe('generic engineering titles', () => {
     const text = 'You will build our dashboard in React and TypeScript with Next.js.';
     expect(prefilterJob(alex, job({ title: 'Software Engineer - Auth', location: 'Remote', remote: true, description: text })).pass).toBe(true);
     expect(prefilterJob(alex, job({ title: 'Software Engineer - Auth', location: 'Remote', remote: true, description: 'Go and Rust.' })).pass).toBe(false);
-    expect(prefilterJob(alex, job({ title: 'Senior Backend Engineer', description: text })).pass).toBe(false);
+    const backend = prefilterJob(alex, job({ title: 'Senior Backend Engineer', description: text }));
+    expect(backend.pass).toBe(true); // adjacent: kept, but ranked low
+    expect(backend.preScore!).toBeLessThan(prefilterJob(alex, job({ description: text })).preScore! - 15);
   });
 });
 

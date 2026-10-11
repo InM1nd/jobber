@@ -14,11 +14,14 @@ export interface RunView {
   filtered: number;
   scored: number;
   queued: number;
+  aiCalls?: number;
+  firstMatchAt?: string | null;
   note: string | null;
 }
 
 export function runLabel(run: RunView) {
   if (run.status === 'fetching') {
+    if (run.scored) return `${run.scored} matches ready · still searching (${run.jobsFound} found)`;
     return run.jobsFound ? `Finding jobs… ${run.jobsFound} found` : 'Finding jobs…';
   }
   if (run.status === 'scoring') return `${run.jobsFound} found · scoring… ${run.scored} scored`;
@@ -63,6 +66,8 @@ export function SearchProgress({ initial, onDone, className }: { initial: RunVie
           continue;
         }
         failures = 0;
+        // Progressive results: show new matches as soon as each AI batch lands.
+        if (body.run.scored > current.scored) router.refresh();
         current = body.run;
         setRun(current);
       }
@@ -90,7 +95,7 @@ export function SearchProgress({ initial, onDone, className }: { initial: RunVie
         <div className="min-w-0 flex-1">
           <p className="text-[15.5px] font-medium tracking-[-0.01em]">{done ? 'Search complete' : runLabel(run)}</p>
           <p className="truncate text-[12.5px] text-muted">
-            {done ? runLabel(run) : run.status === 'fetching' ? `Checking ${run.sourcesDone}/${run.sourcesTotal} job boards` : 'Only jobs that pass the filters are scored by AI'}
+            {done ? runLabel(run) : run.status === 'fetching' ? `Checking ${run.sourcesDone}/${run.sourcesTotal} job boards` : 'AI compares the best-ranked jobs with your CVs'}
           </p>
         </div>
       </div>

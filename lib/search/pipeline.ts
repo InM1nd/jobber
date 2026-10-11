@@ -4,9 +4,16 @@ import { ingestSource } from '@/lib/jobs/ingest';
 import { boardUrl, type SeedCompany } from '@/lib/companies/seed';
 import { LOCAL_BOARDS, boardsFor, keywordSourceUrl, type KeywordBoard } from '@/lib/sources/boards';
 import { sendTelegramMessage } from '@/lib/telegram/bot';
-import { poolWhere, scoreUserBatch } from './score';
+import { poolWhere, scoreUserBatch, TOP_PER_RUN } from './score';
+import { SCORE_BATCH } from '@/lib/ai/limiter';
+import { fetchByHost, hostKey } from './hosts';
+export { fetchByHost, hostKey };
 
 const FRESH_MS = 6 * 60 * 60 * 1000;
+/** Sources per run: targeted scrapers/boards and city companies come first in profile.sourceIds. */
+const MAX_RUN_SOURCES = Number(process.env.MAX_RUN_SOURCES || 30);
+/** The first fetch step stops early so the first AI batch (and first matches) arrive fast. */
+const FIRST_STEP_MS = Number(process.env.FIRST_STEP_MS || 12_000);
 
 export interface SourceSpec {
   company: string;
@@ -46,7 +53,8 @@ export function sourceSpecs(
     ...kw.flatMap((k) => local.map((b) => board(b, k))),
     ...sorted.filter((c) => rank(c) < 2).map(company),
     ...sorted.filter((c) => rank(c) === 2).map(company),
-    ...kw.flatMap((k) => remote.map((b) => board(b, k))),
+    // Remote feeds are broad: two keywords cover them (the third mostly returns duplicates).
+    ...kw.slice(0, 2).flatMap((k) => remote.map((b) => board(b, k))),
   ];
 }
 
@@ -76,7 +84,7 @@ export async function startSearchRun(userId: string) {
   const watched = profile?.watchedCompanies.length
     ? await prisma.jobSource.findMany({ where: { company: { in: profile.watchedCompanies }, isActive: true }, select: { id: true } })
     : [];
-  const sourceIds = [...new Set([...(profile?.sourceIds || []), ...watched.map((s) => s.id)])];
+  const sourceIds = [...new Set([...(profile?.sourceIds || []), ...watched.map((s) => s.id)])].slice(0, MAX_RUN_SOURCES);
   return prisma.searchRun.create({ data: { userId, sourceIds, status: sourceIds.length ? 'fetching' : 'done' } });
 }
 
@@ -95,6 +103,8 @@ export function runView(run: SearchRun | null) {
     filtered: run.filtered,
     scored: run.scored,
     queued: run.queued,
+    aiCalls: run.aiCalls,
+    firstMatchAt: run.firstMatchAt?.toISOString() ?? null,
     note: run.note,
   };
 }
@@ -111,49 +121,80 @@ export async function stepSearchRun(userId: string, runId: string, budgetMs = 35
   if (!run) return null;
   if (run.status === 'done' || run.status === 'error') return run;
 
+  const noteFor = (stoppedBy: string | null) =>
+    stoppedBy === 'quota'
+      ? 'Your daily AI limit is used — the rest is scored tomorrow (or add your own free Gemini key in Settings).'
+      : stoppedBy === 'budget'
+        ? 'The shared AI used today’s free quota — the rest is scored tomorrow.'
+        : stoppedBy === 'rate'
+          ? 'The shared AI is busy — the rest will be scored in the next run.'
+          : stoppedBy === 'no-ai'
+            ? 'AI is not configured on this server.'
+            : null;
+
   if (run.status === 'fetching') {
-    const batch = run.sourceIds.slice(run.sourcesDone, run.sourcesDone + 4);
-    const sources = await prisma.jobSource.findMany({ where: { id: { in: batch } } });
-    await Promise.all(
-      sources.map((s) =>
-        s.lastSuccessAt && Date.now() - s.lastSuccessAt.getTime() < FRESH_MS ? Promise.resolve(0) : ingestSource(s),
-      ),
+    const first = run.doneSourceIds.length === 0;
+    const deadline = started + (first ? FIRST_STEP_MS : Math.max(10_000, budgetMs - 10_000));
+    const remaining = run.sourceIds.filter((id) => !run!.doneSourceIds.includes(id));
+    const sources = await prisma.jobSource.findMany({ where: { id: { in: remaining } } });
+    const order = new Map(remaining.map((id, i) => [id, i]));
+    sources.sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+    const fetched = await fetchByHost(
+      sources,
+      hostKey,
+      (s) => (s.lastSuccessAt && Date.now() - s.lastSuccessAt.getTime() < FRESH_MS ? Promise.resolve(0) : ingestSource(s)),
+      deadline,
     );
-    const sourcesDone = Math.min(run.sourceIds.length, run.sourcesDone + batch.length);
+    const doneSourceIds = [...run.doneSourceIds, ...fetched.map((s) => s.id)];
+    const allFetched = doneSourceIds.length >= run.sourceIds.length || !sources.length;
     const profile = await prisma.profile.findUnique({ where: { userId } });
     const jobsFound = profile ? await prisma.job.count({ where: poolWhere(profile) }) : 0;
+    // Progressive: score one batch of the best candidates found so far, while the rest is still fetching.
+    let early = { filtered: 0, scored: 0, queued: 0, calls: 0, stoppedBy: null as string | null };
+    if (!allFetched && run.scored === 0 && !run.note) {
+      early = await scoreUserBatch(userId, { maxCalls: 1, deadline: started + budgetMs, concurrency: 1, maxJobs: SCORE_BATCH, minCandidates: 6 });
+    }
     run = await prisma.searchRun.update({
       where: { id: run.id },
-      data: { sourcesDone, jobsFound, status: sourcesDone >= run.sourceIds.length ? 'scoring' : 'fetching' },
+      data: {
+        doneSourceIds,
+        sourcesDone: Math.min(run.sourceIds.length, doneSourceIds.length),
+        jobsFound,
+        status: allFetched ? 'scoring' : 'fetching',
+        filtered: { increment: early.filtered },
+        scored: { increment: early.scored },
+        aiCalls: { increment: early.calls },
+        queued: early.queued,
+        ...(early.scored && !run.firstMatchAt ? { firstMatchAt: new Date() } : {}),
+        ...(early.stoppedBy ? { note: noteFor(early.stoppedBy) } : {}),
+      },
     });
     return run;
   }
 
-  // scoring
+  // scoring: the best remaining candidates, capped per run so the shared AI budget lasts.
+  // The first batch is its own step so the first matches show up before the second AI call.
+  const firstBatch = run.scored === 0 && run.aiCalls === 0;
+  const left = Math.max(0, TOP_PER_RUN - run.scored);
   const result = await scoreUserBatch(userId, {
-    maxCalls: 4,
+    maxCalls: firstBatch ? 1 : Math.max(1, Math.ceil(left / SCORE_BATCH)),
     deadline: started + budgetMs,
     concurrency: 2,
+    maxJobs: firstBatch ? Math.min(left, SCORE_BATCH) : left,
+    ...(firstBatch ? { minCandidates: 1 } : {}),
   });
-  const done = result.queued === 0 || result.stoppedBy === 'quota' || result.stoppedBy === 'budget' || result.stoppedBy === 'no-ai' || result.stoppedBy === 'rate';
-  const note =
-    result.stoppedBy === 'quota'
-      ? 'Your daily AI limit is used — the rest is scored tomorrow (or add your own free Gemini key in Settings).'
-      : result.stoppedBy === 'budget'
-        ? 'The shared AI used today’s free quota — the rest is scored tomorrow.'
-      : result.stoppedBy === 'rate'
-        ? 'The shared AI is busy — the rest will be scored in the next run.'
-        : result.stoppedBy === 'no-ai'
-          ? 'AI is not configured on this server.'
-          : null;
+  const more = firstBatch && !result.stoppedBy && result.scored > 0 && result.queued > 0 && left > SCORE_BATCH;
+  const done = result.stoppedBy !== 'time' && !more;
   run = await prisma.searchRun.update({
     where: { id: run.id },
     data: {
       filtered: { increment: result.filtered },
       scored: { increment: result.scored },
-      queued: result.queued,
+      aiCalls: { increment: result.calls },
+      queued: Math.max(0, result.queued),
       status: done ? 'done' : 'scoring',
-      note,
+      note: noteFor(result.stoppedBy) ?? run.note,
+      ...(result.scored && !run.firstMatchAt ? { firstMatchAt: new Date() } : {}),
     },
   });
   if (done) await notifyRunDone(userId, run.id);

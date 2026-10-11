@@ -21,34 +21,48 @@ export async function ingestSource(source: DbSource, maxJobs = 80): Promise<numb
       })
     ).slice(0, maxJobs);
 
-    for (const job of jobs) {
+    // Batched: 2 lookups + 1 createMany + updates in one transaction (was 3 queries per job).
+    const rows = jobs.map((job) => {
       const company = job.company || source.company;
-      const dedupeKey = makeDedupeKey(company, job.title, job.location);
-      const key = { sourceId_externalId: { sourceId: source.id, externalId: job.externalId } };
-      const existing = await prisma.job.findUnique({ where: key, select: { id: true } });
-      if (!existing) {
-        const duplicate = await prisma.job.findFirst({ where: { dedupeKey }, select: { id: true } });
-        if (duplicate) continue;
-      }
-      const data = {
-        company: job.company || null,
-        title: job.title,
-        location: job.location,
-        remote: job.remote,
-        description: job.description.slice(0, 20000),
-        requirements: job.requirements,
-        salaryMin: job.salaryMin,
-        salaryMax: job.salaryMax,
-        currency: job.currency,
-        postedAt: job.postedAt && !Number.isNaN(job.postedAt.getTime()) ? job.postedAt : undefined,
-        url: job.url,
-        dedupeKey,
+      return {
+        externalId: job.externalId,
+        data: {
+          company: job.company || null,
+          title: job.title,
+          location: job.location,
+          remote: job.remote,
+          description: job.description.slice(0, 20000),
+          requirements: job.requirements,
+          salaryMin: job.salaryMin,
+          salaryMax: job.salaryMax,
+          currency: job.currency,
+          postedAt: job.postedAt && !Number.isNaN(job.postedAt.getTime()) ? job.postedAt : undefined,
+          url: job.url,
+          dedupeKey: makeDedupeKey(company, job.title, job.location),
+        },
       };
-      await prisma.job.upsert({
-        where: key,
-        create: { sourceId: source.id, externalId: job.externalId, ...data },
-        update: { ...data, isActive: true },
-      });
+    });
+    const existing = new Set(
+      (await prisma.job.findMany({ where: { sourceId: source.id, externalId: { in: rows.map((r) => r.externalId) } }, select: { externalId: true } })).map((j) => j.externalId),
+    );
+    const fresh = rows.filter((r) => !existing.has(r.externalId));
+    const dupes = new Set(
+      fresh.length
+        ? (await prisma.job.findMany({ where: { dedupeKey: { in: fresh.map((r) => r.data.dedupeKey) } }, select: { dedupeKey: true } })).map((j) => j.dedupeKey)
+        : [],
+    );
+    const seen = new Set<string>();
+    const toCreate = fresh.filter((r) => !dupes.has(r.data.dedupeKey) && !seen.has(r.data.dedupeKey) && seen.add(r.data.dedupeKey));
+    if (toCreate.length) {
+      await prisma.job.createMany({ data: toCreate.map((r) => ({ sourceId: source.id, externalId: r.externalId, ...r.data })), skipDuplicates: true });
+    }
+    const toUpdate = rows.filter((r) => existing.has(r.externalId));
+    for (let i = 0; i < toUpdate.length; i += 25) {
+      await prisma.$transaction(
+        toUpdate.slice(i, i + 25).map((r) =>
+          prisma.job.update({ where: { sourceId_externalId: { sourceId: source.id, externalId: r.externalId } }, data: { ...r.data, isActive: true } }),
+        ),
+      );
     }
 
     await prisma.jobSource.update({

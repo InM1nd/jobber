@@ -42,13 +42,19 @@ export function MatchMeta({ match, place, className }: { match: DemoMatch; place
   );
 }
 
-export function MatchRow({ match, now, place = {} }: { match: DemoMatch; now: number; place?: { city?: string | null; country?: string | null } }) {
+export function MatchRow({ match, now, place = {}, href, selected, compact }: { match: DemoMatch; now: number; place?: { city?: string | null; country?: string | null }; href?: string; selected?: boolean; compact?: boolean }) {
   const where = [match.job.location, match.job.remote && !/remote/i.test(match.job.location || '') ? 'Remote' : null].filter(Boolean).join(' · ');
   const fit = fitOf(match.score);
   return (
     <Link
-      href={`/dashboard/matches/${match.id}`}
-      className="group relative flex items-start gap-3.5 px-5 py-4 transition-colors hover:bg-surface-2/70 active:bg-surface-2"
+      href={href || `/dashboard/matches/${match.id}`}
+      scroll={!href}
+      aria-current={selected ? 'true' : undefined}
+      className={cn(
+        'group relative flex items-start gap-3.5 px-5 py-4 transition-colors hover:bg-surface-2/70 active:bg-surface-2',
+        compact && 'py-3',
+        selected && 'bg-accent-soft/60 hover:bg-accent-soft/60',
+      )}
     >
       <span className={cn('absolute bottom-5 left-0 top-5 w-[3px] rounded-r-full', FIT_BG[fit])} aria-hidden />
       <ScoreRing score={match.score} />
@@ -65,7 +71,7 @@ export function MatchRow({ match, now, place = {} }: { match: DemoMatch; now: nu
         </p>
         <MatchMeta match={match} place={place} className="mt-2" />
         {match.reasons[0] && <p className="mt-2 line-clamp-1 text-[14px] text-fg/85">{match.reasons[0]}</p>}
-        {match.redFlags[0] && <Note tone="warning" className="mt-1">{match.redFlags[0]}</Note>}
+        {match.redFlags[0] && !compact && <Note tone="warning" className="mt-1">{match.redFlags[0]}</Note>}
       </div>
       <ChevronRight className="mt-2 size-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5" />
     </Link>

@@ -41,8 +41,10 @@ export interface PrefilterResult {
   pass: boolean;
   reason?: string;
   tier: LocationTier;
-  /** Higher = more relevant; local jobs first, then keyword overlap. */
+  /** Higher = more relevant (equals preScore when passing). */
   relevance: number;
+  /** Deterministic 0-100 fit used to rank before AI; only set when pass. */
+  preScore?: number;
 }
 
 const GENERIC = new Set([
@@ -78,7 +80,7 @@ const has = (text: string, term: string) => text.includes(` ${term} `);
 const GENERIC_SWE = /software (engineer|developer)|full[\s-]?stack|web (developer|engineer)|product engineer|application (engineer|developer)|softwareentwickler|\b(engineer|developer)\b/i;
 const OFF_TRACK = /backend|back-end|data|machine learning|\bml\b|security|devops|\bsre\b|reliability|platform|infrastructure|\bios\b|android|mobile|embedded|\bqa\b|test|support|solutions|sales|database|postgres|cloud|network|firmware|hardware|manager|deployment|grc|gtm|advocate|relations|evangelist|trainer|evaluator/i;
 const MANAGERISH = /\b(product|project|program|account|marketing|sales|community|engineering) manager\b|\bhead of\b/i;
-const ENGINEERING = /engineer|developer|\bdev\b|programmer|entwickler|\bswe\b|architect|hacker/i;
+const ENGINEERING = /engineer|developer|front[\s-]?end|back[\s-]?end|full[\s-]?stack|programmierer|\bdev\b|programmer|entwickler|\bswe\b|architect|hacker/i;
 
 /** 0 intern · 1 junior · 2 mid · 3 senior · 4 lead/staff · 5 principal/director. null = not stated. */
 export function titleLevel(title: string): number | null {
@@ -166,7 +168,6 @@ function allowedTiers(profile: PrefilterProfile): Set<LocationTier> {
 const TIER_LABEL: Record<LocationTier, string> = {
   city: 'In your city', country: 'Elsewhere in your country', remote: 'Remote', relocation: 'Needs relocation', other: 'Outside your area',
 };
-const TIER_BONUS: Record<LocationTier, number> = { city: 12, country: 7, remote: 3, relocation: 0, other: 0 };
 
 export function prefilterJob(profile: PrefilterProfile, job: PrefilterJob, now = Date.now()): PrefilterResult {
   const title = normalizeText(job.title);
@@ -191,29 +192,35 @@ export function prefilterJob(profile: PrefilterProfile, job: PrefilterJob, now =
   if (types.length && !types.includes('part_time') && /\b(part[- ]time|teilzeit|minijob|geringfügig)\b/i.test(job.title)) return reject('Part-time');
   if (types.length && types.every((t) => t === 'part_time') && /\b(full[- ]time|vollzeit)\b/i.test(job.title)) return reject('Full-time only');
 
-  // 1) Role relevance: the title must mention a role term or a core skill.
+  // 1) Field: hard-drop only clear mismatches (no role/skill signal at all, or a
+  //    non-engineering job for an engineering-only target). Adjacent titles
+  //    (Fullstack vs Frontend, generic SWE, backend…) stay and are ranked.
+  const synonyms = roleSynonyms(profile);
   const titleHits = terms.filter((t) => has(title, t)).length + skills.filter((s) => has(title, s)).length;
+  const synHits = synonyms.filter((t) => has(title, t)).length;
   const bodyHits = skills.filter((s) => has(body, s)).length;
-  const genericFit = GENERIC_SWE.test(job.title) && !OFF_TRACK.test(job.title) && bodyHits >= 2;
-  if ((terms.length || skills.length) && titleHits === 0 && !genericFit) return reject('Title does not match your roles');
-  if (profile.targetRoles.length && profile.targetRoles.every((r) => ENGINEERING.test(r)) && (!ENGINEERING.test(job.title) || MANAGERISH.test(job.title))) {
-    return reject('Not an engineering role');
+  const engineeringTarget = profile.targetRoles.length > 0 && profile.targetRoles.every((r) => ENGINEERING.test(r));
+  if (engineeringTarget && (!ENGINEERING.test(job.title) || MANAGERISH.test(job.title))) return reject('Not an engineering role');
+  const genericFit = GENERIC_SWE.test(job.title) && bodyHits >= 1;
+  if ((terms.length || skills.length) && titleHits + synHits === 0 && !genericFit && !(engineeringTarget && bodyHits >= 2)) {
+    return reject('Title does not match your roles');
   }
 
-  // 2) Seniority (one level up allowed with "stretch").
+  // 2) Seniority: more than one level above what you allow is a clear mismatch.
   const user = LEVEL_INDEX[(profile.seniority || 'mid').toLowerCase()] ?? 2;
   const jobLevel = titleLevel(job.title);
   if (jobLevel != null) {
-    const up = profile.stretch ? 1 : 0;
-    if (jobLevel > user + up) return reject(profile.stretch ? 'More than one level up' : 'Too senior');
+    if (jobLevel > user + 1) return reject(profile.stretch ? 'More than one level up' : 'Too senior');
     if (user >= 3 && jobLevel <= 1) return reject('Too junior');
   }
 
   // 3) Language.
+  let languagePts = 10;
   if (!speaksGerman(profile.languages)) {
     if (GERMAN_REQUIRED.test(job.description)) return reject('Requires fluent German');
     const germanWords = (job.description.slice(0, 3000).match(GERMAN_WORDS) || []).length;
     if (germanWords >= 12) return reject('Vacancy is in German');
+    if (germanWords >= 6 || (!job.description.trim() && /\b(m\/w\/d|w\/m\/d|mitarbeiter|entwickler)\b/i.test(job.title))) languagePts = 4;
   }
 
   // 4) Location tier vs. what the user is open to.
@@ -225,7 +232,54 @@ export function prefilterJob(profile: PrefilterProfile, job: PrefilterJob, now =
     return reject(allowed.has('remote') && !allowed.has('city') ? 'Not remote' : 'Not in your city');
   }
 
-  return { pass: true, tier: loc.tier, relevance: TIER_BONUS[loc.tier] + titleHits * 3 + bodyHits };
+  // 5) Deterministic pre-score 0-100 (ranking only; AI decides the real score).
+  const roleTitle = bestRoleSimilarity(profile.targetRoles, job.title);
+  let titlePts = Math.round(roleTitle * 30) + Math.min(10, titleHits * 4 + synHits * 3);
+  if (OFF_TRACK.test(job.title) && roleTitle < 0.6 && !profile.targetRoles.some((r) => OFF_TRACK.test(r))) titlePts = Math.min(titlePts, 10);
+  const skillPts = Math.min(25, (skills.length ? Math.round((bodyHits / Math.min(skills.length, 6)) * 20) : 10) + Math.min(5, titleHits * 2));
+  const tierPts = { city: 15, country: 11, remote: 9, relocation: 4, other: 0 }[loc.tier];
+  const senPts = jobLevel == null ? 8 : jobLevel === user ? 10 : jobLevel === user + 1 ? (profile.stretch ? 7 : 3) : jobLevel === user - 1 ? 6 : 2;
+  const thin = job.description.trim().length < 200 ? 0.9 : 1; // list-only scrapes carry less evidence
+  const preScore = Math.max(0, Math.min(100, Math.round((Math.min(40, titlePts) + skillPts + tierPts + senPts + languagePts) * thin)));
+  return { pass: true, tier: loc.tier, relevance: preScore, preScore };
+}
+
+/** Related titles that count as the same family (Frontend ≈ React/UI/Web, Fullstack ≈ Software/Product engineer…). */
+const FAMILIES: string[][] = [
+  ['frontend', 'react', 'ui', 'web', 'nextjs', 'vue', 'angular', 'javascript', 'typescript', 'fullstack'],
+  ['fullstack', 'frontend', 'backend', 'software', 'web', 'product', 'application', 'node', 'typescript'],
+  ['product', 'fullstack', 'growth', 'software', 'frontend'],
+  ['backend', 'fullstack', 'api', 'platform', 'node', 'java', 'python', 'go'],
+  ['design', 'ux', 'ui', 'product', 'frontend', 'creative'],
+  ['data', 'analytics', 'analyst', 'bi', 'ml'],
+];
+
+export function roleSynonyms(profile: Pick<PrefilterProfile, 'targetRoles' | 'keywords'>) {
+  const words = new Set(roleTerms(profile));
+  const out = new Set<string>();
+  for (const fam of FAMILIES) if (words.has(fam[0])) fam.forEach((w) => out.add(w));
+  for (const w of words) out.delete(w);
+  return [...out];
+}
+
+const tokens = (s: string) => normalizeText(s).trim().split(/\s+/).filter((w) => w.length >= 2 && !GENERIC.has(w));
+
+/** 0..1: best overlap between the job title and any target role; family words count half. */
+export function bestRoleSimilarity(targetRoles: string[], jobTitle: string) {
+  const t = new Set(tokens(jobTitle));
+  if (!t.size) return 0;
+  let best = 0;
+  for (const role of targetRoles) {
+    const r = tokens(role);
+    if (!r.length) continue;
+    let hit = 0;
+    for (const w of r) {
+      if (t.has(w)) hit += 1;
+      else if (FAMILIES.some((f) => f[0] === w && f.some((x) => t.has(x)))) hit += 0.5;
+    }
+    best = Math.max(best, hit / r.length);
+  }
+  return best;
 }
 
 export { TIER_LABEL };

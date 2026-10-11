@@ -38,7 +38,7 @@ export function dailyLimits(ownKey = false): QuotaLimits {
 }
 
 /** Jobs scored per AI request. */
-export const SCORE_BATCH = 5;
+export const SCORE_BATCH = 12;
 
 export function utcDay(now = new Date()) {
   return now.toISOString().slice(0, 10);

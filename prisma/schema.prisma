@@ -179,6 +179,8 @@ model JobMatch {
   subScores         Json?
   // true = rejected by the rule pre-filter, never sent to the model, hidden in the UI
   filtered          Boolean   @default(false)
+  /// Deterministic 0-100 pre-score used to rank jobs before AI scoring.
+  preScore          Int?
   
   notifiedAt        DateTime?
   viewedAt          DateTime?
@@ -269,6 +271,9 @@ model SearchRun {
   status       String    @default("fetching") // fetching | scoring | done | error
   sourceIds    String[]
   sourcesDone  Int       @default(0)
+  doneSourceIds String[]  @default([])
+  firstMatchAt DateTime?
+  aiCalls      Int       @default(0)
   jobsFound    Int       @default(0)
   filtered     Int       @default(0)
   scored       Int       @default(0)

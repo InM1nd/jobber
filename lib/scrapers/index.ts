@@ -1,5 +1,6 @@
 import type { JobSource, JobSourceConfig, RawJob } from '@/lib/sources/types';
-import { PLATFORMS, scrapePlatform } from './platforms';
+import { PLATFORMS, scrapeDetail, scrapePlatform } from './platforms';
+export { scrapeDetail };
 
 export const SCRAPER_TYPES = PLATFORMS.filter((p) => p.status === 'enabled').map((p) => `scrape:${p.id}`);
 
@@ -35,7 +36,8 @@ export class ScraperSource implements JobSource {
     if (process.env.OWNER_SCRAPERS !== 'true') return [];
     const id = this.config.sourceType.replace(/^scrape:/, '');
     const [, kw, city] = this.config.company.split(' · ');
-    return scrapePlatform(id, kw || '', city || 'wien');
+    // List page only: detail pages are fetched later, just for the top candidates (see enrichThin).
+    return scrapePlatform(id, kw || '', city || 'wien', { details: Number(process.env.SCRAPER_LIST_DETAILS || 0) });
   }
 }
 

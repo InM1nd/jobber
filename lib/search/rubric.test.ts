@@ -35,11 +35,23 @@ describe('location tiers', () => {
   });
 });
 
+describe('pre-score', () => {
+  it('ranks exact > adjacent > off-track titles and keeps Fullstack for a Frontend target', () => {
+    const t = (title: string) => prefilterJob(base, job({ title, description: 'React, TypeScript, Next.js product UI.' }));
+    expect(t('Fullstack Developer').pass).toBe(true);
+    expect(t('Frontend Engineer').preScore!).toBeGreaterThan(t('Fullstack Developer').preScore!);
+    expect(t('Fullstack Developer').preScore!).toBeGreaterThan(t('Data Platform Engineer').preScore!);
+  });
+});
+
 describe('controls', () => {
   it('stretch allows exactly one level up', () => {
     expect(titleLevel('Senior Frontend Engineer')).toBe(3);
-    expect(prefilterJob(base, job({ title: 'Senior Frontend Engineer' })).reason).toBe('Too senior');
-    expect(prefilterJob({ ...base, stretch: true }, job({ title: 'Senior Frontend Engineer' })).pass).toBe(true);
+    const noStretch = prefilterJob(base, job({ title: 'Senior Frontend Engineer' }));
+    const stretch = prefilterJob({ ...base, stretch: true }, job({ title: 'Senior Frontend Engineer' }));
+    expect(noStretch.pass).toBe(true); // one level up is ranked lower, not dropped
+    expect(stretch.preScore!).toBeGreaterThan(noStretch.preScore!);
+    expect(prefilterJob(base, job({ title: 'Principal Frontend Engineer' })).reason).toBe('Too senior');
     expect(prefilterJob({ ...base, stretch: true }, job({ title: 'Staff Frontend Engineer' })).pass).toBe(false);
   });
   it('applies exclusions, avoid words, age and employment type', () => {
@@ -122,5 +134,15 @@ describe('guided form draft', () => {
     const back = draftFromProfile({ ...patch, skillGaps: [], salaryMin: null, salaryMax: null } as never);
     expect(back.languages[0]).toEqual({ name: 'English', level: 'Fluent' });
     expect(back.openTo).toEqual(['remote']);
+  });
+});
+
+describe('AI reply validation', () => {
+  it('salvages complete entries from a truncated batch reply', async () => {
+    const { salvageResults } = await import('./score');
+    const reply = '{"results":[{"id":"j1","roleFit":90,"skills":80,"cv":"A","reasons":["x"],"redFlags":[]},{"id":"j2","roleFit":70,"skills":6';
+    const got = parseAiScores(salvageResults(reply));
+    expect(got.map((g) => g.id)).toEqual(['j1']);
+    expect(parseAiScores({ results: [{ id: 'j3', roleFit: 'abc', skills: 3 }] })).toEqual([]);
   });
 });

@@ -135,6 +135,7 @@ function initialState(): DemoState {
     matches: [
       {
         id: 'm1',
+        subScores: { role: 92, skills: 85, seniority: 100, location: 100, language: 100, salary: 70 },
         createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
         score: 86,
         priority: 'high',
