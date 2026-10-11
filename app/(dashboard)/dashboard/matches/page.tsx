@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { KeyRound, Sparkles, UserRound } from 'lucide-react';
 import { MatchRow, isNew } from '@/components/app/match-card';
-import { Button } from '@/components/ui/button';
-import { EmptyState, FIT_LABEL, FitDot, PageHeader, fitOf, type Fit } from '@/components/ui/kit';
+import { EmptyState, FIT_LABEL, FitDot, PageHeader, CtaLink, capsClass, fitOf, type Fit } from '@/components/ui/kit';
+import { cn } from '@/lib/utils';
 import { connection } from 'next/server';
 import { getMatches, getProfile, listApiKeys, requireUser } from '@/lib/data/service';
 import { isDemoMode } from '@/lib/demo/mode';
@@ -34,16 +33,39 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
     ? [newCount ? `${newCount} new today` : null, strongCount ? `${strongCount} strong` : null, `${matches.length} total`].filter(Boolean).join(' · ')
     : 'New roles are scored every morning';
 
+  const today = new Date(now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const hour = new Date(now).getHours();
+  const greeting = hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
+  const headline = newCount || matches.length;
+
   return (
     <div>
       <PageHeader
-        title="Matches"
-        subtitle={
-          matches.length && newCount ? (
-            <span className="inline-flex items-center gap-1.5"><span className="size-1.5 animate-pulse rounded-full bg-accent" />{summary}</span>
-          ) : summary
-        }
+        eyebrow={today}
+        eyebrowRight={matches.length ? <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-accent" />{strongCount} strong</span> : undefined}
+        title={matches.length ? greeting : 'Matches'}
+        subtitle={matches.length ? undefined : 'New roles are scored every morning'}
       />
+
+      {matches.length > 0 && (
+        <div className="relative mb-9 pt-3">
+          <div className="absolute inset-x-5 top-0 h-10 rounded-[var(--radius-card)] border border-line bg-bg" aria-hidden />
+          <div className="relative rounded-[var(--radius-card)] border border-line bg-bg px-6 py-6">
+            <div className="flex items-end gap-4">
+              <span className="text-[88px] font-semibold leading-[0.85] tracking-[-0.06em] tabular-nums">{headline}</span>
+              <span className="pb-1 text-[16px] leading-tight text-muted">
+                {newCount ? 'new roles' : 'roles'}<br />{newCount ? 'today' : 'scored'}
+              </span>
+            </div>
+            <p className="mt-5 text-[16px] font-medium tracking-[-0.01em]">{summary}</p>
+            {groups[0].items[0] && (
+              <p className="mt-1 truncate text-[14px] text-muted">
+                Top: <span className="text-accent">{groups[0].items[0].score}</span> {groups[0].items[0].job.title}, {groups[0].items[0].job.company}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {matches.length === 0 &&
         (!hasProfile ? (
@@ -51,14 +73,14 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
             icon={UserRound}
             title="Set up your profile"
             text="Add your CV and a few filters. Matches start arriving the next morning."
-            action={<Button asChild><Link href="/dashboard/profile">Set up profile</Link></Button>}
+            action={<CtaLink href="/dashboard/profile">Set up profile</CtaLink>}
           />
         ) : !hasKey ? (
           <EmptyState
             icon={KeyRound}
             title="Connect your AI"
             text="Scoring and letters run on your own OpenRouter or API key, so you stay in control of cost."
-            action={<Button asChild><Link href="/dashboard/settings">Connect AI key</Link></Button>}
+            action={<CtaLink href="/dashboard/settings">Connect AI key</CtaLink>}
           />
         ) : (
           <EmptyState
@@ -72,11 +94,11 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         {groups.map(({ fit, items }) =>
           items.length === 0 ? null : (
             <section key={fit}>
-              <h2 className="flex items-center justify-between border-b border-line pb-2 text-[12px] font-medium text-muted">
+              <h2 className={cn(capsClass, 'mb-2.5 flex items-center justify-between px-1')}>
                 <span className="inline-flex items-center gap-2"><FitDot fit={fit} />{FIT_LABEL[fit]}</span>
-                <span className="tabular-nums text-subtle">{items.length}</span>
+                <span className="tabular-nums">{items.length}</span>
               </h2>
-              <div className="divide-y divide-line">
+              <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">
                 {items.map((match) => <MatchRow key={match.id} match={match} now={now} />)}
               </div>
             </section>

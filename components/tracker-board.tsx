@@ -98,18 +98,18 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-4 border-b border-line">
+      <div className="grid grid-cols-4 gap-0.5 rounded-[14px] bg-surface-2 p-[3px]">
         {SEGMENTS.map((s) => (
           <button
             key={s.key}
             type="button"
             onClick={() => setSegment(s.key)}
             className={cn(
-              '-mb-px flex flex-col items-center border-b py-2 text-[12px] transition-colors',
-              segment === s.key ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg',
+              'flex flex-col items-center rounded-[11px] py-2 text-[12px] transition-all active:scale-[0.97]',
+              segment === s.key ? 'bg-bg font-semibold text-fg shadow-[0_1px_3px_rgb(0_0_0/0.08)] dark:bg-[#1c1c1f]' : 'text-muted hover:text-fg',
             )}
           >
-            <span className="text-[15px] font-medium tabular-nums leading-tight">{counts[s.key]}</span>
+            <span className="text-[20px] font-semibold tabular-nums leading-tight tracking-[-0.03em]">{counts[s.key]}</span>
             <span className="inline-flex items-center gap-1.5"><span className={cn('size-1.5 rounded-full', SEG_DOT[s.key])} />{s.label}</span>
           </button>
         ))}
@@ -151,15 +151,15 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
       ) : visible.length === 0 ? (
         <p className="py-8 text-center text-[13px] text-muted">Nothing in {current.label.toLowerCase()}.</p>
       ) : (
-        <div className="divide-y divide-line">
+        <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">
           {visible.map((app) => (
-            <article key={app.id} className="animate-in py-4">
+            <article key={app.id} className="animate-in px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-[15px] font-medium leading-snug">{app.role}</h3>
+                  <h3 className="text-[16px] font-semibold leading-snug tracking-[-0.02em]">{app.role}</h3>
                   <p className="text-[13px] text-muted">{app.company}</p>
                 </div>
-                <label className={cn('relative inline-flex shrink-0 items-center gap-1.5 rounded-[6px] border border-line py-0.5 pl-2 pr-1 text-[12px] font-medium transition-colors hover:bg-surface-2', TONE[app.status] || TONE.to_apply)}>
+                <label className={cn('relative inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line py-1 pl-2.5 pr-1.5 text-[12px] font-medium transition-colors hover:bg-surface-2', TONE[app.status] || TONE.to_apply)}>
                   <span className={cn('size-1.5 rounded-full', DOT[app.status] || DOT.to_apply)} />
                   {LABELS[app.status] || 'To apply'}
                   <ChevronDown className="size-3.5 opacity-70" />

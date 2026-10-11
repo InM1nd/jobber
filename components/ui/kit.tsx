@@ -2,16 +2,55 @@ import * as React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: React.ReactNode; action?: React.ReactNode }) {
+export const capsClass = 'text-[11.5px] font-medium uppercase tracking-[0.14em] text-muted';
+
+export function PageHeader({
+  title,
+  subtitle,
+  eyebrow,
+  eyebrowRight,
+  action,
+}: {
+  title: string;
+  subtitle?: React.ReactNode;
+  eyebrow?: React.ReactNode;
+  eyebrowRight?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
-    <div className="mb-6 flex items-end justify-between gap-4 md:mb-10">
-      <div className="min-w-0">
-        <h1 className="text-[20px] font-semibold tracking-[-0.02em] md:text-[24px]">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
+    <div className="mb-6 md:mb-10">
+      {(eyebrow || eyebrowRight) && (
+        <div className="mb-2 flex items-center justify-between text-[15px] text-muted">
+          <span>{eyebrow}</span>
+          {eyebrowRight && <span className="font-medium text-fg">{eyebrowRight}</span>}
+        </div>
+      )}
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-[32px] font-semibold leading-[1.08] tracking-[-0.04em] md:text-[40px]">{title}</h1>
+          {subtitle && <p className="mt-1.5 text-[15px] leading-snug text-muted">{subtitle}</p>}
+        </div>
+        {action}
       </div>
-      {action}
     </div>
   );
+}
+
+/** Karten-style primary CTA: ink pill, label left, mint round arrow right. */
+export function CtaLink({ href, children, external, className }: { href: string; children: React.ReactNode; external?: boolean; className?: string }) {
+  const cls = cn(
+    'group inline-flex h-14 min-w-[220px] items-center justify-between gap-6 rounded-full bg-fg pl-7 pr-2 text-[16px] font-semibold tracking-[-0.01em] text-bg transition-transform active:scale-[0.98]',
+    className,
+  );
+  const inner = (
+    <>
+      {children}
+      <span className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-fg transition-transform group-hover:translate-x-0.5">
+        <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </span>
+    </>
+  );
+  return <a href={href} className={cls} {...(external ? { rel: "noreferrer" } : {})}>{inner}</a>;
 }
 
 /** Quiet inline note: a small dot plus muted text. No tinted boxes. */
@@ -80,9 +119,9 @@ export function Score({ score, className }: { score: number; className?: string 
 export function EmptyState({ icon: Icon, title, text, action }: { icon: LucideIcon; title: string; text: string; action?: React.ReactNode }) {
   return (
     <div className="flex animate-in flex-col items-center px-6 py-16 text-center">
-      <Icon className="mb-4 size-5 text-muted" strokeWidth={1.5} />
-      <p className="text-[15px] font-medium">{title}</p>
-      <p className="mt-1 max-w-[280px] text-[13px] leading-relaxed text-muted">{text}</p>
+      <Icon className="mb-5 size-7 text-fg" strokeWidth={1.5} />
+      <p className="text-[22px] font-semibold tracking-[-0.03em]">{title}</p>
+      <p className="mt-2 max-w-[300px] text-[15px] leading-relaxed text-muted">{text}</p>
       {action && <div className="mt-6">{action}</div>}
     </div>
   );
@@ -91,9 +130,9 @@ export function EmptyState({ icon: Icon, title, text, action }: { icon: LucideIc
 export function Group({ title, footer, children, className }: { title?: string; footer?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <section className={cn('space-y-2', className)}>
-      {title && <h2 className="text-[12px] font-medium text-muted">{title}</h2>}
+      {title && <h2 className={cn(capsClass, 'px-1')}>{title}</h2>}
       <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">{children}</div>
-      {footer && <p className="text-[12px] leading-relaxed text-subtle">{footer}</p>}
+      {footer && <p className="px-1 text-[12.5px] leading-relaxed text-muted">{footer}</p>}
     </section>
   );
 }
@@ -115,10 +154,10 @@ export function Row({
   children?: React.ReactNode;
 }) {
   return (
-    <div className={cn('flex min-h-12 items-center gap-3 px-3.5 py-2.5', className)}>
+    <div className={cn('flex min-h-14 items-center gap-3.5 px-5 py-3', className)}>
       {Icon && <Icon className="size-[17px] shrink-0 text-muted" strokeWidth={1.6} />}
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[14.5px]">{label}</div>
+        <div className="truncate text-[15.5px] font-medium tracking-[-0.01em]">{label}</div>
         {detail && <div className="truncate text-[12.5px] text-muted">{detail}</div>}
         {children}
       </div>
@@ -128,7 +167,7 @@ export function Row({
 }
 
 export const fieldClass =
-  'w-full rounded-[var(--radius-field)] border border-line-strong bg-bg px-3 py-2 text-[15px] text-fg placeholder:text-subtle outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 md:text-sm';
+  'w-full rounded-[var(--radius-field)] border border-line bg-surface-2 px-4 py-3 text-[15px] text-fg placeholder:text-subtle outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 md:text-sm';
 
 export const inlineFieldClass = 'w-full bg-transparent text-right text-[14.5px] text-fg placeholder:text-subtle outline-none';
 
@@ -142,8 +181,8 @@ export function Notice({ tone, children }: { tone: 'success' | 'danger'; childre
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-2 text-[15px] font-semibold tracking-[-0.02em]', className)}>
-      <span className="flex size-5 items-center justify-center rounded-[5px] bg-accent text-[11px] font-bold text-accent-fg">J</span>
+    <span className={cn('inline-flex items-center gap-2 text-[17px] font-semibold tracking-[-0.03em]', className)}>
+      <span className="flex size-6 items-center justify-center rounded-[7px] bg-accent text-[11px] font-bold text-accent-fg">J</span>
       Jobber
     </span>
   );

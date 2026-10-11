@@ -26,24 +26,26 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         <ChevronLeft className="size-4" /> Matches
       </Link>
 
-      <header className="flex items-start gap-4">
-        <ScoreRing score={match.score} size={52} />
-        <div className="min-w-0">
-        <p className="text-[13px] text-muted">{match.job.company}</p>
-        <h1 className="mt-1 text-[22px] font-semibold leading-tight tracking-[-0.02em] md:text-[28px]">{match.job.title}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted">
-          <span className={`font-medium ${FIT_TEXT[fitOf(match.score)]}`}>{FIT_LABEL[fitOf(match.score)]}</span>
-          {place && <span>{place}</span>}
-          {salary && <span>{salary}</span>}
-          <a href={match.job.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent underline-offset-4 hover:underline">
-            Listing <ArrowUpRight className="size-3.5" />
-          </a>
+      <header className="rounded-[var(--radius-card)] bg-[#111111] p-6 text-white dark:border dark:border-line dark:bg-[#121214]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[14px] text-white/55">{match.job.company}</p>
+            <h1 className="mt-1 text-[28px] font-semibold leading-[1.08] tracking-[-0.04em]">{match.job.title}</h1>
+          </div>
+          <ScoreRing score={match.score} size={56} className="[&>span]:text-white" />
         </div>
+        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-white/55">
+          <span className={`font-semibold ${FIT_TEXT[fitOf(match.score)]}`}>{FIT_LABEL[fitOf(match.score)]}</span>
+          {place && <span>· {place}</span>}
+          {salary && <span>· {salary}</span>}
         </div>
+        <a href={match.job.url} target="_blank" rel="noreferrer" className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-white/10 px-4 text-[14px] font-semibold transition-colors hover:bg-white/15">
+          Open listing <ArrowUpRight className="size-4 text-accent" />
+        </a>
       </header>
 
       {(match.reasons.length > 0 || match.redFlags.length > 0) && (
-        <div className="space-y-1.5 border-t border-line pt-5">
+        <div className="space-y-2 px-1">
           {match.reasons.map((r) => <Note key={r}>{r}</Note>)}
           {match.redFlags.map((f) => <Note key={f} tone="warning">{f}</Note>)}
         </div>

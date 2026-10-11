@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Logo, Note, ScoreRing } from '@/components/ui/kit';
+import { CtaLink, Logo, Note, ScoreRing, capsClass } from '@/components/ui/kit';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const BOT = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'JobberCheck_bot').replace(/^@/, '');
@@ -24,19 +24,21 @@ export default function Home() {
       </header>
 
       <main className="flex flex-1 flex-col items-center px-6 pb-24 pt-20 text-center md:pt-28">
-        <h1 className="max-w-2xl animate-in text-[40px] font-semibold leading-[1.05] tracking-[-0.04em] md:text-[56px]">
+        <h1 className="max-w-2xl animate-in text-[44px] font-semibold leading-[1.02] tracking-[-0.05em] md:text-[68px]">
           Job search, quietly handled.
         </h1>
-        <p className="mt-4 max-w-md text-[16px] leading-relaxed text-muted">
+        <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">
           New roles scored against your CV every morning, with an honest letter when one fits.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-2.5">
-          <Button asChild size="lg"><a href={`https://t.me/${BOT}`}>Open in Telegram</a></Button>
+          <CtaLink href={`https://t.me/${BOT}`} external>Open in Telegram</CtaLink>
           <Button asChild size="lg" variant="outline"><Link href="/auth/signin">Sign in <ArrowRight /></Link></Button>
         </div>
 
-        <div className="mt-20 w-full max-w-md text-left">
-          <div className="flex items-baseline justify-between border-b border-line pb-2 text-[12px] text-muted">
+        <div className="relative mt-20 w-full max-w-md pt-3 text-left">
+          <div className="absolute inset-x-6 top-0 h-10 rounded-[22px] border border-line bg-bg" aria-hidden />
+          <div className="relative rounded-[22px] border border-line bg-bg p-5">
+          <div className={`flex items-baseline justify-between pb-2 ${capsClass}`}>
             <span className="inline-flex items-center gap-1.5 font-medium"><span className="size-1.5 rounded-full bg-accent" />This morning</span>
             <span className="text-subtle">2 new · 1 strong</span>
           </div>
@@ -55,6 +57,7 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
           </div>
         </div>
       </main>

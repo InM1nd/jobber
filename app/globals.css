@@ -9,12 +9,12 @@
 :root {
   --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f4f4f5;
-  --fg: #09090b;
-  --muted: #71717a;
-  --subtle: #a1a1aa;
-  --border: #e9e9ec;
-  --border-strong: #d4d4d8;
+  --surface-2: #f6f6f4;
+  --fg: #111111;
+  --muted: #8e8e93;
+  --subtle: #b5b5ba;
+  --border: #ececec;
+  --border-strong: #dededc;
   --accent: #0b8f6c;
   --accent-hover: #087a5c;
   --accent-fg: #ffffff;
@@ -40,14 +40,14 @@
 }
 
 [data-theme="dark"] {
-  --bg: #0a0a0a;
-  --surface: #0a0a0a;
-  --surface-2: #18181b;
-  --fg: #fafafa;
-  --muted: #a1a1aa;
-  --subtle: #71717a;
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #121214;
+  --fg: #f5f5f5;
+  --muted: #8e8e93;
+  --subtle: #5c5c61;
   --border: #232326;
-  --border-strong: #333338;
+  --border-strong: #2e2e32;
   --accent: #4ee3b8;
   --accent-hover: #74ebc8;
   --accent-fg: #04120d;
@@ -73,7 +73,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-inter-tight), var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -102,8 +102,8 @@
   --color-st-offer: var(--st-offer);
   --shadow-soft: var(--shadow-sm);
   --shadow-lift: var(--shadow-md);
-  --radius-card: 10px;
-  --radius-field: 8px;
+  --radius-card: 22px;
+  --radius-field: 14px;
   --animate-in: fade-up 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
@@ -123,7 +123,7 @@ body {
   color: var(--fg);
   font-family: var(--font-sans);
   font-feature-settings: "ss01";
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   -webkit-tap-highlight-color: transparent;
 }
 

@@ -84,7 +84,7 @@ function applyTheme(webApp: WebApp) {
   root.style.setProperty('--tg-safe-bottom', `${(safe?.bottom || 0) + (content?.bottom || 0)}px`);
   root.dataset.theme = webApp.colorScheme;
   root.dataset.tg = '1';
-  const page = webApp.colorScheme === 'dark' ? '#0a0a0a' : '#ffffff';
+  const page = webApp.colorScheme === 'dark' ? '#000000' : '#ffffff';
   webApp.setHeaderColor?.(page);
   webApp.setBackgroundColor?.(page);
 }
@@ -209,8 +209,8 @@ function isActive(pathname: string, href: string) {
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/90 pb-[var(--safe-bottom)] backdrop-blur-md md:hidden">
-      <div className="mx-auto grid max-w-lg grid-cols-4 px-2">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(12px+var(--safe-bottom))] md:hidden">
+      <div className="pointer-events-auto mx-auto flex h-16 max-w-md items-center gap-1 rounded-full bg-[#111111] px-2 shadow-[0_8px_28px_-6px_rgb(0_0_0/0.35)] dark:bg-[#1c1c1f]">
         {tabs.map((tab) => {
           const active = isActive(pathname, tab.href);
           const Icon = tab.icon;
@@ -220,13 +220,14 @@ export function BottomNav() {
               href={tab.href}
               onClick={() => haptic('light')}
               aria-current={active ? 'page' : undefined}
+              aria-label={tab.label}
               className={cn(
-                'flex flex-col items-center gap-1 pb-2 pt-2.5 text-[10.5px] font-medium transition-colors',
-                active ? 'text-accent' : 'text-subtle hover:text-muted active:text-fg',
+                'flex h-12 items-center justify-center gap-2 rounded-full transition-[flex,background-color] duration-300 ease-out active:scale-[0.94]',
+                active ? 'flex-[1.9] bg-accent text-accent-fg' : 'flex-1 text-[#8e8e93] hover:text-white',
               )}
             >
-              <Icon className="size-[20px]" strokeWidth={active ? 2 : 1.6} />
-              {tab.label}
+              <Icon className="size-[21px]" strokeWidth={active ? 2.2 : 1.6} />
+              {active && <span className="animate-in text-[14px] font-semibold tracking-[-0.01em]">{tab.label}</span>}
             </Link>
           );
         })}
@@ -238,7 +239,7 @@ export function BottomNav() {
 export function Sidebar({ account }: { account: string }) {
   const pathname = usePathname();
   return (
-    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-line px-3 py-5 md:flex">
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
       <Link href="/" className="px-3 pb-6"><Logo /></Link>
       <nav className="flex flex-col gap-0.5">
         {tabs.map((tab) => {
@@ -249,8 +250,8 @@ export function Sidebar({ account }: { account: string }) {
               key={tab.href}
               href={tab.href}
               className={cn(
-                'flex items-center gap-2.5 rounded-[8px] px-3 py-1.5 text-[13.5px] transition-colors',
-                active ? 'bg-surface-2 font-medium text-fg [&_svg]:text-accent' : 'text-muted hover:bg-surface-2/60 hover:text-fg',
+                'flex items-center gap-2.5 rounded-full px-3.5 py-2 text-[14px] transition-colors',
+                active ? 'bg-fg font-semibold text-bg [&_svg]:text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg',
               )}
             >
               <Icon className="size-4" strokeWidth={active ? 2 : 1.6} />
