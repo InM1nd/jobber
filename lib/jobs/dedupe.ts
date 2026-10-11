@@ -7,5 +7,9 @@ export function makeDedupeKey(company: string, title: string, location?: string 
       .replace(/\s+/g, ' ')
       .trim();
 
-  return `${norm(company)}|${norm(title)}|${norm(location || '')}`;
+  // "(m/w/d)", "*in", ":in" etc. differ between platforms for the same ad.
+  const cleanTitle = title.replace(/\((?:[mwdfx][/|,\s]*){2,}\)/gi, '').replace(/[*:]in\b/gi, '');
+  const cleanCompany = company.replace(/\b(gmbh|ag|kg|og|e\.?u\.?|ltd|inc|se)\b\.?/gi, '');
+  const firstPlace = norm(location || '').split(' ')[0];
+  return `${norm(cleanCompany)}|${norm(cleanTitle)}|${norm(firstPlace)}`;
 }

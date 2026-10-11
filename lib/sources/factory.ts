@@ -10,6 +10,7 @@ import { RssSource } from './rss';
 import { SmartRecruitersSource } from './smartrecruiters';
 import { KeywordBoardSource } from './boards';
 import { MoreSource } from './more';
+import { SCRAPER_TYPES, ScraperSource } from '@/lib/scrapers';
 
 export const SUPPORTED_SOURCE_TYPES = [
   'greenhouse',
@@ -37,6 +38,7 @@ export const SUPPORTED_SOURCE_TYPES = [
 ] as const;
 
 export function isSupportedSourceType(type: string): boolean {
+  if (SCRAPER_TYPES.includes(type)) return true;
   return SUPPORTED_SOURCE_TYPES.includes(type.toLowerCase() as (typeof SUPPORTED_SOURCE_TYPES)[number]);
 }
 
@@ -47,6 +49,7 @@ class UnsupportedSource implements JobSource {
 }
 
 export function createJobSource(config: JobSourceConfig): JobSource {
+  if (config.sourceType.startsWith('scrape:')) return new ScraperSource(config);
   switch (config.sourceType.toLowerCase()) {
     case 'greenhouse':
       return new GreenhouseSource(config);

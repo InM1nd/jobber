@@ -1,3 +1,4 @@
+import { PLATFORMS, scraperSourceUrl, scrapersEnabledFor } from '@/lib/scrapers';
 import { getPrisma } from '@/lib/db/prisma';
 import { boardUrl } from '@/lib/companies/seed';
 import { ensureBoardSources, ensureSourceRows, sourceSpecs } from './pipeline';
@@ -18,7 +19,7 @@ export async function watchList(userId: string) {
   const prisma = getPrisma();
   const profile = await prisma.profile.findUnique({ where: { userId } });
   if (!profile?.sourceIds.length) return [];
-  const rows = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, NOT: { sector: 'board' } } });
+  const rows = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, OR: [{ sector: null }, { sector: { notIn: ['board', 'scrape'] } }] } });
   return rows.map((r) => ({ id: r.id, name: r.company, ats: r.sourceType, url: r.sourceUrl, lastSuccessAt: r.lastSuccessAt?.toISOString() ?? null }));
 }
 
@@ -48,11 +49,26 @@ export async function rebuildSources(userId: string, companies?: Array<WatchComp
     companyIds = current.map((c) => c.id);
     names = current.map((c) => c.name);
   }
-  const local = boardIds.slice(0, 0);
-  void local;
-  const sourceIds = [...new Set([...companyIds, ...boardIds])];
+  const scraperIds = await ownerScraperSources(userId, keywords, profile.location);
+  const sourceIds = [...new Set([...scraperIds, ...companyIds, ...boardIds])];
   await prisma.profile.update({ where: { userId }, data: { sourceIds, watchedCompanies: names } });
   return sourceIds;
+}
+
+/** Owner-only Austrian platform scrapers (flag OWNER_SCRAPERS=true + OWNER_TELEGRAM_ID). */
+async function ownerScraperSources(userId: string, keywords: string[], city?: string | null) {
+  const user = await getPrisma().user.findUnique({ where: { id: userId }, select: { telegramId: true } });
+  if (!scrapersEnabledFor(user)) return [];
+  const where = city?.trim() || 'Wien';
+  const specs = keywords.slice(0, 3).flatMap((k) =>
+    PLATFORMS.filter((p) => p.status === 'enabled').map((p) => ({
+      company: `${p.name} · ${k} · ${where}`,
+      sourceType: `scrape:${p.id}`,
+      sourceUrl: scraperSourceUrl(p.id, k, where),
+      sector: 'scrape',
+    })),
+  );
+  return ensureSourceRows(specs);
 }
 
 export { boardUrl };
