@@ -23,11 +23,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Sidebar account={accountLabel(user)} />
       <div className="min-w-0 flex-1">
         {demo && (
-          <div className="border-b border-line bg-accent-soft px-4 py-1.5 text-center text-[11.5px] font-medium text-accent">
+          <div className="border-b border-line px-4 py-1.5 text-center text-[11px] text-subtle">
             Demo mode · sample data
           </div>
         )}
-        <main className="mx-auto max-w-lg animate-in px-4 pb-[calc(88px+var(--safe-bottom))] pt-[calc(16px+var(--safe-top))] md:max-w-3xl md:px-10 md:pb-16 md:pt-12">
+        <main className="mx-auto max-w-lg animate-in px-4 pb-[calc(88px+var(--safe-bottom))] pt-[calc(16px+var(--safe-top))] md:max-w-2xl md:px-10 md:pb-16 md:pt-14">
           {children}
         </main>
       </div>

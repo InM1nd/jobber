@@ -190,13 +190,13 @@ export function SettingsPanel({
         </button>
         {showKeyForm ? (
           <form onSubmit={saveKey} className="animate-in space-y-2.5 p-4">
-            <div className="grid grid-cols-5 gap-1 rounded-[12px] bg-surface-2 p-1">
+            <div className="grid grid-cols-5 gap-1 rounded-[8px] bg-surface-2 p-0.5">
               {PROVIDERS.map(([id, name]) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setProvider(id)}
-                  className={`truncate rounded-[9px] px-1 py-1.5 text-[11.5px] font-medium transition-all ${provider === id ? 'bg-surface text-fg shadow-soft' : 'text-muted'}`}
+                  className={`truncate rounded-[6px] px-1 py-1.5 text-[11.5px] font-medium transition-all ${provider === id ? 'bg-bg text-fg' : 'text-muted'}`}
                 >
                   {name}
                 </button>
@@ -226,7 +226,7 @@ export function SettingsPanel({
               canUnlinkTelegram ? (
                 <Button size="sm" variant="ghost" onClick={() => unlink('telegram')}>Unlink</Button>
               ) : (
-                <span className="text-[12px] font-medium text-success">Linked</span>
+                <span className="text-[12px] text-muted">Linked</span>
               )
             ) : (
               <Button size="sm" variant="soft" onClick={() => setShowTelegramOptions((v) => !v)}>Link</Button>
@@ -251,7 +251,7 @@ export function SettingsPanel({
               canUnlinkEmail ? (
                 <Button size="sm" variant="ghost" onClick={() => unlink('email')}>Unlink</Button>
               ) : (
-                <span className="text-[12px] font-medium text-success">Linked</span>
+                <span className="text-[12px] text-muted">Linked</span>
               )
             ) : (
               <Button size="sm" variant="soft" onClick={() => setShowEmailForm((v) => !v)}>Link</Button>

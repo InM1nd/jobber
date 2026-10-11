@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { KanbanSquare, Loader2, Settings, Sparkles, UserRound } from 'lucide-react';
 import { Logo } from '@/components/ui/kit';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { waitForTelegramInitData, waitForTelegramSdk } from '@/lib/telegram/web-app-launch';
@@ -76,30 +77,16 @@ export async function openExternal(url: string) {
 }
 
 function applyTheme(webApp: WebApp) {
-  const theme = webApp.themeParams || {};
   const root = document.documentElement;
-  const set = (name: string, value?: string) => {
-    if (value) root.style.setProperty(name, value);
-  };
-  set('--tg-bg', theme.bg_color);
-  set('--tg-text', theme.text_color);
-  set('--tg-hint', theme.hint_color);
-  set('--tg-link', theme.link_color);
-  set('--tg-button', theme.button_color);
-  set('--tg-button-text', theme.button_text_color);
-  set('--tg-secondary-bg', theme.secondary_bg_color);
-  set('--tg-section-bg', theme.section_bg_color || theme.bg_color);
   const safe = webApp.safeAreaInset;
   const content = webApp.contentSafeAreaInset;
   root.style.setProperty('--tg-safe-top', `${(safe?.top || 0) + (content?.top || 0)}px`);
   root.style.setProperty('--tg-safe-bottom', `${(safe?.bottom || 0) + (content?.bottom || 0)}px`);
   root.dataset.theme = webApp.colorScheme;
   root.dataset.tg = '1';
-  const page = theme.secondary_bg_color || theme.bg_color;
-  if (page) {
-    webApp.setHeaderColor?.(page);
-    webApp.setBackgroundColor?.(page);
-  }
+  const page = webApp.colorScheme === 'dark' ? '#0a0a0a' : '#ffffff';
+  webApp.setHeaderColor?.(page);
+  webApp.setBackgroundColor?.(page);
 }
 
 /** telegram-web-app.js also defines WebApp in a normal browser; only theme inside Telegram. */
@@ -222,7 +209,7 @@ function isActive(pathname: string, href: string) {
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/85 pb-[var(--safe-bottom)] backdrop-blur-xl md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/90 pb-[var(--safe-bottom)] backdrop-blur-md md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-4 px-2">
         {tabs.map((tab) => {
           const active = isActive(pathname, tab.href);
@@ -235,12 +222,10 @@ export function BottomNav() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex flex-col items-center gap-1 pb-2 pt-2.5 text-[10.5px] font-medium transition-colors',
-                active ? 'text-accent' : 'text-subtle hover:text-muted',
+                active ? 'text-fg' : 'text-subtle hover:text-muted',
               )}
             >
-              <span className={cn('flex h-7 w-12 items-center justify-center rounded-full transition-colors', active && 'bg-accent-soft')}>
-                <Icon className="size-[20px]" strokeWidth={active ? 2.2 : 1.8} />
-              </span>
+              <Icon className="size-[20px]" strokeWidth={active ? 2 : 1.6} />
               {tab.label}
             </Link>
           );
@@ -253,7 +238,7 @@ export function BottomNav() {
 export function Sidebar({ account }: { account: string }) {
   const pathname = usePathname();
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 md:flex">
+    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-line px-3 py-5 md:flex">
       <Link href="/" className="px-3 pb-6"><Logo /></Link>
       <nav className="flex flex-col gap-0.5">
         {tabs.map((tab) => {
@@ -264,21 +249,19 @@ export function Sidebar({ account }: { account: string }) {
               key={tab.href}
               href={tab.href}
               className={cn(
-                'flex items-center gap-3 rounded-[10px] px-3 py-2 text-sm font-medium transition-colors',
-                active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg',
+                'flex items-center gap-2.5 rounded-[8px] px-3 py-1.5 text-[13.5px] transition-colors',
+                active ? 'bg-surface-2 font-medium text-fg' : 'text-muted hover:text-fg',
               )}
             >
-              <Icon className="size-[18px]" strokeWidth={active ? 2.2 : 1.8} />
+              <Icon className="size-4" strokeWidth={active ? 2 : 1.6} />
               {tab.label}
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto flex items-center gap-2.5 rounded-[12px] bg-surface-2 px-3 py-2.5">
-        <span className="flex size-8 items-center justify-center rounded-full bg-accent-soft text-[13px] font-semibold uppercase text-accent">
-          {account.replace(/^@/, '').slice(0, 1) || 'J'}
-        </span>
-        <span className="min-w-0 truncate text-[13px] text-muted">{account}</span>
+      <div className="mt-auto flex items-center justify-between gap-2 px-3">
+        <span className="min-w-0 truncate text-[12.5px] text-muted">{account}</span>
+        <ThemeToggle />
       </div>
     </aside>
   );
@@ -390,12 +373,12 @@ export function AuthGate() {
             }}
           >
             <input
-              className="w-full rounded-[12px] border border-line-strong bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
+              className="w-full rounded-[8px] border border-line-strong bg-bg px-3 py-2 text-[15px] outline-none focus:border-fg"
               placeholder="Invite code"
               value={invite}
               onChange={(event) => setInvite(event.target.value)}
             />
-            <button className="h-11 w-full rounded-[12px] bg-accent text-sm font-medium text-accent-fg" type="submit">
+            <button className="h-10 w-full rounded-[8px] bg-fg text-sm font-medium text-bg" type="submit">
               Continue
             </button>
           </form>
@@ -404,7 +387,7 @@ export function AuthGate() {
         {!waiting && (
           <Link
             href="/auth/signin"
-            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-line-strong bg-surface text-sm font-medium shadow-soft"
+            className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-[8px] border border-line-strong text-sm font-medium"
           >
             Sign in on the web
           </Link>

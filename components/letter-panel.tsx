@@ -36,8 +36,8 @@ export function LetterPanel({ matchId, initial }: { matchId: string; initial: st
   }
 
   return (
-    <section className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-soft">
-      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+    <section className="overflow-hidden rounded-[var(--radius-card)] border border-line">
+      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
         <p className="text-[14px] font-medium">Cover letter</p>
         <div className="flex gap-1.5">
           {letter && (
@@ -45,7 +45,7 @@ export function LetterPanel({ matchId, initial }: { matchId: string; initial: st
               {copied ? 'Copied' : 'Copy'}
             </Button>
           )}
-          <Button type="button" size="sm" variant={letter ? 'secondary' : 'default'} onClick={generate} disabled={loading}>
+          <Button type="button" size="sm" variant={letter ? 'outline' : 'default'} onClick={generate} disabled={loading}>
             {loading ? 'Writing…' : letter ? 'Rewrite' : 'Generate'}
           </Button>
         </div>

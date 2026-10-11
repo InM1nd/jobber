@@ -70,7 +70,7 @@ export default function SignUpPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full rounded-[12px] border border-line-strong bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
+                className="w-full rounded-[8px] border border-line-strong bg-bg px-3 py-2 text-[15px] outline-none focus:border-fg"
               />
             </div>
 
@@ -85,7 +85,7 @@ export default function SignUpPage() {
                 onChange={(e) => setInviteCode(e.target.value)}
                 placeholder="Enter invite code"
                 required
-                className="w-full rounded-[12px] border border-line-strong bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
+                className="w-full rounded-[8px] border border-line-strong bg-bg px-3 py-2 text-[15px] outline-none focus:border-fg"
               />
               <p className="text-xs text-muted mt-1">
                 Get an invite code from the owner

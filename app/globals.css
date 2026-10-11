@@ -7,62 +7,53 @@
    Inside Telegram, surfaces and text follow themeParams (see telegram-ui.tsx).
    ------------------------------------------------------------------------- */
 :root {
-  --bg: #f6f6f8;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f1f1f4;
-  --fg: #0e0e12;
-  --muted: #62626e;
-  --subtle: #9a9aa6;
-  --border: rgb(14 14 18 / 0.08);
-  --border-strong: rgb(14 14 18 / 0.14);
-  --accent: #5b5bf0;
-  --accent-hover: #4b4be0;
+  --surface-2: #f4f4f5;
+  --fg: #09090b;
+  --muted: #71717a;
+  --subtle: #a1a1aa;
+  --border: #e9e9ec;
+  --border-strong: #d4d4d8;
+  --accent: #09090b;
+  --accent-hover: #27272a;
   --accent-fg: #ffffff;
-  --accent-soft: rgb(91 91 240 / 0.1);
-  --success: #12a150;
-  --success-soft: rgb(18 161 80 / 0.1);
-  --warning: #b86e00;
-  --warning-soft: rgb(230 140 0 / 0.12);
-  --danger: #e5484d;
-  --danger-soft: rgb(229 72 77 / 0.1);
-  --shadow-sm: 0 1px 2px rgb(14 14 18 / 0.04), 0 1px 1px rgb(14 14 18 / 0.02);
-  --shadow-md: 0 6px 24px -8px rgb(14 14 18 / 0.12), 0 2px 6px -2px rgb(14 14 18 / 0.06);
+  --accent-soft: #f4f4f5;
+  --success: #16a34a;
+  --success-soft: transparent;
+  --warning: #b45309;
+  --warning-soft: transparent;
+  --danger: #dc2626;
+  --danger-soft: transparent;
+  --shadow-sm: none;
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.04);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: #0b0b0f;
-  --surface: #16161c;
-  --surface-2: #1f1f27;
-  --fg: #f4f4f6;
-  --muted: #a1a1ad;
-  --subtle: #70707c;
-  --border: rgb(255 255 255 / 0.07);
-  --border-strong: rgb(255 255 255 / 0.13);
-  --accent: #8183ff;
-  --accent-hover: #9597ff;
-  --accent-fg: #0b0b14;
-  --accent-soft: rgb(129 131 255 / 0.15);
-  --success: #3dd68c;
-  --success-soft: rgb(61 214 140 / 0.13);
-  --warning: #f5b544;
-  --warning-soft: rgb(245 181 68 / 0.13);
-  --danger: #ff6369;
-  --danger-soft: rgb(255 99 105 / 0.13);
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-  --shadow-md: 0 8px 28px -10px rgb(0 0 0 / 0.6);
+  --bg: #0a0a0a;
+  --surface: #0a0a0a;
+  --surface-2: #18181b;
+  --fg: #fafafa;
+  --muted: #a1a1aa;
+  --subtle: #71717a;
+  --border: #232326;
+  --border-strong: #333338;
+  --accent: #fafafa;
+  --accent-hover: #e4e4e7;
+  --accent-fg: #0a0a0a;
+  --accent-soft: #18181b;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --shadow-md: none;
   color-scheme: dark;
 }
 
-/* Inside Telegram: grouped-list look built from the user's own theme. */
+/* Inside Telegram we follow colorScheme (light/dark) and keep our own palette. */
 [data-tg] {
-  --bg: var(--tg-secondary-bg, var(--bg));
-  --surface: var(--tg-section-bg, var(--surface));
-  --fg: var(--tg-text, var(--fg));
-  --muted: var(--tg-hint, var(--muted));
-  --subtle: var(--tg-hint, var(--subtle));
   --safe-top: var(--tg-safe-top, 0px);
   --safe-bottom: var(--tg-safe-bottom, env(safe-area-inset-bottom, 0px));
 }
@@ -90,8 +81,8 @@
   --color-danger-soft: var(--danger-soft);
   --shadow-soft: var(--shadow-sm);
   --shadow-lift: var(--shadow-md);
-  --radius-card: 16px;
-  --radius-field: 12px;
+  --radius-card: 10px;
+  --radius-field: 8px;
   --animate-in: fade-up 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
@@ -106,7 +97,8 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  font-feature-settings: "cv11", "ss01";
+  font-feature-settings: "ss01";
+  letter-spacing: -0.005em;
   -webkit-tap-highlight-color: transparent;
 }
 

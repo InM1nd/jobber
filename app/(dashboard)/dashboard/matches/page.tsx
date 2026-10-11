@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { KeyRound, Sparkles, UserRound } from 'lucide-react';
-import { MatchCard } from '@/components/app/match-card';
+import { MatchRow } from '@/components/app/match-card';
 import { Button } from '@/components/ui/button';
 import { EmptyState, PageHeader } from '@/components/ui/kit';
 import { getMatches, getProfile, listApiKeys, requireUser } from '@/lib/data/service';
@@ -40,7 +40,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         (!hasProfile ? (
           <EmptyState
             icon={UserRound}
-            title="Tell Jobber what you’re looking for"
+            title="Set up your profile"
             text="Add your CV and a few filters. Matches start arriving the next morning."
             action={<Button asChild><Link href="/dashboard/profile">Set up profile</Link></Button>}
           />
@@ -59,16 +59,16 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
           />
         ))}
 
-      <div className="space-y-7">
+      <div className="space-y-8">
         {groups.map(({ label, items }) =>
           items.length === 0 ? null : (
-            <section key={label} className="space-y-2.5">
-              <h2 className="flex items-center gap-2 px-1 text-[12px] font-medium uppercase tracking-[0.06em] text-subtle">
+            <section key={label}>
+              <h2 className="flex items-baseline justify-between border-b border-line pb-2 text-[12px] font-medium text-muted">
                 {label}
-                <span className="rounded-full bg-surface-2 px-1.5 py-px text-[11px] tabular-nums text-muted">{items.length}</span>
+                <span className="tabular-nums text-subtle">{items.length}</span>
               </h2>
-              <div className="space-y-3">
-                {items.map((match) => <MatchCard key={match.id} match={match} />)}
+              <div className="divide-y divide-line">
+                {items.map((match) => <MatchRow key={match.id} match={match} />)}
               </div>
             </section>
           ),

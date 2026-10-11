@@ -17,7 +17,7 @@ for (const [name,t] of [['dark',dark],['light',light]]) {
 for (const scheme of ['light','dark']) {
   const ctx=await b.newContext({viewport:{width:1440,height:900},colorScheme:scheme});
   const p=await ctx.newPage(); p.on('response',r=>{if(r.url().endsWith('.css')&&r.status()!==200){console.error('CSS FAIL',r.url(),r.status());process.exit(1)}});
-  for (const [file,path] of [['landing','/'],['matches','/dashboard/matches'],['signin','/auth/signin'],['settings','/dashboard/settings']]) {
+  for (const [file,path] of [['landing','/'],['matches','/dashboard/matches']]) {
     await p.goto(B+path,{waitUntil:'networkidle'}); await p.waitForTimeout(600);
     await p.screenshot({path:`${OUT}/web-${scheme}-${file}.png`});
   }
