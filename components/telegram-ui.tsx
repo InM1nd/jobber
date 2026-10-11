@@ -222,7 +222,7 @@ export function BottomNav() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex flex-col items-center gap-1 pb-2 pt-2.5 text-[10.5px] font-medium transition-colors',
-                active ? 'text-fg' : 'text-subtle hover:text-muted',
+                active ? 'text-accent' : 'text-subtle hover:text-muted active:text-fg',
               )}
             >
               <Icon className="size-[20px]" strokeWidth={active ? 2 : 1.6} />
@@ -250,7 +250,7 @@ export function Sidebar({ account }: { account: string }) {
               href={tab.href}
               className={cn(
                 'flex items-center gap-2.5 rounded-[8px] px-3 py-1.5 text-[13.5px] transition-colors',
-                active ? 'bg-surface-2 font-medium text-fg' : 'text-muted hover:text-fg',
+                active ? 'bg-surface-2 font-medium text-fg [&_svg]:text-accent' : 'text-muted hover:bg-surface-2/60 hover:text-fg',
               )}
             >
               <Icon className="size-4" strokeWidth={active ? 2 : 1.6} />
@@ -378,7 +378,7 @@ export function AuthGate() {
               value={invite}
               onChange={(event) => setInvite(event.target.value)}
             />
-            <button className="h-10 w-full rounded-[8px] bg-fg text-sm font-medium text-bg" type="submit">
+            <button className="h-10 w-full rounded-[8px] bg-accent text-sm font-medium text-accent-fg" type="submit">
               Continue
             </button>
           </form>

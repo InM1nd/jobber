@@ -19,9 +19,9 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={cn('relative h-[24px] w-[40px] shrink-0 rounded-full transition-colors', checked ? 'bg-fg' : 'bg-line-strong')}
+      className={cn('relative h-[24px] w-[40px] shrink-0 rounded-full transition-colors', checked ? 'bg-accent' : 'bg-line-strong')}
     >
-      <span className={cn('absolute top-[2px] size-[20px] rounded-full bg-bg transition-transform', checked ? 'translate-x-[18px]' : 'translate-x-[2px]')} />
+      <span className={cn('absolute top-[2px] size-[20px] rounded-full bg-white shadow-sm transition-transform', checked ? 'translate-x-[18px]' : 'translate-x-[2px]')} />
     </button>
   );
 }

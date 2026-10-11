@@ -22,9 +22,14 @@ const LABELS: Record<string, string> = {
 };
 
 const TONE: Record<string, string> = {
-  to_apply: 'text-muted', applied: 'text-fg', interview: 'text-fg', on_hold: 'text-muted',
-  offer: 'text-success', rejected: 'text-subtle', skip: 'text-subtle',
+  to_apply: 'text-muted', applied: 'text-st-applied', interview: 'text-st-interview', on_hold: 'text-muted',
+  offer: 'text-st-offer', rejected: 'text-subtle', skip: 'text-subtle',
 };
+const DOT: Record<string, string> = {
+  to_apply: 'bg-subtle', applied: 'bg-st-applied', interview: 'bg-st-interview', on_hold: 'bg-subtle',
+  offer: 'bg-st-offer', rejected: 'bg-line-strong', skip: 'bg-line-strong',
+};
+const SEG_DOT: Record<string, string> = { to_apply: 'bg-subtle', applied: 'bg-st-applied', interview: 'bg-st-interview', closed: 'bg-line-strong' };
 
 const SEGMENTS = [
   { key: 'to_apply', label: 'To apply', match: ['to_apply'] },
@@ -101,11 +106,11 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
             onClick={() => setSegment(s.key)}
             className={cn(
               '-mb-px flex flex-col items-center border-b py-2 text-[12px] transition-colors',
-              segment === s.key ? 'border-fg text-fg' : 'border-transparent text-muted hover:text-fg',
+              segment === s.key ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg',
             )}
           >
             <span className="text-[15px] font-medium tabular-nums leading-tight">{counts[s.key]}</span>
-            {s.label}
+            <span className="inline-flex items-center gap-1.5"><span className={cn('size-1.5 rounded-full', SEG_DOT[s.key])} />{s.label}</span>
           </button>
         ))}
       </div>
@@ -131,7 +136,7 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex h-10 items-center gap-1.5 text-[13.5px] text-muted transition-colors hover:text-fg"
+          className="flex h-10 items-center gap-1.5 text-[13.5px] font-medium text-accent transition-opacity hover:opacity-80"
         >
           <Plus className="size-4" /> Add application
         </button>
@@ -154,7 +159,8 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
                   <h3 className="text-[15px] font-medium leading-snug">{app.role}</h3>
                   <p className="text-[13px] text-muted">{app.company}</p>
                 </div>
-                <label className={cn('relative inline-flex shrink-0 items-center gap-1 rounded-[6px] border border-line py-0.5 pl-2 pr-1 text-[12px]', TONE[app.status] || TONE.to_apply)}>
+                <label className={cn('relative inline-flex shrink-0 items-center gap-1.5 rounded-[6px] border border-line py-0.5 pl-2 pr-1 text-[12px] font-medium transition-colors hover:bg-surface-2', TONE[app.status] || TONE.to_apply)}>
+                  <span className={cn('size-1.5 rounded-full', DOT[app.status] || DOT.to_apply)} />
                   {LABELS[app.status] || 'To apply'}
                   <ChevronDown className="size-3.5 opacity-70" />
                   <select
@@ -177,7 +183,7 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
                 )}
                 {app.salaryExpectation && <span>{app.salaryExpectation}</span>}
                 {app.url && (
-                  <a className="ml-auto inline-flex items-center gap-0.5 text-fg" href={app.url} target="_blank" rel="noreferrer">
+                  <a className="ml-auto inline-flex items-center gap-0.5 text-accent" href={app.url} target="_blank" rel="noreferrer">
                     Listing <ArrowUpRight className="size-3.5" />
                   </a>
                 )}

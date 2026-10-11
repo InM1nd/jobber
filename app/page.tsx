@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Logo, Note } from '@/components/ui/kit';
+import { Logo, Note, ScoreRing } from '@/components/ui/kit';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const BOT = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'JobberCheck_bot').replace(/^@/, '');
@@ -37,15 +37,18 @@ export default function Home() {
 
         <div className="mt-20 w-full max-w-md text-left">
           <div className="flex items-baseline justify-between border-b border-line pb-2 text-[12px] text-muted">
-            <span className="font-medium">This morning</span>
-            <span className="tabular-nums text-subtle">3</span>
+            <span className="inline-flex items-center gap-1.5 font-medium"><span className="size-1.5 rounded-full bg-accent" />This morning</span>
+            <span className="text-subtle">2 new · 1 strong</span>
           </div>
-          <div className="divide-y divide-line">
-            {rows.map((r) => (
-              <div key={r.title} className="flex gap-3 py-3.5">
-                <span className={`w-8 shrink-0 text-[15px] font-medium tabular-nums ${r.score >= 80 ? 'text-fg' : 'text-muted'}`}>{r.score}</span>
+          <div className="mt-1 space-y-0.5">
+            {rows.map((r, i) => (
+              <div key={r.title} className={`-mx-3 flex gap-3.5 rounded-[10px] px-3 py-3.5 ${i === 0 ? 'bg-accent-soft' : ''}`}>
+                <ScoreRing score={r.score} />
                 <div className="min-w-0">
-                  <p className="text-[14.5px] font-medium">{r.title}</p>
+                  <p className="flex items-center gap-2 text-[14.5px] font-medium">
+                    {r.title}
+                    {i < 2 && <span className="rounded-[4px] bg-accent-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-accent">New</span>}
+                  </p>
                   <p className="text-[12.5px] text-muted">{r.meta}</p>
                   {r.reason && <p className="mt-1 text-[12.5px] text-fg/80">{r.reason}</p>}
                   {r.flag && <Note tone="warning" className="mt-1">{r.flag}</Note>}

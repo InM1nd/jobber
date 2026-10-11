@@ -148,6 +148,7 @@ export async function getMatches(userId: string) {
       currency: match.job.currency,
       postedAt: match.job.postedAt?.toISOString() ?? null,
     },
+    createdAt: match.createdAt.toISOString(),
   }));
 }
 

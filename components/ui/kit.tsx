@@ -24,6 +24,51 @@ export function Note({ tone = 'neutral', children, className }: { tone?: 'neutra
   );
 }
 
+export type Fit = 'strong' | 'good' | 'ok' | 'weak';
+
+export function fitOf(score: number): Fit {
+  if (score >= 80) return 'strong';
+  if (score >= 65) return 'good';
+  if (score >= 45) return 'ok';
+  return 'weak';
+}
+
+export const FIT_LABEL: Record<Fit, string> = { strong: 'Strong match', good: 'Good fit', ok: 'Worth a look', weak: 'Long shot' };
+export const FIT_TEXT: Record<Fit, string> = { strong: 'text-fit-strong', good: 'text-fit-good', ok: 'text-fit-ok', weak: 'text-fit-weak' };
+export const FIT_BG: Record<Fit, string> = { strong: 'bg-fit-strong', good: 'bg-fit-good', ok: 'bg-fit-ok', weak: 'bg-fit-weak' };
+
+/** Number inside a thin progress arc, coloured by fit. Fills once on load. */
+export function ScoreRing({ score, size = 36, className }: { score: number; size?: number; className?: string }) {
+  const stroke = 2.5;
+  const r = (size - stroke) / 2;
+  const len = 2 * Math.PI * r;
+  const fit = fitOf(score);
+  return (
+    <span className={cn('relative inline-flex shrink-0 items-center justify-center', FIT_TEXT[fit], className)} style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={len}
+          strokeDashoffset={len * (1 - Math.max(0, Math.min(100, score)) / 100)}
+          style={{ ['--ring-len' as string]: `${len}`, animation: 'ring-fill 0.9s cubic-bezier(0.2,0.7,0.2,1) both' }}
+        />
+      </svg>
+      <span className="absolute text-[12px] font-semibold tabular-nums text-fg" style={{ fontSize: size * 0.34 }}>{score}</span>
+    </span>
+  );
+}
+
+export function FitDot({ fit, className }: { fit: Fit; className?: string }) {
+  return <span className={cn('inline-block size-1.5 shrink-0 rounded-full', FIT_BG[fit], className)} />;
+}
+
 export function Score({ score, className }: { score: number; className?: string }) {
   return (
     <span className={cn('w-8 shrink-0 text-[15px] font-medium tabular-nums', score >= 80 ? 'text-fg' : 'text-muted', className)}>
@@ -83,7 +128,7 @@ export function Row({
 }
 
 export const fieldClass =
-  'w-full rounded-[var(--radius-field)] border border-line-strong bg-bg px-3 py-2 text-[15px] text-fg placeholder:text-subtle outline-none transition-colors focus:border-fg md:text-sm';
+  'w-full rounded-[var(--radius-field)] border border-line-strong bg-bg px-3 py-2 text-[15px] text-fg placeholder:text-subtle outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 md:text-sm';
 
 export const inlineFieldClass = 'w-full bg-transparent text-right text-[14.5px] text-fg placeholder:text-subtle outline-none';
 
@@ -98,7 +143,7 @@ export function Notice({ tone, children }: { tone: 'success' | 'danger'; childre
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn('inline-flex items-center gap-2 text-[15px] font-semibold tracking-[-0.02em]', className)}>
-      <span className="flex size-5 items-center justify-center rounded-[5px] bg-fg text-[11px] font-bold text-bg">J</span>
+      <span className="flex size-5 items-center justify-center rounded-[5px] bg-accent text-[11px] font-bold text-accent-fg">J</span>
       Jobber
     </span>
   );

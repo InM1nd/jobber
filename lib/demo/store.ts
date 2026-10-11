@@ -24,6 +24,8 @@ export interface DemoMatch {
   reasons: string[];
   redFlags: string[];
   coverLetter: string | null;
+  /** When Jobber scored it; drives the "new" badge. */
+  createdAt?: string;
   job: {
     id: string;
     title: string;
@@ -108,6 +110,7 @@ function initialState(): DemoState {
     matches: [
       {
         id: 'm1',
+        createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
         score: 86,
         priority: 'high',
         reasons: [
@@ -134,6 +137,7 @@ function initialState(): DemoState {
       },
       {
         id: 'm2',
+        createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
         score: 74,
         priority: 'medium',
         reasons: ['Design-engineer shape: Figma plus production React.', 'CMS and content tooling sit close to existing work.'],
@@ -157,6 +161,7 @@ function initialState(): DemoState {
       },
       {
         id: 'm3',
+        createdAt: new Date(Date.now() - 30 * 3600000).toISOString(),
         score: 61,
         priority: 'medium',
         reasons: ['Product engineer title and a small-team product surface.'],
@@ -179,6 +184,7 @@ function initialState(): DemoState {
       },
       {
         id: 'm4',
+        createdAt: new Date(Date.now() - 60 * 3600000).toISOString(),
         score: 28,
         priority: 'low',
         reasons: ['The company is on the watchlist.'],

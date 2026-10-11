@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { ArrowUpRight, ChevronLeft } from 'lucide-react';
 import { LetterPanel } from '@/components/letter-panel';
 import { TelegramBack } from '@/components/telegram-ui';
-import { Note } from '@/components/ui/kit';
+import { FIT_LABEL, FIT_TEXT, Note, ScoreRing, fitOf } from '@/components/ui/kit';
 import { getMatch, requireUser } from '@/lib/data/service';
 import { formatSalaryRange } from '@/lib/text';
 
@@ -26,16 +26,19 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         <ChevronLeft className="size-4" /> Matches
       </Link>
 
-      <header>
+      <header className="flex items-start gap-4">
+        <ScoreRing score={match.score} size={52} />
+        <div className="min-w-0">
         <p className="text-[13px] text-muted">{match.job.company}</p>
         <h1 className="mt-1 text-[22px] font-semibold leading-tight tracking-[-0.02em] md:text-[28px]">{match.job.title}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted">
-          <span><span className="font-medium tabular-nums text-fg">{match.score}</span> match</span>
+          <span className={`font-medium ${FIT_TEXT[fitOf(match.score)]}`}>{FIT_LABEL[fitOf(match.score)]}</span>
           {place && <span>{place}</span>}
           {salary && <span>{salary}</span>}
-          <a href={match.job.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-fg underline-offset-4 hover:underline">
+          <a href={match.job.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent underline-offset-4 hover:underline">
             Listing <ArrowUpRight className="size-3.5" />
           </a>
+        </div>
         </div>
       </header>
 
