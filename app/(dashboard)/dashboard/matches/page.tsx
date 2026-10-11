@@ -4,6 +4,7 @@ import { SearchProgress } from '@/components/search-progress';
 import { latestRun, runView } from '@/lib/search/pipeline';
 import { MatchRow, isNew } from '@/components/app/match-card';
 import { SkippedList } from '@/components/skipped-list';
+import { AddJobLink } from '@/components/add-job-link';
 import { TIER_ORDER } from '@/lib/jobs/prefilter';
 import Link from 'next/link';
 import { ChevronRight, Filter } from 'lucide-react';
@@ -75,6 +76,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       />
 
       {activeRun && <SearchProgress initial={activeRun} className="mb-8" />}
+
+      {!isDemoMode() && <AddJobLink />}
 
       {matches.length > 0 && (
         <div className="relative mb-9 pt-3">

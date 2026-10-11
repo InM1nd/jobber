@@ -2,10 +2,14 @@ import type { JobSource as DbSource } from '@prisma/client';
 import { getPrisma } from '@/lib/db/prisma';
 import { makeDedupeKey } from './dedupe';
 import { fetchJobsFromSource } from '@/lib/sources/factory';
+import { SCRAPE_FRESH_MS } from '@/lib/scrapers';
 
 /** Fetches one source and upserts its jobs. Returns how many jobs it saw. */
 export async function ingestSource(source: DbSource, maxJobs = 80): Promise<number> {
   const prisma = getPrisma();
+  // Shared scraper rows: one fetch serves every allowed user; don't refetch inside the window.
+  if (source.sourceType.startsWith('scrape:') && source.lastSuccessAt && Date.now() - source.lastSuccessAt.getTime() < SCRAPE_FRESH_MS) return 0;
+  if (source.sourceType === 'manual') return 0;
   try {
     const jobs = (
       await fetchJobsFromSource({

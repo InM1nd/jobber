@@ -19,7 +19,7 @@ export async function watchList(userId: string) {
   const prisma = getPrisma();
   const profile = await prisma.profile.findUnique({ where: { userId } });
   if (!profile?.sourceIds.length) return [];
-  const rows = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, OR: [{ sector: null }, { sector: { notIn: ['board', 'scrape'] } }] } });
+  const rows = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, OR: [{ sector: null }, { sector: { notIn: ['board', 'scrape', 'manual'] } }] } });
   return rows.map((r) => ({ id: r.id, name: r.company, ats: r.sourceType, url: r.sourceUrl, lastSuccessAt: r.lastSuccessAt?.toISOString() ?? null }));
 }
 
@@ -50,17 +50,21 @@ export async function rebuildSources(userId: string, companies?: Array<WatchComp
     names = current.map((c) => c.name);
   }
   const scraperIds = await ownerScraperSources(userId, keywords, profile.location);
-  const sourceIds = [...new Set([...scraperIds, ...companyIds, ...boardIds])];
+  // Keep the user's own "Added by you" source.
+  const manual = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, sector: 'manual' }, select: { id: true } });
+  const sourceIds = [...new Set([...scraperIds, ...companyIds, ...boardIds, ...manual.map((m) => m.id)])];
   await prisma.profile.update({ where: { userId }, data: { sourceIds, watchedCompanies: names } });
   return sourceIds;
 }
 
-/** Owner-only Austrian platform scrapers (flag OWNER_SCRAPERS=true + OWNER_TELEGRAM_ID). */
+/** Allow-listed Austrian platform scrapers (OWNER_SCRAPERS=true + OWNER_TELEGRAM_ID or SCRAPER_TELEGRAM_IDS). */
 async function ownerScraperSources(userId: string, keywords: string[], city?: string | null) {
   const user = await getPrisma().user.findUnique({ where: { id: userId }, select: { telegramId: true } });
   if (!scrapersEnabledFor(user)) return [];
-  const where = city?.trim() || 'Wien';
-  const specs = keywords.slice(0, 3).flatMap((k) =>
+  // Normalised so identical keyword+city queries map to ONE shared source row across users.
+  const where = (city?.trim() || 'Wien').toLowerCase().replace(/^vienna$/, 'wien');
+  const kws = [...new Set(keywords.map((k) => k.trim().toLowerCase()).filter(Boolean))];
+  const specs = kws.slice(0, 3).flatMap((k) =>
     PLATFORMS.filter((p) => p.status === 'enabled').map((p) => ({
       company: `${p.name} · ${k} · ${where}`,
       sourceType: `scrape:${p.id}`,

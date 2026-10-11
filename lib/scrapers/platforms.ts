@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import type { RawJob } from '@/lib/sources/types';
-import { stripHtml } from '@/lib/sources/html';
+import { jobFromJsonLd, pageText } from '@/lib/jobs/extract';
 import { politeGet, scrubPersonal, slug } from './polite';
 
 /**
@@ -36,25 +36,9 @@ const daysAgo = (s: string) => {
 const remoteish = (s: string) => /home[- ]?office|remote|homeoffice/i.test(s);
 
 function mainText(html: string, selectors: string[]) {
-  const $ = cheerio.load(html);
-  for (const sel of selectors) {
-    const el = $(sel).first();
-    if (el.length) {
-      const t = textOf($, el);
-      if (t.length > 300) return t;
-    }
-  }
-  const ld = $('script[type="application/ld+json"]').map((_, e) => $(e).text()).get().find((t) => t.includes('JobPosting'));
-  if (ld) {
-    try {
-      const j = JSON.parse(ld);
-      const post = (Array.isArray(j) ? j : [j]).find((x) => x['@type'] === 'JobPosting');
-      if (post?.description) return stripHtml(post.description);
-    } catch {
-      /* ignore */
-    }
-  }
-  return '';
+  const ld = jobFromJsonLd(html);
+  if (ld && ld.description.length > 300) return ld.description;
+  return pageText(html, selectors);
 }
 
 export const PLATFORMS: Platform[] = [
@@ -88,7 +72,7 @@ export const PLATFORMS: Platform[] = [
         .get()
         .filter(Boolean) as RawJob[];
     },
-    detail: (html) => mainText(html, ['.m-jobContent__jobText', '.m-jobContent', 'main']),
+    detail: (html) => mainText(html, ['iframe.m-jobContent__iFrame', '.m-jobContent__jobText', '.m-jobContent']),
   },
   {
     id: 'stepstone',

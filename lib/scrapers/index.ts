@@ -3,11 +3,22 @@ import { PLATFORMS, scrapePlatform } from './platforms';
 
 export const SCRAPER_TYPES = PLATFORMS.filter((p) => p.status === 'enabled').map((p) => `scrape:${p.id}`);
 
-/** Feature flag: only on when OWNER_SCRAPERS=true AND the user is the owner. */
-export function scrapersEnabledFor(user: { telegramId?: string | null } | null | undefined) {
-  const owner = process.env.OWNER_TELEGRAM_ID?.trim();
-  return process.env.OWNER_SCRAPERS === 'true' && Boolean(owner) && user?.telegramId === owner;
+/** Telegram ids allowed to use the scrapers: OWNER_TELEGRAM_ID + SCRAPER_TELEGRAM_IDS (comma-separated). */
+export function scraperAllowlist() {
+  return new Set(
+    [process.env.OWNER_TELEGRAM_ID, ...(process.env.SCRAPER_TELEGRAM_IDS || '').split(',')]
+      .map((x) => x?.trim())
+      .filter((x): x is string => Boolean(x)),
+  );
 }
+
+/** Feature flag: OWNER_SCRAPERS=true AND the user's Telegram id is on the allowlist. */
+export function scrapersEnabledFor(user: { telegramId?: string | null } | null | undefined) {
+  return process.env.OWNER_SCRAPERS === 'true' && Boolean(user?.telegramId) && scraperAllowlist().has(user!.telegramId!);
+}
+
+/** Scraped sources are shared rows (same keyword+city => same row for all users); refetch at most this often. */
+export const SCRAPE_FRESH_MS = Number(process.env.SCRAPER_FRESH_HOURS || 12) * 3600 * 1000;
 
 export function scraperSourceUrl(platformId: string, keyword: string, city: string) {
   const p = PLATFORMS.find((x) => x.id === platformId)!;

@@ -4,7 +4,7 @@ import { scrubPersonal } from './polite';
 import { makeDedupeKey } from '@/lib/jobs/dedupe';
 
 describe('owner scrapers', () => {
-  afterEach(() => { delete process.env.OWNER_SCRAPERS; delete process.env.OWNER_TELEGRAM_ID; });
+  afterEach(() => { delete process.env.OWNER_SCRAPERS; delete process.env.OWNER_TELEGRAM_ID; delete process.env.SCRAPER_TELEGRAM_IDS; });
   it('only enables for the owner with the flag on', () => {
     process.env.OWNER_TELEGRAM_ID = '42';
     expect(scrapersEnabledFor({ telegramId: '42' })).toBe(false);
@@ -12,6 +12,9 @@ describe('owner scrapers', () => {
     expect(scrapersEnabledFor({ telegramId: '42' })).toBe(true);
     expect(scrapersEnabledFor({ telegramId: '7' })).toBe(false);
     expect(scrapersEnabledFor(null)).toBe(false);
+    process.env.SCRAPER_TELEGRAM_IDS = ' 7, 8 ,';
+    expect(scrapersEnabledFor({ telegramId: '7' })).toBe(true);
+    expect(scrapersEnabledFor({ telegramId: '9' })).toBe(false);
   });
   it('scrubs personal data', () => {
     const t = scrubPersonal('Apply now\nIhre Ansprechperson: Maria Muster\nmail jobs.x@firma.at or +43 1 234 56 78');
