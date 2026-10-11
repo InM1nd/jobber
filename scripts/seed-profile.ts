@@ -20,37 +20,54 @@ async function main() {
     console.log('Copy your profile and writing rules into seed-data/ to seed the owner account.');
   }
 
-  const ownerEmail = process.env.OWNER_EMAIL || 'owner@example.com';
+  const ownerTelegramId = process.env.OWNER_TELEGRAM_ID?.trim() || '';
+  const inviteCode = process.env.SEED_INVITE_CODE || `jobber-${crypto.randomBytes(3).toString('hex')}`;
 
-  let user = await prisma.user.findUnique({
-    where: { email: ownerEmail },
-    include: { profile: true },
-  });
+  let user = ownerTelegramId
+    ? await prisma.user.findUnique({
+        where: { telegramId: ownerTelegramId },
+        include: { profile: true },
+      })
+    : null;
 
-  if (!user) {
+  if (!user && ownerTelegramId) {
     user = await prisma.user.create({
       data: {
-        email: ownerEmail,
+        email: `tg${ownerTelegramId}@users.jobber.local`,
+        telegramId: ownerTelegramId,
       },
       include: { profile: true },
     });
-    console.log(`Created user: ${ownerEmail}`);
+    console.log(`Created owner for Telegram id ${ownerTelegramId}`);
   }
 
-  const inviteCode = process.env.SEED_INVITE_CODE || `jobber-${crypto.randomBytes(3).toString('hex')}`;
+  if (!user) {
+    const invite = await prisma.inviteCode.findUnique({ where: { code: inviteCode } });
+    if (invite?.usedBy) {
+      user = await prisma.user.findUnique({
+        where: { id: invite.usedBy },
+        include: { profile: true },
+      });
+    }
+  }
+
   await prisma.inviteCode.upsert({
     where: { code: inviteCode },
     create: {
       code: inviteCode,
-      createdBy: user.id,
+      createdBy: user?.id || 'seed',
       expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     },
     update: {},
   });
   console.log(`Invite code: ${inviteCode}`);
 
-  if (!hasProfile) {
+  if (!hasProfile || !user) {
     await seedSources(watchlistPath);
+    if (hasProfile && !user) {
+      console.log('Profile files are present, but no owner Telegram account exists yet.');
+      console.log('Set OWNER_TELEGRAM_ID, or open the Mini App with the invite above, then run seed again.');
+    }
     return;
   }
 
@@ -136,9 +153,8 @@ async function main() {
 
   await seedSources(watchlistPath);
 
-  console.log('\n✅ Seed complete!');
-  console.log(`\nOwner account: ${ownerEmail}`);
-  console.log('Use Supabase magic link to sign in');
+  console.log('\nSeed complete.');
+  console.log(`Owner Telegram id: ${user.telegramId || ownerTelegramId || 'the account that used the seed invite'}`);
 }
 
 async function seedSources(watchlistPath: string) {

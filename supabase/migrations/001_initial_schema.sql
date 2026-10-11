@@ -1,7 +1,7 @@
 -- Run this AFTER `npx prisma db push`.
 -- Prisma creates the tables. This file turns on Row Level Security so the
 -- Supabase anon/authenticated API cannot read another person's rows.
--- The Next.js server connects with DATABASE_URL and bypasses RLS; every
+-- The Next.js server connects with DATABASE_URL (transaction pooler) and bypasses RLS; every
 -- server query still filters by the signed-in user id.
 
 ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;

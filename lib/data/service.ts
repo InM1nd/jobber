@@ -377,42 +377,51 @@ export async function signInWithTelegram(input: {
     return { user: existing };
   }
 
-  const ownerEmail = process.env.OWNER_EMAIL;
-  if (ownerEmail) {
-    const owner = await prisma.user.findUnique({ where: { email: ownerEmail } });
-    if (owner && !owner.telegramId) {
-      const attached = await prisma.user.update({
-        where: { id: owner.id },
-        data: { telegramId: input.telegramId, telegramUsername: input.username || null },
-      });
-      return { user: attached };
-    }
+  const configuredOwner = process.env.OWNER_TELEGRAM_ID?.trim();
+  if (configuredOwner && input.telegramId === configuredOwner) {
+    const created = await prisma.user.create({
+      data: {
+        email: `tg${input.telegramId}@users.jobber.local`,
+        telegramId: input.telegramId,
+        telegramUsername: input.username || null,
+      },
+    });
+    return { user: created };
   }
 
   const invite = input.startParam?.trim() || '';
   const allowed = invite ? await checkInvite(invite) : false;
-  const userCount = await prisma.user.count();
-  if (!allowed && userCount > 0) return { error: 'invite' };
+  if (!allowed) return { error: 'invite' };
 
   const created = await prisma.user.create({
     data: {
       email: `tg${input.telegramId}@users.jobber.local`,
       telegramId: input.telegramId,
       telegramUsername: input.username || null,
-      invitedBy: allowed ? invite : null,
+      invitedBy: invite,
     },
   });
   if (allowed) await consumeInvite(invite, created.id);
   return { user: created };
 }
 
+export async function isOwner(user: SessionUser) {
+  const configured = process.env.OWNER_TELEGRAM_ID?.trim();
+  if (configured) return user.telegramId === configured;
+
+  const prisma = getPrisma();
+  const first = await prisma.user.findFirst({
+    where: { telegramId: { not: null } },
+    orderBy: { createdAt: 'asc' },
+  });
+  return first?.id === user.id;
+}
+
 export async function createInvite(user: SessionUser) {
   if (isDemoMode()) return demoStore.createInvite();
 
   const prisma = getPrisma();
-  const count = await prisma.user.count();
-  const owner = process.env.OWNER_EMAIL;
-  if (owner && user.email !== owner && count > 1) {
+  if (!(await isOwner(user))) {
     throw new Error('Only the owner can create invite codes');
   }
   const code = `jobber-${crypto.randomBytes(3).toString('hex')}`;

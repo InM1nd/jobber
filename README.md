@@ -6,7 +6,7 @@ The owner tests it first. Friends get in with an invite code. Jobber does not pa
 
 ## What works in this version
 
-- Sign-in from Telegram WebApp `initData`, checked with HMAC-SHA256 and the bot token. `auth_date` older than 24 hours is rejected. A signed cookie is the session. Email magic link still works in a normal browser.
+- Sign-in from Telegram WebApp `initData`, checked with HMAC-SHA256 and the bot token. `auth_date` older than 24 hours is rejected. A signed cookie is the session. The owner is the Telegram account in `OWNER_TELEGRAM_ID`, or the first account that opens the app with the seed invite. Email magic link still works in a normal browser.
 - Profile: PDF text extraction, skills, location and salary filters, skill gaps, writing rules, company watchlist.
 - Pluggable sources with real parsers: Greenhouse, Ashby, Lever, Workable, Personio, Recruitee, SmartRecruiters, RSS/Teamtailor, and the public Remotive API. HTML-only and Join.com pages are stored but not fetched.
 - Deduping the same company + title + location across sources.
@@ -41,7 +41,7 @@ npm install
 2. In **Authentication → Providers → Email**, keep email enabled. Magic links are the login method.
 3. In **Authentication → URL configuration**, add `https://<your-domain>/auth/callback` and `http://127.0.0.1:43123/auth/callback`.
 4. Copy the project URL, anon key, and service role key.
-5. Copy the Postgres connection string into `DATABASE_URL`. Use the direct connection string for Prisma, not the pooled one, if `db push` complains.
+5. In **Project Settings → Database**, copy both pooler strings (see the next section). Prisma Client talks to the transaction pooler. `prisma db push` talks to the session pooler.
 
 ### 3. Environment
 
@@ -51,7 +51,8 @@ cp .env.example .env.local
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Postgres connection string |
+| `DATABASE_URL` | Supabase transaction pooler, port 6543, with `?pgbouncer=true`. Prisma Client uses this for every query |
+| `DIRECT_URL` | Supabase session pooler, port 5432. Prisma uses this only for `db push` and migrations |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser auth key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Reserved for server tasks. Not used by the browser |
@@ -60,8 +61,8 @@ cp .env.example .env.local
 | `CRON_SECRET` | Random string. Vercel sends it as `Authorization: Bearer …` |
 | `NEXT_PUBLIC_APP_URL` | Public origin, no trailing slash. Locally `http://127.0.0.1:43123` |
 | `DEMO_MODE` | `false` once Supabase is set. `true` forces sample data |
-| `OWNER_EMAIL` | Account the seed script creates, and the only person who can mint invites after more users exist |
-| `SEED_INVITE_CODE` | Optional. Otherwise the seed script prints a random code |
+| `OWNER_TELEGRAM_ID` | Numeric Telegram id of the owner. That account opens the app without an invite and is the only one who can mint invites. Leave empty to use the seed invite instead |
+| `SEED_INVITE_CODE` | Optional. Otherwise the seed script prints a random code. The first Telegram user who opens the app with this code is the owner when `OWNER_TELEGRAM_ID` is empty |
 
 Generate the two secrets:
 
@@ -71,6 +72,8 @@ openssl rand -hex 32   # CRON_SECRET
 ```
 
 ### 4. Database
+
+`DATABASE_URL` is the transaction pooler (`:6543/postgres?pgbouncer=true`). `DIRECT_URL` is the session pooler (`:5432/postgres`). Prisma Client reads `DATABASE_URL`. `prisma db push` and migrations read `DIRECT_URL`, because the transaction pooler cannot run them.
 
 ```bash
 npx prisma db push
@@ -93,10 +96,10 @@ mkdir -p seed-data
 If the watchlist file is missing, the script uses `examples/company_watchlist.json` (public career URLs only).
 
 ```bash
-OWNER_EMAIL="you@example.com" npm run seed
+npm run seed
 ```
 
-The script prints an invite code. Sign in with the same email via the magic link. The callback attaches your Supabase user to that row.
+The script prints an invite code and seeds job sources. It does not create an email account. Set `OWNER_TELEGRAM_ID` to your numeric Telegram id and the script writes the local profile onto that Telegram user. If the id is empty, open the Mini App with the printed invite first, then run the seed again so the profile lands on that account.
 
 ### 6. Telegram Mini App
 
@@ -123,7 +126,7 @@ curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -d '{"url":"https://YOUR_DOMAIN/api/telegram"}'
 ```
 
-Invite links look like `https://t.me/<bot>/<shortname>?startapp=CODE`. `/start CODE` also passes the code into the button URL. The seeded owner account is attached to the first Telegram user who opens the app with `OWNER_EMAIL`, without an invite. Everyone else needs a code.
+Invite links look like `https://t.me/<bot>/<shortname>?startapp=CODE`. `/start CODE` also passes the code into the button URL. The owner is `OWNER_TELEGRAM_ID`, or, when that is empty, the first Telegram user who opens the app with the seed invite. Only the owner can mint further invites. Everyone else needs a code.
 
 ### 7. Your model key
 
@@ -139,7 +142,7 @@ Inside Telegram, Connect OpenRouter calls `Telegram.WebApp.openLink`. The return
 - `09:00 UTC` `/api/cron/match-jobs` — up to 5 users, 10 unscored jobs each
 - `10:00 UTC` `/api/cron/follow-ups` — Telegram reminders
 
-Set every variable from `.env.local` in the Vercel project, including `CRON_SECRET`. Vercel Cron must send `Authorization: Bearer $CRON_SECRET`. If your project does not inject that header, add a rewrite or a cron proxy that does. The routes reject anything else.
+Set every variable from `.env.local` in the Vercel project, including `DATABASE_URL`, `DIRECT_URL`, and `CRON_SECRET`. `prisma generate` reads both database URLs from the schema even though queries only use `DATABASE_URL`. Vercel Cron must send `Authorization: Bearer $CRON_SECRET`. If your project does not inject that header, add a rewrite or a cron proxy that does. The routes reject anything else.
 
 ### 9. Run locally
 
