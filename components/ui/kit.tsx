@@ -179,10 +179,21 @@ export function Notice({ tone, children }: { tone: 'success' | 'danger'; childre
   );
 }
 
+/** Match ring: mint progress ring with a J. Ring/track use theme tokens, J uses currentColor. */
+export function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="64 64 384 384" className={cn('shrink-0', className)} aria-hidden>
+      <circle cx="256" cy="256" r="170" fill="none" stroke="var(--color-line)" strokeWidth="46" />
+      <path d="M341 108.8 A170 170 0 1 1 146.7 125.8" fill="none" stroke="var(--color-accent)" strokeWidth="46" strokeLinecap="round" />
+      <path d="M282 176 V282 a52 52 0 0 1 -104 0" fill="none" stroke="currentColor" strokeWidth="52" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn('inline-flex items-center gap-2 text-[17px] font-semibold tracking-[-0.03em]', className)}>
-      <span className="flex size-6 items-center justify-center rounded-[7px] bg-accent text-[11px] font-bold text-accent-fg">J</span>
+      <LogoMark className="size-6" />
       Jobber
     </span>
   );

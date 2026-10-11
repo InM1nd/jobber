@@ -26,7 +26,14 @@ export const metadata: Metadata = {
   description: "Daily job matches scored against your profile, honest cover letters, and a simple tracker. In Telegram and on the web.",
   applicationName: "Jobber",
   appleWebApp: { capable: true, title: "Jobber", statusBarStyle: "default" },
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,6 +1,6 @@
 // Jobber service worker: offline shell + cache-first static assets.
-const VERSION = 'jobber-v1';
-const SHELL = ['/offline.html', '/icons/icon-192.png', '/icons/icon-512.png'];
+const VERSION = 'jobber-v2';
+const SHELL = ['/offline.html', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
