@@ -12,10 +12,9 @@ ALTER TABLE "Application" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "JobSource" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Job" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "InviteCode" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "LinkCode" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "CronJob" ENABLE ROW LEVEL SECURITY;
 
--- ApiKey, InviteCode, LinkCode, and CronJob have no policies on purpose.
+-- ApiKey, InviteCode, and CronJob have no policies on purpose.
 -- With RLS enabled and no policy, the public API cannot read them.
 -- The server writes them through Prisma.
 

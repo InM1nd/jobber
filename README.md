@@ -1,12 +1,12 @@
 # Jobber
 
-Jobber is a small job-search assistant: a Next.js app plus a Telegram bot. It fetches vacancies from public ATS APIs, scores them against your profile with **your** model key, drafts cover letters from your writing rules, and reminds you to follow up.
+Jobber is a Telegram Mini App for job search. The same Next.js app on Vercel holds the UI, the bot webhook, and the cron routes. It fetches vacancies from public ATS APIs, scores them with **your** model key, drafts cover letters from your writing rules, and reminds you to follow up in the chat.
 
 The owner tests it first. Friends get in with an invite code. Jobber does not pay for LLM calls.
 
 ## What works in this version
 
-- Email magic-link sign-in (Supabase) and invite codes.
+- Sign-in from Telegram WebApp `initData`, checked with HMAC-SHA256 and the bot token. `auth_date` older than 24 hours is rejected. A signed cookie is the session. Email magic link still works in a normal browser.
 - Profile: PDF text extraction, skills, location and salary filters, skill gaps, writing rules, company watchlist.
 - Pluggable sources with real parsers: Greenhouse, Ashby, Lever, Workable, Personio, Recruitee, SmartRecruiters, RSS/Teamtailor, and the public Remotive API. HTML-only and Join.com pages are stored but not fetched.
 - Deduping the same company + title + location across sources.
@@ -15,7 +15,7 @@ The owner tests it first. Friends get in with an invite code. Jobber does not pa
 - Cover letters through one provider interface: OpenRouter, OpenAI, Anthropic, Gemini, or xAI. OpenRouter also has a PKCE start/callback.
 - API keys encrypted with AES-256-GCM. The ciphertext is not returned to the browser and is not written to logs on purpose.
 - Application tracker with statuses and a 7-day follow-up date.
-- Telegram commands: `/start`, `/link CODE`, `/matches`, `/profile`, `/reminders`, `/help`.
+- `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
 - Local demo mode when Supabase is not configured, so the screens can be clicked through with sample matches.
 
 ## What is stubbed
@@ -23,7 +23,7 @@ The owner tests it first. Friends get in with an invite code. Jobber does not pa
 - OpenRouter's key exchange follows their documented PKCE callback (`POST /api/v1/auth/keys`). If their payload changes, the callback will say the exchange failed. There is no separate OpenRouter app id in this version.
 - Sources marked `html` or `join` in the watchlist have no adapter. The cron records that on the source row instead of scraping the page.
 - SmartRecruiters stores the list payload (title, location, url). The long description needs a second request and is not fetched yet.
-- Telegram Login Widget is not wired. Linking is a one-time code (`/link`) or pasting the numeric Telegram id.
+- There is no separate `/link` step. Opening the Mini App is the account.
 - Profile editing of an uploaded CV is replace-only. There is no rich CV editor.
 - Demo mode keeps data in the server process. It is for clicking through the UI, not a second database.
 
@@ -76,7 +76,7 @@ openssl rand -hex 32   # CRON_SECRET
 npx prisma db push
 ```
 
-Then run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL editor. That enables row level security. The Next.js server uses `DATABASE_URL` and bypasses RLS; the policies stop the public Supabase API from reading another user's rows. `ApiKey`, invite codes, and link codes have RLS on and no client policy, so the browser cannot select them.
+Then run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL editor. That enables row level security. The Next.js server uses `DATABASE_URL` and bypasses RLS; the policies stop the public Supabase API from reading another user's rows. `ApiKey`, invite codes, and cron rows have RLS on and no client policy, so the browser cannot select them.
 
 ### 5. Your profile (kept out of git)
 
@@ -98,21 +98,24 @@ OWNER_EMAIL="you@example.com" npm run seed
 
 The script prints an invite code. Sign in with the same email via the magic link. The callback attaches your Supabase user to that row.
 
-### 6. Telegram
+### 6. Telegram Mini App
 
-1. Talk to [@BotFather](https://t.me/botfather), `/newbot`, put the token in `TELEGRAM_BOT_TOKEN`.
-2. `/setcommands` with:
+`NEXT_PUBLIC_APP_URL` must be HTTPS before Telegram will open it. `http://127.0.0.1` is only for the browser demo.
+
+1. Talk to [@BotFather](https://t.me/botfather) and send `/newbot`. Put the token in `TELEGRAM_BOT_TOKEN`. The same token validates Mini App `initData`.
+2. Send `/newapp`, pick the bot, and set the Web App URL to `https://YOUR_DOMAIN/dashboard/matches`. Note the short name. Put the bot username in `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` and the short name in `TELEGRAM_MINI_APP_SHORT_NAME`.
+3. Optional: `/setmenubutton` with the same URL and the text `Open`. `/start` also sets that menu button for the chat.
+4. `/setcommands`:
 
 ```
-start - Start or show your Telegram id
-link - Link a code from Settings
+start - Open Jobber
 help - Show commands
-matches - Recent matches
+matches - Recent scores
 profile - Profile summary
 reminders - Follow-ups that are due
 ```
 
-3. After deploy, set the webhook (HTTPS only):
+5. After deploy, set the webhook:
 
 ```bash
 curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
@@ -120,13 +123,13 @@ curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -d '{"url":"https://YOUR_DOMAIN/api/telegram"}'
 ```
 
-In the app, Settings → Create link code, then send `/link thecode` to the bot. Or paste the numeric id the bot shows on `/start`.
+Invite links look like `https://t.me/<bot>/<shortname>?startapp=CODE`. `/start CODE` also passes the code into the button URL. The seeded owner account is attached to the first Telegram user who opens the app with `OWNER_EMAIL`, without an invite. Everyone else needs a code.
 
 ### 7. Your model key
 
 Settings → Connect OpenRouter, or paste a key for OpenRouter, OpenAI, Anthropic, Gemini, or xAI.
 
-OpenRouter PKCE sends the browser to `https://openrouter.ai/auth` and expects the return on `{NEXT_PUBLIC_APP_URL}/api/auth/openrouter/callback`. Use the same origin you registered as the callback URL in OpenRouter. The raw key is encrypted before it is stored.
+Inside Telegram, Connect OpenRouter calls `Telegram.WebApp.openLink`. The return page is shown in that browser and tells you to switch back to the chat. The key is stored from a signed `state` on the callback, so the Telegram webview does not have to share cookies with that browser. Pasting a key does not leave the Mini App.
 
 ### 8. Vercel
 

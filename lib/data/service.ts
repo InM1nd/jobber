@@ -3,6 +3,7 @@ import { isDemoMode } from '@/lib/demo/mode';
 import { demoStore, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
 import { decryptApiKey, encryptApiKey } from '@/lib/crypto/encryption';
 import { getPrisma } from '@/lib/db/prisma';
+import { readSessionUserId } from '@/lib/auth/session';
 
 export interface SessionUser {
   id: string;
@@ -23,6 +24,15 @@ function followUpDates(status: string, appliedAt?: string | null, followUpAt?: s
 
 export async function requireUser(): Promise<SessionUser | null> {
   if (isDemoMode()) return demoStore.user();
+
+  const sessionUserId = await readSessionUserId();
+  if (sessionUserId) {
+    const prisma = getPrisma();
+    const sessionUser = await prisma.user.findUnique({ where: { id: sessionUserId } });
+    if (sessionUser) return sessionUser;
+  }
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
 
   const { createClient } = await import('@/lib/db/supabase-server');
   const supabase = await createClient();
@@ -344,31 +354,56 @@ export async function getActiveKey(userId: string): Promise<{ provider: string; 
   };
 }
 
-export async function createLinkCode(userId: string) {
-  if (isDemoMode()) return demoStore.createLinkCode();
+export async function signInWithTelegram(input: {
+  telegramId: string;
+  username?: string;
+  startParam?: string;
+}): Promise<{ user: SessionUser } | { error: 'invite' }> {
+  if (isDemoMode()) {
+    demoStore.linkTelegram(input.telegramId, input.username);
+    return { user: demoStore.user() };
+  }
+
   const prisma = getPrisma();
-  const code = crypto.randomBytes(3).toString('hex');
-  await prisma.linkCode.deleteMany({ where: { userId } });
-  const created = await prisma.linkCode.create({
+  const existing = await prisma.user.findUnique({ where: { telegramId: input.telegramId } });
+  if (existing) {
+    if (input.username && input.username !== existing.telegramUsername) {
+      const updated = await prisma.user.update({
+        where: { id: existing.id },
+        data: { telegramUsername: input.username },
+      });
+      return { user: updated };
+    }
+    return { user: existing };
+  }
+
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (ownerEmail) {
+    const owner = await prisma.user.findUnique({ where: { email: ownerEmail } });
+    if (owner && !owner.telegramId) {
+      const attached = await prisma.user.update({
+        where: { id: owner.id },
+        data: { telegramId: input.telegramId, telegramUsername: input.username || null },
+      });
+      return { user: attached };
+    }
+  }
+
+  const invite = input.startParam?.trim() || '';
+  const allowed = invite ? await checkInvite(invite) : false;
+  const userCount = await prisma.user.count();
+  if (!allowed && userCount > 0) return { error: 'invite' };
+
+  const created = await prisma.user.create({
     data: {
-      userId,
-      code,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      email: `tg${input.telegramId}@users.jobber.local`,
+      telegramId: input.telegramId,
+      telegramUsername: input.username || null,
+      invitedBy: allowed ? invite : null,
     },
   });
-  return { code: created.code, expiresAt: created.expiresAt.toISOString() };
-}
-
-export async function linkTelegram(userId: string, telegramId: string, username?: string) {
-  if (isDemoMode()) {
-    demoStore.linkTelegram(telegramId, username);
-    return;
-  }
-  const prisma = getPrisma();
-  await prisma.user.update({
-    where: { id: userId },
-    data: { telegramId, telegramUsername: username || null },
-  });
+  if (allowed) await consumeInvite(invite, created.id);
+  return { user: created };
 }
 
 export async function createInvite(user: SessionUser) {

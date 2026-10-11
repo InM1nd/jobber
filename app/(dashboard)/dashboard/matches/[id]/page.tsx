@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { LetterPanel } from '@/components/letter-panel';
+import { TelegramBack } from '@/components/telegram-ui';
 import { getMatch, requireUser } from '@/lib/data/service';
 import { formatSalaryRange } from '@/lib/text';
 
@@ -17,6 +18,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-8">
+      <TelegramBack href="/dashboard/matches" />
       <Link href="/dashboard/matches" className="text-sm text-gray-500 hover:text-gray-900">
         Back to matches
       </Link>

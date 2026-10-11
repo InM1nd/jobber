@@ -21,7 +21,6 @@ model User {
   apiKeys           ApiKey[]
   matches           JobMatch[]
   applications      Application[]
-  linkCodes         LinkCode[]
   
   @@index([email])
   @@index([telegramId])
@@ -127,17 +126,6 @@ model Job {
   @@index([isActive])
   @@index([postedAt])
   @@index([dedupeKey])
-}
-
-model LinkCode {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  code      String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
 }
 
 model JobMatch {

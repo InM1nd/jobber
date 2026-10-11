@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { haptic, useMainButton, useMainButtonProgress } from '@/components/telegram-ui';
 import type { DemoProfile } from '@/lib/demo/store';
 
 const inputClass =
@@ -29,8 +30,7 @@ export function ProfileEditor({ profile }: { profile: DemoProfile }) {
   const [rules, setRules] = useState(profile.writingRules || '');
   const [companies, setCompanies] = useState(profile.watchedCompanies.join('\n'));
 
-  async function save(event: React.FormEvent) {
-    event.preventDefault();
+  async function saveProfile() {
     setSaving(true);
     setError('');
     setMessage('');
@@ -56,10 +56,22 @@ export function ProfileEditor({ profile }: { profile: DemoProfile }) {
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       setError(body.error || 'Could not save the profile');
+      haptic('error');
       return;
     }
     setMessage('Profile saved.');
+    haptic('success');
     router.refresh();
+  }
+
+  useMainButton('Save profile', () => {
+    void saveProfile();
+  });
+  useMainButtonProgress(saving);
+
+  function save(event: React.FormEvent) {
+    event.preventDefault();
+    void saveProfile();
   }
 
   async function upload(file: File) {

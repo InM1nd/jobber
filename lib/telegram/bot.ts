@@ -1,198 +1,151 @@
-import { Bot, Context, webhookCallback } from 'grammy';
+import { Bot, webhookCallback } from 'grammy';
 import { getPrisma } from '@/lib/db/prisma';
+import { miniAppUrl } from '@/lib/telegram/mini-app';
 
 let botInstance: Bot | null = null;
 
 function getBot(): Bot {
   if (!botInstance) {
     const token = process.env.TELEGRAM_BOT_TOKEN || '';
-    if (!token) {
-      throw new Error('TELEGRAM_BOT_TOKEN is not set');
-    }
+    if (!token) throw new Error('TELEGRAM_BOT_TOKEN is not set');
     botInstance = new Bot(token);
     setupBotCommands(botInstance);
   }
   return botInstance;
 }
 
+async function publishMenuButton(bot: Bot, chatId?: number) {
+  const url = miniAppUrl();
+  if (!url) return;
+  await bot.api.setChatMenuButton({
+    chat_id: chatId,
+    menu_button: {
+      type: 'web_app',
+      text: 'Open',
+      web_app: { url },
+    },
+  });
+}
+
 function setupBotCommands(bot: Bot) {
   bot.command('start', async (ctx) => {
-    const telegramId = String(ctx.from?.id);
-    const username = ctx.from?.username;
+    const invite = String(ctx.match || '').trim();
+    const url = miniAppUrl(invite || undefined);
+    await publishMenuButton(bot, ctx.chat.id);
 
-    const existingUser = await getPrisma().user.findUnique({
-      where: { telegramId },
-      include: { profile: true },
+    if (!url) {
+      await ctx.reply('Jobber is not configured with a public app URL yet.');
+      return;
+    }
+
+    const text = invite
+      ? 'Open Jobber to accept this invite and see your matches.'
+      : 'Jobber scores new roles against your profile and drafts the letter. Open the app to start.';
+
+    await ctx.reply(text, {
+      reply_markup: {
+        inline_keyboard: [[{ text: 'Open Jobber', web_app: { url } }]],
+      },
     });
-
-    if (existingUser) {
-      await ctx.reply(
-        `Welcome back! 👋\n\n` +
-        `You're already connected.\n` +
-        `View your matches at ${process.env.NEXT_PUBLIC_APP_URL || 'the web app'}`
-      );
-      return;
-    }
-
-    await ctx.reply(
-      `Welcome to Jobber! 🔍\n\n` +
-      `To get started, please sign in via the web app:\n` +
-      `${process.env.NEXT_PUBLIC_APP_URL || 'your-app-url'}\n\n` +
-      `Your Telegram ID: \`${telegramId}\`\n` +
-      `Use this to link your account.`,
-      { parse_mode: 'Markdown' }
-    );
-  });
-
-  bot.command('link', async (ctx) => {
-    const code = String(ctx.match || '').trim().toLowerCase();
-    if (!code) {
-      await ctx.reply('Send /link and the code from Settings. Example: /link a1b2c3');
-      return;
-    }
-
-    try {
-      const prisma = getPrisma();
-      const link = await prisma.linkCode.findUnique({ where: { code } });
-      if (!link || link.expiresAt < new Date()) {
-        await ctx.reply('That code is expired or unknown. Create a new one in Settings.');
-        return;
-      }
-
-      await prisma.user.update({
-        where: { id: link.userId },
-        data: {
-          telegramId: String(ctx.from?.id),
-          telegramUsername: ctx.from?.username || null,
-        },
-      });
-      await prisma.linkCode.delete({ where: { id: link.id } });
-      await ctx.reply('Telegram is linked. Daily digests and follow-up reminders will come here.');
-    } catch {
-      await ctx.reply('Could not link this chat. The Telegram id may already belong to another account.');
-    }
   });
 
   bot.command('help', async (ctx) => {
     await ctx.reply(
-      `*Jobber Commands*\n\n` +
-      `/start - Start or link account\n` +
-      `/link CODE - Link this chat to your account\n` +
-      `/help - Show this help\n` +
-      `/matches - View recent matches\n` +
-      `/profile - View your profile\n` +
-      `/reminders - View follow-up reminders`,
-      { parse_mode: 'Markdown' }
+      [
+        'Open Jobber from the button under the message, or from the menu button.',
+        '',
+        '/start — open the app',
+        '/matches — recent scores',
+        '/profile — profile summary',
+        '/reminders — follow-ups that are due',
+      ].join('\n'),
     );
   });
 
   bot.command('matches', async (ctx) => {
-    const telegramId = String(ctx.from?.id);
-    
-    const user = await getPrisma().user.findUnique({
-      where: { telegramId },
-      include: {
-        matches: {
-          where: {
-            score: { gte: 60 },
+    try {
+      const user = await getPrisma().user.findUnique({
+        where: { telegramId: String(ctx.from?.id) },
+        include: {
+          matches: {
+            where: { score: { gte: 60 } },
+            include: { job: { include: { source: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 5,
           },
-          include: { job: { include: { source: true } } },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
         },
-      },
-    });
-
-    if (!user) {
-      await ctx.reply('Please link your account first via /start');
-      return;
+      });
+      if (!user) {
+        await ctx.reply('Open Jobber from /start first.');
+        return;
+      }
+      if (user.matches.length === 0) {
+        await ctx.reply('No recent matches. Check the app later.');
+        return;
+      }
+      const lines = user.matches.map(
+        (match) => `${match.job.title} at ${match.job.source.company} — ${match.score}/100\n${match.job.url}`,
+      );
+      await ctx.reply(lines.join('\n\n'));
+    } catch {
+      await ctx.reply('Matches are unavailable until the database is connected.');
     }
-
-    if (user.matches.length === 0) {
-      await ctx.reply('No recent matches found. Check back later!');
-      return;
-    }
-
-    let message = '*Recent Matches* 🎯\n\n';
-    
-    for (const match of user.matches) {
-      message += `*${match.job.title}* at ${match.job.source.company}\n`;
-      message += `Score: ${match.score}/100 (${match.priority})\n`;
-      message += `${match.job.url}\n\n`;
-    }
-
-    await ctx.reply(message, { parse_mode: 'Markdown' });
   });
 
   bot.command('profile', async (ctx) => {
-    const telegramId = String(ctx.from?.id);
-    
-    const user = await getPrisma().user.findUnique({
-      where: { telegramId },
-      include: { profile: true },
-    });
-
-    if (!user) {
-      await ctx.reply('Please link your account first via /start');
-      return;
+    try {
+      const user = await getPrisma().user.findUnique({
+        where: { telegramId: String(ctx.from?.id) },
+        include: { profile: true },
+      });
+      if (!user?.profile) {
+        await ctx.reply('No profile yet. Open the app and fill it in.');
+        return;
+      }
+      const profile = user.profile;
+      await ctx.reply(
+        [
+          `Location: ${profile.location || 'not set'}`,
+          `Remote only: ${profile.remoteOnly ? 'yes' : 'no'}`,
+          `Skills: ${profile.skills.length}`,
+          `Languages: ${profile.languages.join(', ') || 'not set'}`,
+        ].join('\n'),
+      );
+    } catch {
+      await ctx.reply('Profile is unavailable until the database is connected.');
     }
-
-    if (!user.profile) {
-      await ctx.reply('No profile found. Please set up your profile in the web app.');
-      return;
-    }
-
-    const profile = user.profile;
-    
-    let message = '*Your Profile* 📋\n\n';
-    message += `Location: ${profile.location || 'Not set'}\n`;
-    message += `Remote: ${profile.remoteOnly ? 'Yes' : 'No'}\n`;
-    message += `Skills: ${profile.skills.length} skills\n`;
-    message += `Languages: ${profile.languages.join(', ')}\n`;
-    message += `\nEdit your profile at ${process.env.NEXT_PUBLIC_APP_URL || 'the web app'}`;
-
-    await ctx.reply(message, { parse_mode: 'Markdown' });
   });
 
   bot.command('reminders', async (ctx) => {
-    const telegramId = String(ctx.from?.id);
-    
-    const user = await getPrisma().user.findUnique({
-      where: { telegramId },
-      include: {
-        applications: {
-          where: {
-            followUpAt: { lte: new Date() },
-            followUpSent: false,
+    try {
+      const user = await getPrisma().user.findUnique({
+        where: { telegramId: String(ctx.from?.id) },
+        include: {
+          applications: {
+            where: { followUpAt: { lte: new Date() }, followUpSent: false },
+            orderBy: { followUpAt: 'asc' },
           },
-          orderBy: { followUpAt: 'asc' },
         },
-      },
-    });
-
-    if (!user) {
-      await ctx.reply('Please link your account first via /start');
-      return;
+      });
+      if (!user) {
+        await ctx.reply('Open Jobber from /start first.');
+        return;
+      }
+      if (user.applications.length === 0) {
+        await ctx.reply('No pending follow-ups.');
+        return;
+      }
+      const lines = user.applications.map(
+        (app) => `${app.role} at ${app.company}\nFollow up: ${app.followUpAt?.toLocaleDateString() || 'n/a'}`,
+      );
+      await ctx.reply(lines.join('\n\n'));
+    } catch {
+      await ctx.reply('Reminders are unavailable until the database is connected.');
     }
-
-    if (user.applications.length === 0) {
-      await ctx.reply('No pending follow-ups! 🎉');
-      return;
-    }
-
-    let message = '*Follow-up Reminders* ⏰\n\n';
-    
-    for (const app of user.applications) {
-      message += `*${app.role}* at ${app.company}\n`;
-      message += `Applied: ${app.appliedAt?.toLocaleDateString() || 'N/A'}\n`;
-      message += `Follow up: ${app.followUpAt?.toLocaleDateString() || 'N/A'}\n\n`;
-    }
-
-    await ctx.reply(message, { parse_mode: 'Markdown' });
   });
 }
 
-export function handleTelegramWebhook(req: any) {
+export function handleTelegramWebhook(req: Request) {
   const bot = getBot();
   return webhookCallback(bot, 'std/http')(req);
 }
@@ -200,7 +153,7 @@ export function handleTelegramWebhook(req: any) {
 export async function sendTelegramMessage(telegramId: string, message: string) {
   try {
     const bot = getBot();
-    await bot.api.sendMessage(telegramId, message, { parse_mode: 'Markdown' });
+    await bot.api.sendMessage(telegramId, message);
   } catch (error) {
     console.error('Error sending Telegram message:', error);
   }
@@ -212,9 +165,7 @@ export async function sendDailyDigest(userId: string) {
     include: {
       matches: {
         where: {
-          createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          },
+          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
           score: { gte: 70 },
         },
         include: { job: { include: { source: true } } },
@@ -224,19 +175,10 @@ export async function sendDailyDigest(userId: string) {
     },
   });
 
-  if (!user || !user.telegramId || user.matches.length === 0) {
-    return;
-  }
+  if (!user?.telegramId || user.matches.length === 0) return;
 
-  let message = '🌅 *Daily Job Digest*\n\n';
-  message += `Found ${user.matches.length} new matches:\n\n`;
-
-  for (const match of user.matches) {
-    message += `*${match.job.title}* at ${match.job.source.company}\n`;
-    message += `Score: ${match.score}/100\n`;
-    message += `Priority: ${match.priority}\n`;
-    message += `${match.job.url}\n\n`;
-  }
-
-  await sendTelegramMessage(user.telegramId, message);
+  const lines = user.matches.map(
+    (match) => `${match.job.title} at ${match.job.source.company}\nScore ${match.score} · ${match.priority}\n${match.job.url}`,
+  );
+  await sendTelegramMessage(user.telegramId, `Daily matches\n\n${lines.join('\n\n')}`);
 }

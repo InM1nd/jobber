@@ -20,7 +20,7 @@ export default function Home() {
 
       <main className="flex-1 flex flex-col items-center justify-center px-4">
         <div className="max-w-3xl text-center space-y-8">
-          <h2 className="text-5xl font-bold tracking-tight">
+          <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">
             Your Personal Job Search Assistant
           </h2>
           

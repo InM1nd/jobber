@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { haptic, useMainButton, useMainButtonProgress } from '@/components/telegram-ui';
 
 export function LetterPanel({ matchId, initial }: { matchId: string; initial: string | null }) {
   const [letter, setLetter] = useState(initial || '');
@@ -17,10 +18,17 @@ export function LetterPanel({ matchId, initial }: { matchId: string; initial: st
     setLoading(false);
     if (!response.ok) {
       setError(body.error || 'Could not generate a letter');
+      haptic('error');
       return;
     }
     setLetter(body.letter || '');
+    haptic('success');
   }
+
+  useMainButton(loading ? 'Writing…' : 'Generate letter', () => {
+    void generate();
+  });
+  useMainButtonProgress(loading);
 
   async function copy() {
     await navigator.clipboard.writeText(letter);

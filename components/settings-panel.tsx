@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { haptic, openExternal } from '@/components/telegram-ui';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-600';
@@ -21,9 +22,6 @@ export function SettingsPanel({
   const router = useRouter();
   const [provider, setProvider] = useState('openrouter');
   const [apiKey, setApiKey] = useState('');
-  const [telegram, setTelegram] = useState(telegramId || '');
-  const [username, setUsername] = useState(telegramUsername || '');
-  const [linkCode, setLinkCode] = useState('');
   const [invite, setInvite] = useState('');
   const [message, setMessage] = useState(notice || '');
   const [error, setError] = useState('');
@@ -52,32 +50,17 @@ export function SettingsPanel({
     router.refresh();
   }
 
-  async function makeCode() {
+  async function connectOpenRouter() {
     setError('');
-    const response = await fetch('/api/telegram/code', { method: 'POST' });
+    haptic('light');
+    const response = await fetch('/api/auth/openrouter/start', { method: 'POST' });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setError(body.error || 'Could not create a code');
+    if (!response.ok || !body.url) {
+      setError(body.error || 'Could not start OpenRouter');
+      haptic('error');
       return;
     }
-    setLinkCode(body.code);
-  }
-
-  async function link(event: React.FormEvent) {
-    event.preventDefault();
-    setError('');
-    const response = await fetch('/api/telegram/link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ telegramId: telegram, username }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setError(body.error || 'Could not link Telegram');
-      return;
-    }
-    setMessage('Telegram id saved.');
-    router.refresh();
+    await openExternal(body.url);
   }
 
   async function makeInvite() {
@@ -102,9 +85,7 @@ export function SettingsPanel({
           Jobber does not pay for model calls. OpenRouter is the primary connection. A pasted key is the fallback.
           Keys are encrypted with AES-256-GCM and never sent back to the browser.
         </p>
-        <a href="/api/auth/openrouter/start">
-          <Button type="button">Connect OpenRouter</Button>
-        </a>
+        <Button type="button" onClick={connectOpenRouter}>Connect OpenRouter</Button>
         <form onSubmit={saveKey} className="grid gap-3 md:grid-cols-[180px_1fr_auto]">
           <select className={inputClass} value={provider} onChange={(e) => setProvider(e.target.value)}>
             <option value="openrouter">OpenRouter</option>
@@ -132,22 +113,13 @@ export function SettingsPanel({
         ))}
       </section>
 
-      <section className="space-y-4 rounded-xl border border-gray-200 p-6">
+      <section className="space-y-2 rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold">Telegram</h2>
         <p className="text-sm text-gray-600">
           {telegramId
-            ? `Linked${telegramUsername ? ` as @${telegramUsername}` : ''}.`
-            : 'Not linked yet.'}
+            ? `Signed in${telegramUsername ? ` as @${telegramUsername}` : ''}. Digests and follow-ups come to this chat.`
+            : 'Open Jobber from Telegram to attach this account. Email sign-in still works in a normal browser.'}
         </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="outline" onClick={makeCode}>Create link code</Button>
-          {linkCode && <code className="rounded bg-gray-100 px-2 py-1 text-sm">/link {linkCode}</code>}
-        </div>
-        <form onSubmit={link} className="grid gap-3 md:grid-cols-2">
-          <input className={inputClass} placeholder="Numeric Telegram id" value={telegram} onChange={(e) => setTelegram(e.target.value)} />
-          <input className={inputClass} placeholder="Username, optional" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <Button type="submit" variant="outline">Save Telegram id</Button>
-        </form>
       </section>
 
       <section className="space-y-3 rounded-xl border border-gray-200 p-6">

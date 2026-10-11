@@ -72,7 +72,6 @@ export interface DemoState {
   matches: DemoMatch[];
   applications: DemoApplication[];
   keys: DemoKey[];
-  linkCode: { code: string; expiresAt: string } | null;
   invites: string[];
 }
 
@@ -86,9 +85,9 @@ Oleksandr`;
 
 function initialState(): DemoState {
   return {
-    email: 'demo@local',
-    telegramId: null,
-    telegramUsername: null,
+    email: 'tg42@users.jobber.local',
+    telegramId: '42',
+    telegramUsername: 'oleksandr',
     profile: {
       cvText:
         'Product engineer in Vienna. Building web products since 2021, commercial frontend work since 2022. Strongest tools: TypeScript, React, Next.js, Node.js, PostgreSQL, and Figma. Currently at a Vienna agency until 31 October 2026, available from 1 November 2026. Wants Vienna office or hybrid, or remote with an Austrian contract. Working language: English. German A2.',
@@ -232,7 +231,6 @@ function initialState(): DemoState {
       },
     ],
     keys: [],
-    linkCode: null,
     invites: [],
   };
 }
@@ -316,14 +314,6 @@ export const demoStore = {
   },
   deleteKey(id: string) {
     state().keys = state().keys.filter((key) => key.id !== id);
-  },
-  createLinkCode() {
-    const code = crypto.randomBytes(3).toString('hex');
-    state().linkCode = {
-      code,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    };
-    return state().linkCode;
   },
   linkTelegram(telegramId: string, username?: string) {
     state().telegramId = telegramId;
