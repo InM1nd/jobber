@@ -36,22 +36,25 @@ export function LetterPanel({ matchId, initial }: { matchId: string; initial: st
   }
 
   return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={generate} disabled={loading}>
-          {loading ? 'Writing…' : 'Generate letter'}
-        </Button>
-        {letter && (
-          <Button type="button" variant="outline" onClick={copy}>
-            {copied ? 'Copied' : 'Copy'}
+    <section className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-soft">
+      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+        <p className="text-[14px] font-medium">Cover letter</p>
+        <div className="flex gap-1.5">
+          {letter && (
+            <Button type="button" size="sm" variant="ghost" onClick={copy}>
+              {copied ? 'Copied' : 'Copy'}
+            </Button>
+          )}
+          <Button type="button" size="sm" variant={letter ? 'secondary' : 'default'} onClick={generate} disabled={loading}>
+            {loading ? 'Writing…' : letter ? 'Rewrite' : 'Generate'}
           </Button>
-        )}
+        </div>
       </div>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="px-4 pt-3 text-[13px] text-danger">{error}</p>}
       {letter ? (
-        <pre className="whitespace-pre-wrap rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm leading-6">{letter}</pre>
+        <div className="whitespace-pre-wrap px-4 py-4 text-[14px] leading-[1.65]">{letter}</div>
       ) : (
-        <p className="text-sm text-gray-600">No letter yet. Generating one uses your own API key.</p>
+        <p className="px-4 py-6 text-center text-[13px] text-muted">No letter yet. It follows your writing rules and uses your own AI key.</p>
       )}
     </section>
   );

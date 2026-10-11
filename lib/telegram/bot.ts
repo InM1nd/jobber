@@ -1,6 +1,8 @@
 import { Bot, webhookCallback } from 'grammy';
 import { getPrisma } from '@/lib/db/prisma';
 import { miniAppUrl } from '@/lib/telegram/mini-app';
+import { readLinkCode } from '@/lib/auth/link-code';
+import { linkTelegramToUser } from '@/lib/data/service';
 
 let botInstance: Bot | null = null;
 
@@ -29,7 +31,23 @@ async function publishMenuButton(bot: Bot, chatId?: number) {
 
 function setupBotCommands(bot: Bot) {
   bot.command('start', async (ctx) => {
-    const invite = String(ctx.match || '').trim();
+    const payload = String(ctx.match || '').trim();
+    if (payload.startsWith('link_')) {
+      const userId = readLinkCode(payload.slice(5));
+      if (!userId || !ctx.from) {
+        await ctx.reply('This link has expired. Open Settings on the web and tap “Link Telegram” again.');
+        return;
+      }
+      const linked = await linkTelegramToUser(userId, String(ctx.from.id), ctx.from.username);
+      await ctx.reply(
+        linked.ok
+          ? 'Telegram is now linked to your Jobber account. The app and the website share the same data.'
+          : linked.error,
+      );
+      await publishMenuButton(bot, ctx.chat.id);
+      return;
+    }
+    const invite = payload;
     const url = miniAppUrl(invite || undefined);
     await publishMenuButton(bot, ctx.chat.id);
 

@@ -70,7 +70,7 @@ export default function SignUpPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-[12px] border border-line-strong bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
               />
             </div>
 
@@ -85,21 +85,21 @@ export default function SignUpPage() {
                 onChange={(e) => setInviteCode(e.target.value)}
                 placeholder="Enter invite code"
                 required
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-[12px] border border-line-strong bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted mt-1">
                 Get an invite code from the owner
               </p>
             </div>
 
             {message && (
-              <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
+              <div className="rounded-[12px] bg-success-soft p-3 text-sm text-success">
                 {message}
               </div>
             )}
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
+              <div className="rounded-[12px] bg-danger-soft p-3 text-sm text-danger">
                 {error}
               </div>
             )}
@@ -110,14 +110,14 @@ export default function SignUpPage() {
           </form>
 
           <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">Already have an account? </span>
-            <Link href="/auth/signin" className="text-primary hover:underline">
+            <span className="text-muted">Already have an account? </span>
+            <Link href="/auth/signin" className="text-accent hover:underline">
               Sign in
             </Link>
           </div>
 
           <div className="mt-4 text-center">
-            <Link href="/" className="text-sm text-muted-foreground hover:text-primary">
+            <Link href="/" className="text-sm text-muted hover:text-accent">
               ← Back to home
             </Link>
           </div>

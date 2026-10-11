@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { KanbanSquare, Loader2, Settings, Sparkles, UserRound } from 'lucide-react';
+import { Logo } from '@/components/ui/kit';
+import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { waitForTelegramInitData, waitForTelegramSdk } from '@/lib/telegram/web-app-launch';
 
@@ -9,6 +12,7 @@ type ThemeParams = Record<string, string | undefined>;
 
 type WebApp = {
   initData: string;
+  platform?: string;
   colorScheme: 'light' | 'dark';
   themeParams: ThemeParams;
   ready: () => void;
@@ -84,19 +88,27 @@ function applyTheme(webApp: WebApp) {
   set('--tg-button', theme.button_color);
   set('--tg-button-text', theme.button_text_color);
   set('--tg-secondary-bg', theme.secondary_bg_color);
-  set('--tg-section', theme.section_bg_color || theme.secondary_bg_color);
+  set('--tg-section-bg', theme.section_bg_color || theme.bg_color);
   const safe = webApp.safeAreaInset;
   const content = webApp.contentSafeAreaInset;
   root.style.setProperty('--tg-safe-top', `${(safe?.top || 0) + (content?.top || 0)}px`);
   root.style.setProperty('--tg-safe-bottom', `${(safe?.bottom || 0) + (content?.bottom || 0)}px`);
   root.dataset.theme = webApp.colorScheme;
-  if (theme.bg_color) {
-    webApp.setHeaderColor?.(theme.bg_color);
-    webApp.setBackgroundColor?.(theme.bg_color);
+  root.dataset.tg = '1';
+  const page = theme.secondary_bg_color || theme.bg_color;
+  if (page) {
+    webApp.setHeaderColor?.(page);
+    webApp.setBackgroundColor?.(page);
   }
 }
 
+/** telegram-web-app.js also defines WebApp in a normal browser; only theme inside Telegram. */
+export function insideTelegram(webApp: WebApp | null = getWebApp()) {
+  return Boolean(webApp && (webApp.initData || (webApp.platform && webApp.platform !== 'unknown')));
+}
+
 function boot(webApp: WebApp) {
+  if (!insideTelegram(webApp)) return () => {};
   webApp.ready();
   webApp.expand();
   applyTheme(webApp);
@@ -197,25 +209,38 @@ export function TelegramBack({ href }: { href: string }) {
 }
 
 const tabs = [
-  { href: '/dashboard/matches', label: 'Matches' },
-  { href: '/dashboard/tracker', label: 'Tracker' },
-  { href: '/dashboard/profile', label: 'Profile' },
-  { href: '/dashboard/settings', label: 'Settings' },
+  { href: '/dashboard/matches', label: 'Matches', icon: Sparkles },
+  { href: '/dashboard/tracker', label: 'Tracker', icon: KanbanSquare },
+  { href: '/dashboard/profile', label: 'Profile', icon: UserRound },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
+
+function isActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-black/10 bg-[var(--tg-bg,#fff)] pb-[var(--tg-safe-bottom)]">
-      <div className="mx-auto grid max-w-lg grid-cols-4">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/85 pb-[var(--safe-bottom)] backdrop-blur-xl md:hidden">
+      <div className="mx-auto grid max-w-lg grid-cols-4 px-2">
         {tabs.map((tab) => {
-          const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+          const active = isActive(pathname, tab.href);
+          const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`px-2 py-3 text-center text-xs ${active ? 'font-semibold text-[var(--tg-link,#15803d)]' : 'text-[var(--tg-hint,#6b7280)]'}`}
+              onClick={() => haptic('light')}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex flex-col items-center gap-1 pb-2 pt-2.5 text-[10.5px] font-medium transition-colors',
+                active ? 'text-accent' : 'text-subtle hover:text-muted',
+              )}
             >
+              <span className={cn('flex h-7 w-12 items-center justify-center rounded-full transition-colors', active && 'bg-accent-soft')}>
+                <Icon className="size-[20px]" strokeWidth={active ? 2.2 : 1.8} />
+              </span>
               {tab.label}
             </Link>
           );
@@ -224,6 +249,41 @@ export function BottomNav() {
     </nav>
   );
 }
+
+export function Sidebar({ account }: { account: string }) {
+  const pathname = usePathname();
+  return (
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 md:flex">
+      <Link href="/" className="px-3 pb-6"><Logo /></Link>
+      <nav className="flex flex-col gap-0.5">
+        {tabs.map((tab) => {
+          const active = isActive(pathname, tab.href);
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                'flex items-center gap-3 rounded-[10px] px-3 py-2 text-sm font-medium transition-colors',
+                active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg',
+              )}
+            >
+              <Icon className="size-[18px]" strokeWidth={active ? 2.2 : 1.8} />
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="mt-auto flex items-center gap-2.5 rounded-[12px] bg-surface-2 px-3 py-2.5">
+        <span className="flex size-8 items-center justify-center rounded-full bg-accent-soft text-[13px] font-semibold uppercase text-accent">
+          {account.replace(/^@/, '').slice(0, 1) || 'J'}
+        </span>
+        <span className="min-w-0 truncate text-[13px] text-muted">{account}</span>
+      </div>
+    </aside>
+  );
+}
+
 
 const OPEN_FROM_TELEGRAM = 'Open Jobber from the Telegram chat. The menu button is under the message field.';
 
@@ -306,34 +366,50 @@ export function AuthGate() {
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-10">
-      <h1 className="text-2xl font-semibold">Jobber</h1>
-      <p className="mt-3 text-sm text-[var(--tg-hint,#52525b)]">
-        {waiting ? 'Checking Telegram…' : 'Sign in with the Telegram account that opened this app.'}
-      </p>
-      {needsInvite && (
-        <form
-          className="mt-6 space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit(invite);
-          }}
-        >
-          <input
-            className="w-full rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm"
-            placeholder="Invite code"
-            value={invite}
-            onChange={(event) => setInvite(event.target.value)}
-          />
-          <button className="rounded-md bg-green-700 px-4 py-2 text-sm text-white" type="submit">
-            Continue
-          </button>
-        </form>
-      )}
-      {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
-      <Link href="/auth/signin" className="mt-8 text-sm text-[var(--tg-link,#15803d)]">
-        Email sign-in instead
-      </Link>
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 py-10 text-center">
+      <div className="w-full max-w-sm animate-in">
+        <div className="mx-auto mb-6 flex justify-center"><Logo className="text-lg" /></div>
+        {waiting ? (
+          <p className="flex items-center justify-center gap-2 text-sm text-muted">
+            <Loader2 className="size-4 animate-spin" /> Signing you in with Telegram…
+          </p>
+        ) : (
+          <>
+            <h1 className="text-xl font-semibold tracking-tight">Open Jobber in Telegram</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Tap the <span className="font-medium text-fg">Open</span> button under the message field in @JobberCheck_bot, or sign in on the web.
+            </p>
+          </>
+        )}
+        {needsInvite && (
+          <form
+            className="mt-6 space-y-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submit(invite);
+            }}
+          >
+            <input
+              className="w-full rounded-[12px] border border-line-strong bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
+              placeholder="Invite code"
+              value={invite}
+              onChange={(event) => setInvite(event.target.value)}
+            />
+            <button className="h-11 w-full rounded-[12px] bg-accent text-sm font-medium text-accent-fg" type="submit">
+              Continue
+            </button>
+          </form>
+        )}
+        {error && !waiting && error !== OPEN_FROM_TELEGRAM && <p className="mt-4 text-sm text-danger">{error}</p>}
+        {!waiting && (
+          <Link
+            href="/auth/signin"
+            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-line-strong bg-surface text-sm font-medium shadow-soft"
+          >
+            Sign in on the web
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

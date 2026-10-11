@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { TelegramBoot } from "@/components/telegram-ui";
@@ -16,9 +16,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jobber - Your Personal Job Search Assistant",
-  description: "AI-powered job search assistant with smart matching and automated applications tracking",
+  title: "Jobber — a calm job search assistant",
+  description: "Daily job matches scored against your profile, honest cover letters, and a simple tracker. In Telegram and on the web.",
 };
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f6f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0b0f" },
+  ],
+};
+
+// Pick light/dark before paint on the web. Inside Telegram, TelegramBoot overrides it.
+const themeScript = `try{var d=document.documentElement;if(!d.dataset.theme){d.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -29,7 +42,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-screen antialiased">
         <Script src={TELEGRAM_WEB_APP_SDK} strategy="beforeInteractive" />
         <TelegramBoot />

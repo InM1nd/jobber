@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowUpRight, BellRing, ChevronDown, KanbanSquare, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState, fieldClass } from '@/components/ui/kit';
+import { haptic } from '@/components/telegram-ui';
+import { cn } from '@/lib/utils';
 import type { DemoApplication } from '@/lib/demo/store';
 
 const STATUSES = ['to_apply', 'applied', 'interview', 'on_hold', 'offer', 'rejected', 'skip'] as const;
@@ -14,20 +18,49 @@ const LABELS: Record<string, string> = {
   on_hold: 'On hold',
   offer: 'Offer',
   rejected: 'Rejected',
-  skip: 'Skip',
+  skip: 'Skipped',
 };
 
-const inputClass =
-  'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-600';
+const TONE: Record<string, string> = {
+  to_apply: 'bg-surface-2 text-muted',
+  applied: 'bg-accent-soft text-accent',
+  interview: 'bg-warning-soft text-warning',
+  on_hold: 'bg-surface-2 text-muted',
+  offer: 'bg-success-soft text-success',
+  rejected: 'bg-danger-soft text-danger',
+  skip: 'bg-surface-2 text-subtle',
+};
+
+const SEGMENTS = [
+  { key: 'to_apply', label: 'To apply', match: ['to_apply'] },
+  { key: 'applied', label: 'Applied', match: ['applied', 'on_hold'] },
+  { key: 'interview', label: 'Interview', match: ['interview', 'offer'] },
+  { key: 'closed', label: 'Closed', match: ['rejected', 'skip'] },
+] as const;
+
+function shortDate(value: string) {
+  return new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
 
 export function TrackerBoard({ applications }: { applications: DemoApplication[] }) {
   const router = useRouter();
+  const [segment, setSegment] = useState<(typeof SEGMENTS)[number]['key']>(() => {
+    const firstWithItems = SEGMENTS.find((s) => applications.some((a) => (s.match as readonly string[]).includes(a.status)));
+    return firstWithItems?.key ?? 'to_apply';
+  });
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
   const [url, setUrl] = useState('');
-  const [salary, setSalary] = useState('');
   const [notes, setNotes] = useState('');
+
+  const counts = useMemo(
+    () => Object.fromEntries(SEGMENTS.map((s) => [s.key, applications.filter((a) => (s.match as readonly string[]).includes(a.status)).length])),
+    [applications],
+  );
+  const current = SEGMENTS.find((s) => s.key === segment)!;
+  const visible = applications.filter((a) => (current.match as readonly string[]).includes(a.status));
 
   async function add(event: React.FormEvent) {
     event.preventDefault();
@@ -35,22 +68,26 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
     const response = await fetch('/api/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ company, role, url, salaryExpectation: salary, notes, status: 'to_apply' }),
+      body: JSON.stringify({ company, role, url, notes, status: 'to_apply' }),
     });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       setError(body.error || 'Could not add the application');
+      haptic('error');
       return;
     }
     setCompany('');
     setRole('');
     setUrl('');
-    setSalary('');
     setNotes('');
+    setAdding(false);
+    setSegment('to_apply');
+    haptic('success');
     router.refresh();
   }
 
   async function setStatus(id: string, status: string) {
+    haptic('light');
     await fetch(`/api/applications/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -59,69 +96,101 @@ export function TrackerBoard({ applications }: { applications: DemoApplication[]
     router.refresh();
   }
 
-  const counts = Object.fromEntries(STATUSES.map((status) => [status, applications.filter((app) => app.status === status).length]));
-
   return (
-    <div className="space-y-10">
-      <form onSubmit={add} className="grid gap-3 rounded-xl border border-gray-200 p-6 md:grid-cols-2">
-        <input className={inputClass} placeholder="Company" value={company} onChange={(e) => setCompany(e.target.value)} required />
-        <input className={inputClass} placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} required />
-        <input className={inputClass} placeholder="Listing URL" value={url} onChange={(e) => setUrl(e.target.value)} />
-        <input className={inputClass} placeholder="Salary you named" value={salary} onChange={(e) => setSalary(e.target.value)} />
-        <textarea className={`${inputClass} md:col-span-2`} rows={2} placeholder="What you sent" value={notes} onChange={(e) => setNotes(e.target.value)} />
-        <div className="md:col-span-2">
-          <Button type="submit">Add application</Button>
-          {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-        </div>
-      </form>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {(['to_apply', 'applied', 'interview', 'offer'] as const).map((status) => (
-          <div key={status} className="rounded-xl border border-gray-200 px-4 py-3">
-            <p className="text-sm text-gray-500">{LABELS[status]}</p>
-            <p className="text-2xl font-semibold">{counts[status] || 0}</p>
-          </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-4 gap-1 rounded-[14px] bg-surface-2 p-1">
+        {SEGMENTS.map((s) => (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => setSegment(s.key)}
+            className={cn(
+              'flex flex-col items-center rounded-[10px] py-1.5 text-[12px] font-medium transition-all',
+              segment === s.key ? 'bg-surface text-fg shadow-soft' : 'text-muted hover:text-fg',
+            )}
+          >
+            <span className="text-[16px] font-semibold tabular-nums leading-tight">{counts[s.key]}</span>
+            {s.label}
+          </button>
         ))}
       </div>
 
-      {applications.length === 0 && (
-        <p className="text-sm text-gray-600">Nothing tracked yet. Add the first application above.</p>
+      {adding ? (
+        <form onSubmit={add} className="animate-in space-y-2.5 rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-soft">
+          <div className="flex items-center justify-between pb-1">
+            <p className="text-[15px] font-semibold">New application</p>
+            <button type="button" onClick={() => setAdding(false)} className="rounded-full p-1 text-muted hover:bg-surface-2" aria-label="Close">
+              <X className="size-4" />
+            </button>
+          </div>
+          <div className="grid gap-2.5 md:grid-cols-2">
+            <input className={fieldClass} placeholder="Company" value={company} onChange={(e) => setCompany(e.target.value)} required />
+            <input className={fieldClass} placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} required />
+          </div>
+          <input className={fieldClass} placeholder="Listing URL (optional)" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <textarea className={fieldClass} rows={2} placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          {error && <p className="text-[13px] text-danger">{error}</p>}
+          <Button type="submit" className="w-full">Add to tracker</Button>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-card)] border border-dashed border-line-strong text-[14px] font-medium text-muted transition-colors hover:border-accent hover:text-accent"
+        >
+          <Plus className="size-4" /> Add application
+        </button>
       )}
 
-      <div className="space-y-4">
-        {applications.map((app) => (
-          <article key={app.id} className="space-y-3 rounded-xl border border-gray-200 p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">{app.role}</h2>
-                <p className="text-sm text-gray-600">{app.company}</p>
+      {applications.length === 0 && !adding ? (
+        <EmptyState
+          icon={KanbanSquare}
+          title="Nothing tracked yet"
+          text="Add roles you’re applying to. Moving one to Applied schedules a follow-up reminder in 7 days."
+        />
+      ) : visible.length === 0 ? (
+        <p className="py-8 text-center text-[13px] text-muted">Nothing in {current.label.toLowerCase()}.</p>
+      ) : (
+        <div className="space-y-2.5">
+          {visible.map((app) => (
+            <article key={app.id} className="animate-in rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-soft">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[12.5px] font-medium text-muted">{app.company}</p>
+                  <h3 className="text-[15.5px] font-semibold leading-snug">{app.role}</h3>
+                </div>
+                <label className={cn('relative inline-flex shrink-0 items-center gap-1 rounded-full py-1 pl-2.5 pr-1.5 text-[12px] font-medium', TONE[app.status] || TONE.to_apply)}>
+                  {LABELS[app.status] || 'To apply'}
+                  <ChevronDown className="size-3.5 opacity-70" />
+                  <select
+                    aria-label="Status"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    value={STATUSES.includes(app.status as (typeof STATUSES)[number]) ? app.status : 'to_apply'}
+                    onChange={(event) => setStatus(app.id, event.target.value)}
+                  >
+                    {STATUSES.map((status) => <option key={status} value={status}>{LABELS[status]}</option>)}
+                  </select>
+                </label>
               </div>
-              <select
-                className="rounded-md border border-gray-300 px-2 py-1 text-sm"
-                value={STATUSES.includes(app.status as typeof STATUSES[number]) ? app.status : 'to_apply'}
-                onChange={(event) => setStatus(app.id, event.target.value)}
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>{LABELS[status]}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1 text-sm text-gray-600">
-              {app.appliedAt && <p>Applied {new Date(app.appliedAt).toLocaleDateString()}</p>}
-              {app.followUpAt && (
-                <p>Follow up {new Date(app.followUpAt).toLocaleDateString()}{app.followUpSent ? ' · reminder sent' : ''}</p>
-              )}
-              {app.salaryExpectation && <p>Expectation: {app.salaryExpectation}</p>}
-              {app.notes && <p className="whitespace-pre-wrap text-gray-800">{app.notes}</p>}
-            </div>
-            {app.url && (
-              <a className="text-sm text-green-700 underline" href={app.url} target="_blank" rel="noreferrer">
-                Open listing
-              </a>
-            )}
-          </article>
-        ))}
-      </div>
+              {app.notes && <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-muted">{app.notes}</p>}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-subtle">
+                {app.appliedAt && <span>Applied {shortDate(app.appliedAt)}</span>}
+                {app.followUpAt && (
+                  <span className="inline-flex items-center gap-1 text-accent">
+                    <BellRing className="size-3.5" /> Follow up {shortDate(app.followUpAt)}{app.followUpSent ? ' · sent' : ''}
+                  </span>
+                )}
+                {app.salaryExpectation && <span>{app.salaryExpectation}</span>}
+                {app.url && (
+                  <a className="ml-auto inline-flex items-center gap-0.5 font-medium text-accent" href={app.url} target="_blank" rel="noreferrer">
+                    Listing <ArrowUpRight className="size-3.5" />
+                  </a>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

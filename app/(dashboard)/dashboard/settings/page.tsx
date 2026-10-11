@@ -1,7 +1,18 @@
 import { SettingsPanel } from '@/components/settings-panel';
-import { listApiKeys, requireUser } from '@/lib/data/service';
+import { PageHeader } from '@/components/ui/kit';
+import { isOwner, linkedAccounts, listApiKeys, requireUser } from '@/lib/data/service';
+import { isDemoMode } from '@/lib/demo/mode';
+import { seal } from '@/lib/auth/signed';
 
 export const instant = false;
+
+function emailLinkToken(userId: string) {
+  try {
+    return seal({ uid: userId, purpose: 'link-email', exp: Date.now() + 60 * 60 * 1000 });
+  } catch {
+    return null;
+  }
+}
 
 export default async function SettingsPage({
   searchParams,
@@ -10,23 +21,24 @@ export default async function SettingsPage({
 }) {
   const user = await requireUser();
   if (!user) return null;
-  const keys = await listApiKeys(user.id);
-  const query = await searchParams;
-  const notice = query.connected
-    ? `${query.connected} connected.`
-    : query.error || undefined;
+  const [keys, query, owner] = await Promise.all([
+    listApiKeys(user.id),
+    searchParams,
+    isDemoMode() ? Promise.resolve(true) : isOwner(user),
+  ]);
+  const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME?.replace(/^@/, '') || 'JobberCheck_bot';
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-gray-600">Keys, Telegram, and invites.</p>
-      </div>
+    <div>
+      <PageHeader title="Settings" />
       <SettingsPanel
         keys={keys}
-        telegramId={user.telegramId}
-        telegramUsername={user.telegramUsername}
-        notice={notice}
+        accounts={linkedAccounts(user)}
+        emailLinkToken={emailLinkToken(user.id)}
+        botUsername={bot}
+        isOwner={owner}
+        notice={query.connected ? `${query.connected} connected.` : undefined}
+        error={query.error}
       />
     </div>
   );

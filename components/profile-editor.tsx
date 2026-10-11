@@ -1,13 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FileText, Globe2, Languages, MapPin, Upload, Wallet, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Group, Notice, Row, inlineFieldClass } from '@/components/ui/kit';
+import { cn } from '@/lib/utils';
 import { haptic, useMainButton, useMainButtonProgress } from '@/components/telegram-ui';
 import type { DemoProfile } from '@/lib/demo/store';
 
-const inputClass =
-  'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-600';
+const areaClass =
+  'block w-full resize-none bg-transparent px-4 py-3 text-[15px] leading-relaxed text-fg placeholder:text-subtle outline-none md:text-sm';
+
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={cn('relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors', checked ? 'bg-success' : 'bg-[#dcdce2] dark:bg-[#3a3a42]')}
+    >
+      <span className={cn('absolute top-[2px] size-[26px] rounded-full bg-white shadow transition-transform', checked ? 'translate-x-[22px]' : 'translate-x-[2px]')} />
+    </button>
+  );
+}
 
 function join(values: string[]) {
   return values.join(', ');
@@ -29,6 +46,7 @@ export function ProfileEditor({ profile }: { profile: DemoProfile }) {
   const [gaps, setGaps] = useState(join(profile.skillGaps));
   const [rules, setRules] = useState(profile.writingRules || '');
   const [companies, setCompanies] = useState(profile.watchedCompanies.join('\n'));
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function saveProfile() {
     setSaving(true);
@@ -90,91 +108,76 @@ export function ProfileEditor({ profile }: { profile: DemoProfile }) {
   }
 
   return (
-    <form onSubmit={save} className="space-y-8">
-      <section className="space-y-3 rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold">CV</h2>
-        <p className="text-sm text-gray-600">
-          {profile.cvFileName
-            ? `${profile.cvFileName} · ${(profile.cvText || '').length} characters extracted`
-            : 'No CV yet. Upload a PDF. Only the text is stored.'}
-        </p>
-        {profile.cvText && (
-          <p className="max-h-36 overflow-auto whitespace-pre-wrap rounded-md bg-gray-50 p-3 text-sm text-gray-700">
-            {profile.cvText.slice(0, 700)}
-          </p>
-        )}
+    <form onSubmit={save} className="space-y-6">
+      {message && <Notice tone="success">{message}</Notice>}
+      {error && <Notice tone="danger">{error}</Notice>}
+
+      <Group title="CV" footer="Only the extracted text is stored. Jobber never invents facts that aren’t in it.">
+        <Row
+          icon={FileText}
+          label={profile.cvFileName || 'No CV yet'}
+          detail={profile.cvText ? `${profile.cvText.length.toLocaleString()} characters extracted` : 'Upload a PDF to get started'}
+          trailing={
+            <Button type="button" size="sm" variant="soft" onClick={() => fileRef.current?.click()}>
+              <Upload /> {profile.cvFileName ? 'Replace' : 'Upload'}
+            </Button>
+          }
+        />
         <input
+          ref={fileRef}
           type="file"
           accept="application/pdf"
-          className="text-sm"
+          className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];
-            if (file) upload(file);
+            if (file) void upload(file);
           }}
         />
-      </section>
+      </Group>
 
-      <section className="space-y-4 rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold">Filters</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">City</span>
-            <input className={inputClass} value={location} onChange={(e) => setLocation(e.target.value)} />
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Country you can work from</span>
-            <input className={inputClass} value={country} onChange={(e) => setCountry(e.target.value)} />
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Salary min (yearly gross)</span>
-            <input className={inputClass} inputMode="numeric" value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)} />
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Salary max</span>
-            <input className={inputClass} inputMode="numeric" value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)} />
-          </label>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={remoteOnly} onChange={(e) => setRemoteOnly(e.target.checked)} />
-          Remote only
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span className="font-medium">Working languages</span>
-          <input className={inputClass} value={languages} onChange={(e) => setLanguages(e.target.value)} />
-        </label>
-      </section>
+      <Group title="What you’re looking for">
+        <Row icon={MapPin} label="City" trailing={<input className={cn(inlineFieldClass, 'max-w-[55%]')} placeholder="Vienna" value={location} onChange={(e) => setLocation(e.target.value)} />} />
+        <Row icon={Globe2} iconTone="success" label="Work from" trailing={<input className={cn(inlineFieldClass, 'max-w-[55%]')} placeholder="Austria" value={country} onChange={(e) => setCountry(e.target.value)} />} />
+        <Row icon={Wifi} iconTone="neutral" label="Remote only" trailing={<Toggle checked={remoteOnly} onChange={setRemoteOnly} />} />
+        <Row icon={Languages} iconTone="warning" label="Languages" trailing={<input className={cn(inlineFieldClass, 'max-w-[55%]')} placeholder="English, German" value={languages} onChange={(e) => setLanguages(e.target.value)} />} />
+        <Row
+          icon={Wallet}
+          iconTone="success"
+          label="Salary, €/year"
+          trailing={
+            <div className="flex max-w-[55%] items-center gap-1 text-subtle">
+              <input className={cn(inlineFieldClass, 'w-20')} inputMode="numeric" placeholder="min" value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)} />
+              –
+              <input className={cn(inlineFieldClass, 'w-20')} inputMode="numeric" placeholder="max" value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)} />
+            </div>
+          }
+        />
+      </Group>
 
-      <section className="space-y-4 rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold">Skills</h2>
-        <label className="block space-y-1 text-sm">
-          <span className="font-medium">Confirmed skills</span>
-          <textarea className={inputClass} rows={3} value={skills} onChange={(e) => setSkills(e.target.value)} />
+      <Group title="Skills" footer="Comma separated. Roles that lean on your skill gaps get scored down.">
+        <label className="block">
+          <span className="block px-4 pt-3 text-[12px] font-medium text-muted">Confirmed skills</span>
+          <textarea className={areaClass} rows={2} value={skills} onChange={(e) => setSkills(e.target.value)} />
         </label>
-        <label className="block space-y-1 text-sm">
-          <span className="font-medium">Role keywords</span>
-          <textarea className={inputClass} rows={2} value={keywords} onChange={(e) => setKeywords(e.target.value)} />
+        <label className="block">
+          <span className="block px-4 pt-3 text-[12px] font-medium text-muted">Role keywords</span>
+          <textarea className={areaClass} rows={2} value={keywords} onChange={(e) => setKeywords(e.target.value)} />
         </label>
-        <label className="block space-y-1 text-sm">
-          <span className="font-medium">Skill gaps to avoid</span>
-          <textarea className={inputClass} rows={2} value={gaps} onChange={(e) => setGaps(e.target.value)} />
+        <label className="block">
+          <span className="block px-4 pt-3 text-[12px] font-medium text-muted">Skill gaps to avoid</span>
+          <textarea className={areaClass} rows={2} value={gaps} onChange={(e) => setGaps(e.target.value)} />
         </label>
-      </section>
+      </Group>
 
-      <section className="space-y-3 rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold">Writing rules</h2>
-        <p className="text-sm text-gray-600">Used for every cover letter. The model is told not to invent facts.</p>
-        <textarea className={inputClass} rows={8} value={rules} onChange={(e) => setRules(e.target.value)} />
-      </section>
+      <Group title="Writing rules" footer="Applied to every cover letter.">
+        <textarea className={areaClass} rows={5} placeholder="e.g. 3 short paragraphs, no clichés, one concrete story." value={rules} onChange={(e) => setRules(e.target.value)} />
+      </Group>
 
-      <section className="space-y-3 rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold">Company watchlist</h2>
-        <p className="text-sm text-gray-600">One company per line. Sources themselves are seeded in the database.</p>
-        <textarea className={inputClass} rows={6} value={companies} onChange={(e) => setCompanies(e.target.value)} />
-      </section>
+      <Group title="Company watchlist" footer="One company per line.">
+        <textarea className={areaClass} rows={4} placeholder={'Bitpanda\nStoryblok'} value={companies} onChange={(e) => setCompanies(e.target.value)} />
+      </Group>
 
-      {message && <p className="text-sm text-green-700">{message}</p>}
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save profile'}</Button>
+      <Button type="submit" size="lg" className="w-full md:w-auto" disabled={saving}>{saving ? 'Saving…' : 'Save profile'}</Button>
     </form>
   );
 }

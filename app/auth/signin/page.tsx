@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Mail } from 'lucide-react';
 import { createClient } from '@/lib/db/supabase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
+import { Logo, Notice, fieldClass } from '@/components/ui/kit';
+import { TelegramLoginButton } from '@/components/telegram-login-button';
+
+const BOT = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'JobberCheck_bot').replace(/^@/, '');
 
 export default function SignInPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -17,39 +23,40 @@ export default function SignInPage() {
     setLoading(true);
     setMessage('');
     setError('');
-
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       });
       setLoading(false);
       if (error) setError(error.message);
-      else setMessage('Check your email for the magic link.');
+      else setMessage(`Check ${email} for a sign-in link.`);
     } catch {
       setLoading(false);
-      setError('Supabase is not configured. Open the app from the home page to use demo mode.');
+      setError('Email sign-in is not configured here.');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign In to Jobber</CardTitle>
-          <CardDescription>
-            Enter your email to receive a magic link
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email
-              </label>
+    <div className="flex min-h-screen flex-col bg-bg px-5">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between py-5">
+        <Link href="/"><Logo /></Link>
+        <Link href="/" className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-fg">
+          <ArrowLeft className="size-4" /> Home
+        </Link>
+      </header>
+      <main className="flex flex-1 items-center justify-center pb-20">
+        <div className="w-full max-w-[380px] animate-in">
+          <h1 className="text-center text-[26px] font-semibold tracking-[-0.02em]">Welcome back</h1>
+          <p className="mt-1.5 text-center text-sm text-muted">Same account as the Jobber app in Telegram.</p>
+
+          <div className="mt-8 rounded-[20px] border border-line bg-surface p-6 shadow-lift">
+            <TelegramLoginButton bot={BOT} onDone={() => router.push('/dashboard/matches')} onError={setError} />
+            <div className="my-5 flex items-center gap-3 text-[12px] text-subtle">
+              <span className="h-px flex-1 bg-line" /> or with email <span className="h-px flex-1 bg-line" />
+            </div>
+            <form onSubmit={handleSignIn} className="space-y-3">
               <input
                 id="email"
                 type="email"
@@ -57,41 +64,24 @@ export default function SignInPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className={fieldClass}
               />
-            </div>
-
-            {message && (
-              <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
-                {message}
+              <Button type="submit" variant="outline" disabled={loading} className="w-full">
+                <Mail /> {loading ? 'Sending…' : 'Email me a link'}
+              </Button>
+            </form>
+            {(message || error) && (
+              <div className="mt-4">
+                {message && <Notice tone="success">{message}</Notice>}
+                {error && <Notice tone="danger">{error}</Notice>}
               </div>
             )}
-
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Sending...' : 'Send Magic Link'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">Don't have an account? </span>
-            <Link href="/auth/signup" className="text-primary hover:underline">
-              Sign up
-            </Link>
           </div>
-
-          <div className="mt-4 text-center">
-            <Link href="/" className="text-sm text-muted-foreground hover:text-primary">
-              ← Back to home
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+          <p className="mt-6 text-center text-[13px] text-muted">
+            New here? <Link href="/auth/signup" className="font-medium text-accent hover:underline">Join with an invite</Link>
+          </p>
+        </div>
+      </main>
     </div>
   );
 }

@@ -457,3 +457,111 @@ export async function consumeInvite(code: string, userId: string) {
     data: { invitedBy: code },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Linked accounts: one User row carries both telegramId and a real email.
+// ---------------------------------------------------------------------------
+
+const PLACEHOLDER_EMAIL = /@users\.jobber\.local$/;
+
+export function hasRealEmail(user: { email: string }) {
+  return !PLACEHOLDER_EMAIL.test(user.email);
+}
+
+export interface LinkedAccounts {
+  telegram: { id: string; username: string | null } | null;
+  email: string | null;
+}
+
+export function linkedAccounts(user: SessionUser): LinkedAccounts {
+  return {
+    telegram: user.telegramId ? { id: user.telegramId, username: user.telegramUsername } : null,
+    email: hasRealEmail(user) ? user.email : null,
+  };
+}
+
+type LinkResult = { ok: true } | { ok: false; error: string };
+
+/** Attach a Telegram identity to an existing (usually email) account. */
+export async function linkTelegramToUser(userId: string, telegramId: string, username?: string): Promise<LinkResult> {
+  if (isDemoMode()) {
+    demoStore.linkTelegram(telegramId, username);
+    return { ok: true };
+  }
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, error: 'Account not found' };
+  if (user.telegramId === telegramId) return { ok: true };
+  if (user.telegramId) return { ok: false, error: 'A different Telegram account is already linked. Unlink it first.' };
+
+  const other = await prisma.user.findUnique({ where: { telegramId } });
+  if (other && other.id !== userId) {
+    // A Telegram-only account with nothing in it can be folded into this one.
+    const [matches, apps, keys, profile] = await Promise.all([
+      prisma.jobMatch.count({ where: { userId: other.id } }),
+      prisma.application.count({ where: { userId: other.id } }),
+      prisma.apiKey.count({ where: { userId: other.id } }),
+      prisma.profile.findUnique({ where: { userId: other.id } }),
+    ]);
+    const empty = !hasRealEmail(other) && matches + apps + keys === 0 && !profile?.cvText;
+    if (!empty) {
+      return { ok: false, error: 'This Telegram account already has its own Jobber data. Sign in with Telegram and link the email from there.' };
+    }
+    await prisma.user.delete({ where: { id: other.id } });
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { telegramId, telegramUsername: username || null },
+  });
+  return { ok: true };
+}
+
+/** Attach a verified email (from a Supabase magic link) to the signed-in account. */
+export async function linkEmailToUser(userId: string, email: string, supabaseId: string): Promise<LinkResult> {
+  if (isDemoMode()) return { ok: true };
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, error: 'Account not found' };
+  if (user.email === email) {
+    if (user.supabaseId !== supabaseId) await prisma.user.update({ where: { id: userId }, data: { supabaseId } });
+    return { ok: true };
+  }
+  const other = await prisma.user.findFirst({ where: { OR: [{ email }, { supabaseId }] } });
+  if (other && other.id !== userId) {
+    const [matches, apps, keys] = await Promise.all([
+      prisma.jobMatch.count({ where: { userId: other.id } }),
+      prisma.application.count({ where: { userId: other.id } }),
+      prisma.apiKey.count({ where: { userId: other.id } }),
+    ]);
+    if (other.telegramId || matches + apps + keys > 0) {
+      return { ok: false, error: 'This email already belongs to another Jobber account.' };
+    }
+    await prisma.user.delete({ where: { id: other.id } });
+  }
+  await prisma.user.update({ where: { id: userId }, data: { email, supabaseId } });
+  return { ok: true };
+}
+
+export async function unlinkAccount(userId: string, kind: 'telegram' | 'email'): Promise<LinkResult> {
+  if (isDemoMode()) return { ok: false, error: 'Not available in demo mode' };
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, error: 'Account not found' };
+  if (kind === 'telegram') {
+    if (!user.telegramId) return { ok: true };
+    if (!hasRealEmail(user)) return { ok: false, error: 'Link an email first, or you would lose access.' };
+    if (process.env.OWNER_TELEGRAM_ID?.trim() === user.telegramId) {
+      return { ok: false, error: 'The owner Telegram account cannot be unlinked.' };
+    }
+    await prisma.user.update({ where: { id: userId }, data: { telegramId: null, telegramUsername: null } });
+    return { ok: true };
+  }
+  if (!hasRealEmail(user)) return { ok: true };
+  if (!user.telegramId) return { ok: false, error: 'Link Telegram first, or you would lose access.' };
+  await prisma.user.update({
+    where: { id: userId },
+    data: { email: `tg${user.telegramId}@users.jobber.local`, supabaseId: null },
+  });
+  return { ok: true };
+}

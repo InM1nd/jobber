@@ -1,7 +1,7 @@
 import { connection } from 'next/server';
 import { isDemoMode } from '@/lib/demo/mode';
 import { requireUser, type SessionUser } from '@/lib/data/service';
-import { AuthGate, BottomNav } from '@/components/telegram-ui';
+import { AuthGate, BottomNav, Sidebar } from '@/components/telegram-ui';
 
 export const instant = false;
 
@@ -19,19 +19,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const demo = isDemoMode();
 
   return (
-    <div className="min-h-screen bg-[var(--tg-bg,#fff)] text-[var(--tg-text,#171717)]">
-      <header className="pt-[var(--tg-safe-top)]">
-        <div className="mx-auto flex max-w-lg items-baseline justify-between px-4 py-3">
-          <p className="text-lg font-semibold tracking-tight text-[var(--tg-link,#15803d)]">Jobber</p>
-          <p className="truncate text-xs text-[var(--tg-hint,#6b7280)]">{accountLabel(user)}</p>
-        </div>
-      </header>
-      {demo && (
-        <p className="mx-auto max-w-lg px-4 pb-2 text-xs text-[var(--tg-hint,#92400e)]">
-          Sample data. Open the bot to sign in with Telegram.
-        </p>
-      )}
-      <main className="mx-auto max-w-lg px-4 pb-24 pt-2">{children}</main>
+    <div className="flex min-h-screen bg-bg text-fg">
+      <Sidebar account={accountLabel(user)} />
+      <div className="min-w-0 flex-1">
+        {demo && (
+          <div className="border-b border-line bg-accent-soft px-4 py-1.5 text-center text-[11.5px] font-medium text-accent">
+            Demo mode · sample data
+          </div>
+        )}
+        <main className="mx-auto max-w-lg animate-in px-4 pb-[calc(88px+var(--safe-bottom))] pt-[calc(16px+var(--safe-top))] md:max-w-3xl md:px-10 md:pb-16 md:pt-12">
+          {children}
+        </main>
+      </div>
       <BottomNav />
     </div>
   );
