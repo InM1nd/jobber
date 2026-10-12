@@ -9,10 +9,11 @@ import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
 import type { DemoApplication } from '@/lib/demo/store';
 
-const STATUSES = ['to_apply', 'applied', 'interview', 'on_hold', 'offer', 'rejected', 'skip'] as const;
+const STATUSES = ['to_apply', 'check_listing', 'applied', 'interview', 'on_hold', 'offer', 'rejected', 'skip'] as const;
 
 const LABELS: Record<string, string> = {
   to_apply: 'To apply',
+  check_listing: 'Check listing',
   applied: 'Applied',
   interview: 'Interview',
   on_hold: 'On hold',
@@ -22,17 +23,17 @@ const LABELS: Record<string, string> = {
 };
 
 const TONE: Record<string, string> = {
-  to_apply: 'text-muted', applied: 'text-st-applied', interview: 'text-st-interview', on_hold: 'text-muted',
+  to_apply: 'text-muted', check_listing: 'text-muted', applied: 'text-st-applied', interview: 'text-st-interview', on_hold: 'text-muted',
   offer: 'text-st-offer', rejected: 'text-subtle', skip: 'text-subtle',
 };
 const DOT: Record<string, string> = {
-  to_apply: 'bg-subtle', applied: 'bg-st-applied', interview: 'bg-st-interview', on_hold: 'bg-subtle',
+  to_apply: 'bg-subtle', check_listing: 'bg-subtle', applied: 'bg-st-applied', interview: 'bg-st-interview', on_hold: 'bg-subtle',
   offer: 'bg-st-offer', rejected: 'bg-line-strong', skip: 'bg-line-strong',
 };
 const SEG_DOT: Record<string, string> = { to_apply: 'bg-subtle', applied: 'bg-st-applied', interview: 'bg-st-interview', closed: 'bg-line-strong' };
 
 const SEGMENTS = [
-  { key: 'to_apply', label: 'To apply', match: ['to_apply'] },
+  { key: 'to_apply', label: 'To apply', match: ['to_apply', 'check_listing'] },
   { key: 'applied', label: 'Applied', match: ['applied', 'on_hold'] },
   { key: 'interview', label: 'Interview', match: ['interview', 'offer'] },
   { key: 'closed', label: 'Closed', match: ['rejected', 'skip'] },

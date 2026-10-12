@@ -213,7 +213,17 @@ model Application {
   contact           String?
   salaryExpectation String?
   notes             String?   @db.Text
-  
+
+  // Fields written by the assistant agent via /api/agent (migration 005)
+  location          String?
+  source            String?
+  priority          String?   // "high" | "medium" | "low"
+  score             Int?
+  whyFit            String?   @db.Text
+  risks             String?   @db.Text
+  nextAction        String?
+  dedupeKey         String?   // normalized url, or company|role
+
   coverLetter       String?   @db.Text
   cvVersion         String?
   
@@ -222,6 +232,7 @@ model Application {
   
   @@index([userId, status])
   @@index([followUpAt])
+  @@index([userId, dedupeKey])
 }
 
 model InviteCode {
