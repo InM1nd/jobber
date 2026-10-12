@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PDFParse } from 'pdf-parse';
+import { pdfToText } from '@/lib/pdf';
 import { requireUser, saveProfile } from '@/lib/data/service';
 import { extractCvProfile } from '@/lib/ai/cv-profile';
 import { aiErrorResponse } from '@/lib/ai/errors';
@@ -11,12 +11,7 @@ export const maxDuration = 60;
 const MAX_CVS = 6;
 
 async function pdfText(file: File) {
-  const parser = new PDFParse({ data: new Uint8Array(await file.arrayBuffer()) });
-  try {
-    return (await parser.getText()).text.replace(/\s+\n/g, '\n').trim();
-  } finally {
-    await parser.destroy();
-  }
+  return pdfToText(await file.arrayBuffer());
 }
 
 function autoLabel(headline: string | null, roles: string[], fileName: string | null) {
@@ -51,11 +46,12 @@ export async function POST(request: Request) {
     const file = form.get('file');
     label = String(form.get('label') || '');
     if (!(file instanceof File)) return NextResponse.json({ error: 'Choose a PDF file' }, { status: 400 });
-    if (file.size > 5 * 1024 * 1024) return NextResponse.json({ error: 'PDF must be under 5 MB' }, { status: 400 });
+    if (file.size > 4 * 1024 * 1024) return NextResponse.json({ error: 'PDF must be under 4 MB (export a lighter PDF or paste the text)' }, { status: 400 });
     if (file.type && file.type !== 'application/pdf') return NextResponse.json({ error: 'Only PDF files work here — or paste the text.' }, { status: 400 });
     try {
       text = await pdfText(file);
-    } catch {
+    } catch (e) {
+      console.error('[cvs] pdf parse failed', e);
       return NextResponse.json({ error: 'Could not read that PDF. Paste the text instead.' }, { status: 422 });
     }
     fileName = file.name.slice(0, 180);

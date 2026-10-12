@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PDFParse } from 'pdf-parse';
+import { pdfToText } from '@/lib/pdf';
 import { requireUser, saveProfile } from '@/lib/data/service';
 
 export const instant = false;
@@ -21,10 +21,14 @@ export async function POST(request: Request) {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const parser = new PDFParse({ data: bytes });
+  let text = '';
   try {
-    const result = await parser.getText();
-    const text = result.text.replace(/\s+\n/g, '\n').trim();
+    text = await pdfToText(bytes);
+  } catch (e) {
+    console.error('[profile/cv] pdf parse failed', e);
+    return NextResponse.json({ error: 'Could not read that PDF. Paste the text instead.' }, { status: 422 });
+  }
+  {
     if (!text) {
       return NextResponse.json({ error: 'No text found in that PDF' }, { status: 422 });
     }
@@ -33,7 +37,5 @@ export async function POST(request: Request) {
       cvFileName: file.name.slice(0, 180),
     });
     return NextResponse.json({ characters: text.length, fileName: file.name });
-  } finally {
-    await parser.destroy();
   }
 }

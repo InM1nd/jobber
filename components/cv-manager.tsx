@@ -26,6 +26,13 @@ export function CvManager({ cvs, onChange, onParsed, compact }: { cvs: CvItem[];
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function upload(body: FormData | string) {
+    if (typeof body !== 'string') {
+      const f = body.get('file');
+      if (f instanceof File && f.size > 4 * 1024 * 1024) {
+        setError('PDF must be under 4 MB — export a lighter PDF or paste the text.');
+        return;
+      }
+    }
     setBusy(true);
     setError('');
     const res = await fetch('/api/cvs', {
@@ -35,7 +42,7 @@ export function CvManager({ cvs, onChange, onParsed, compact }: { cvs: CvItem[];
     const data = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
     if (!res?.ok) {
-      setError(data.error || 'Could not read the CV. Try again.');
+      setError(data.error || (res?.status === 413 ? 'File too large — under 4 MB please.' : res?.status === 504 ? 'Reading took too long. Try again or paste the text.' : `Could not read the CV (error ${res?.status ?? 'network'}). Try again or paste the text.`));
       haptic('error');
       return;
     }
