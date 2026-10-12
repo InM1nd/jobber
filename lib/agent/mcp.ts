@@ -12,8 +12,10 @@ const valid = (k?: string) => Boolean(k && k.length >= 24);
 /** Auth for the remote MCP endpoint: secret URL token (MCP_URL_TOKEN) or Bearer AGENT_API_KEY_CLAUDE. */
 export function mcpAuthorized(request: Request, urlToken?: string) {
   const tok = process.env.MCP_URL_TOKEN;
-  if (urlToken && valid(tok) && same(urlToken, tok!)) return true;
   const claude = process.env.AGENT_API_KEY_CLAUDE;
+  if (urlToken && valid(tok) && same(urlToken, tok!)) return true;
+  // The Claude API key also works as the URL token (one secret to manage).
+  if (urlToken && valid(claude) && same(urlToken, claude!)) return true;
   const h = request.headers.get('authorization') || '';
   const bearer = h.startsWith('Bearer ') ? h.slice(7).trim() : '';
   return Boolean(bearer && valid(claude) && same(bearer, claude!));
@@ -89,10 +91,33 @@ function buildServer(ownerId: string) {
 }
 
 /** Stateless Streamable HTTP: a fresh server + transport per request. */
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'POST, GET, OPTIONS',
+  'access-control-allow-headers': 'content-type, accept, authorization, mcp-session-id, mcp-protocol-version, last-event-id',
+  'access-control-expose-headers': 'mcp-session-id, mcp-protocol-version',
+};
+const withCors = (res: Response) => {
+  const h = new Headers(res.headers);
+  for (const [k, v] of Object.entries(CORS)) h.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+};
+
 export async function handleMcp(request: Request, urlToken?: string) {
-  if (!mcpAuthorized(request, urlToken)) return Response.json({ error: 'Not found' }, { status: 404 });
-  if (request.method === 'GET' || request.method === 'DELETE') {
-    return Response.json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed (stateless server: use POST).' }, id: null }, { status: 405, headers: { allow: 'POST' } });
+  const path = new URL(request.url).pathname;
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  if (!mcpAuthorized(request, urlToken)) {
+    // Diagnostics only: never log the token itself.
+    console.warn('[mcp] unauthorized', request.method, path.replace(/[^/]{12,}$/, (t) => `<${t.length} chars, sha ${createHash('sha256').update(t).digest('hex').slice(0, 6)}>`), 'ua=', request.headers.get('user-agent'));
+    return withCors(Response.json({ error: 'Not found' }, { status: 404 }));
+  }
+  console.info('[mcp]', request.method, 'ok', 'ua=', request.headers.get('user-agent'));
+  if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'DELETE') {
+    // Streamable HTTP: a server without a standalone SSE stream answers GET with 405.
+    return new Response(request.method === 'HEAD' ? null : JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed: this stateless MCP server only accepts POST.' }, id: null }), {
+      status: 405,
+      headers: { allow: 'POST, OPTIONS', 'content-type': 'application/json', ...CORS },
+    });
   }
   const owner = await getOwner();
   if (!owner) return Response.json({ error: 'Owner not found' }, { status: 500 });
@@ -100,7 +125,7 @@ export async function handleMcp(request: Request, urlToken?: string) {
   const server = buildServer(owner.id);
   await server.connect(transport);
   try {
-    return await transport.handleRequest(request);
+    return withCors(await transport.handleRequest(request));
   } finally {
     void server.close();
   }
