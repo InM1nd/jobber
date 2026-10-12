@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { cache } from 'react';
 import { isDemoMode } from '@/lib/demo/mode';
 import { linkApplications, notTracked } from '@/lib/tracker/link';
-import { demoStore, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
+import { demoStore, type AppFit, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
 import { getPrisma } from '@/lib/db/prisma';
 import { readSessionUserId } from '@/lib/auth/session';
 import type { CvAdvice } from '@/lib/ai/cv-advice';
@@ -215,7 +215,10 @@ export async function getApplications(userId: string): Promise<DemoApplication[]
   const apps = await prisma.application.findMany({
     where: { userId },
     orderBy: { updatedAt: 'desc' },
+    include: { job: { select: { matches: { where: { userId, filtered: false }, select: { score: true, reasons: true, redFlags: true, subScores: true, cvAdvice: true, cvId: true, updatedAt: true } } } } },
   });
+  const cvRows = await prisma.cv.findMany({ where: { userId }, select: { id: true, label: true } });
+  const cvLabel = new Map(cvRows.map((c) => [c.id, c.label]));
 
   return apps.map((app) => ({
     id: app.id,
@@ -238,6 +241,17 @@ export async function getApplications(userId: string): Promise<DemoApplication[]
     risks: app.risks,
     nextAction: app.nextAction,
     updatedAt: app.updatedAt.toISOString(),
+    jobId: app.jobId,
+    fit: (() => {
+      const m = app.job?.matches[0];
+      if (!m || m.score <= 0) return null;
+      return {
+        score: m.score, reasons: m.reasons, redFlags: m.redFlags,
+        subScores: (m.subScores as Record<string, number> | null) ?? null,
+        cvAdvice: (m.cvAdvice as AppFit['cvAdvice']) ?? null,
+        cvLabel: m.cvId ? cvLabel.get(m.cvId) ?? null : null, scoredAt: m.updatedAt.toISOString(),
+      };
+    })(),
   }));
 }
 

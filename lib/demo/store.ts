@@ -90,6 +90,18 @@ export interface DemoApplication {
   risks?: string | null;
   nextAction?: string | null;
   updatedAt?: string | null;
+  jobId?: string | null;
+  fit?: AppFit | null;
+}
+
+export interface AppFit {
+  score: number;
+  reasons: string[];
+  redFlags: string[];
+  subScores: Record<string, number> | null;
+  cvAdvice: import('@/lib/ai/cv-advice').CvAdvice | null;
+  cvLabel: string | null;
+  scoredAt: string | null;
 }
 
 export interface DemoKey {

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState, fieldClass, fitOf, FIT_TEXT } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
+import { FitPanel, FollowUpPanel } from '@/components/tracker-extras';
 import type { DemoApplication } from '@/lib/demo/store';
 
 type App = DemoApplication;
@@ -200,7 +201,7 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
         </div>
       )}
 
-      {open && <DetailSheet app={open} onClose={() => setOpenId(null)} onPatch={(d) => patch(open.id, d)} />}
+      {open && <DetailSheet key={open.id} app={open} onClose={() => setOpenId(null)} onPatch={(d) => patch(open.id, d)} />}
       {adding && <AddSheet onClose={() => setAdding(false)} onAdded={() => { setAdding(false); setTab('todo'); router.refresh(); }} />}
     </div>
   );
@@ -277,6 +278,9 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
             <input type="date" className={cn(fieldClass, 'h-10', isDue(app) && 'text-fit-weak')} value={toInput(app.followUpAt)} onChange={(e) => void onPatch({ followUpAt: e.target.value || null })} />
           </Field>
         </div>
+
+        <FollowUpPanel app={app} />
+        <FitPanel app={app} />
 
         {app.whyFit && <Field label="Why it fits"><p className="text-[14px] leading-relaxed">{app.whyFit}</p></Field>}
         {app.risks && <Field label="Risks"><p className="whitespace-pre-line text-[14px] leading-relaxed text-muted">{app.risks}</p></Field>}

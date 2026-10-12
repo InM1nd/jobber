@@ -747,8 +747,14 @@ export function demoTrackerSample(letter: string): DemoApplication[] {
   return ROWS.map((r, i) => ({
     id: r.id, company: r.company, role: r.role, url: r.url, status: r.status,
     appliedAt: D(r.appliedAt), followUpAt: D(r.followUpAt), followUpSent: false,
-    contact: null, salaryExpectation: r.status === 'applied' ? '€62k gross' : null,
+    salaryExpectation: r.status === 'applied' ? '€62k gross' : null,
     notes: r.notes, coverLetter: i === 0 ? letter : null, location: r.location, source: r.source,
-    priority: r.priority, score: r.score, whyFit: r.whyFit, risks: r.risks, nextAction: r.nextAction, updatedAt: D(r.updated),
+    priority: r.priority, score: r.score, contact: r.status === 'applied' && i % 2 ? 'jobs@' + r.company.toLowerCase().replace(/[^a-z]/g, '') + '.com' : null, whyFit: r.whyFit, risks: r.risks, nextAction: r.nextAction, updatedAt: D(r.updated),
+    fit: r.status === 'applied' && i % 3 === 0 ? {
+      score: r.score, reasons: [r.whyFit, 'Vienna-based team with English as the working language'], redFlags: r.risks ? [r.risks] : [],
+      subScores: { role: 86, skills: 80, seniority: 58, location: 100, language: 92, salary: 70 },
+      cvAdvice: { verdict: 'Good fit. Lead with the component library and the CI tests.', emphasize: ['Component library at marswalk media', '~300 automated tests in CI'], add: ['Name the Next.js + Sanity migration in the summary'], reword: [], missingKeywords: ['Storybook'], doNotClaim: ['Storybook'] },
+      cvLabel: 'Frontend Engineer', scoredAt: D(-1),
+    } : null,
   }));
 }
