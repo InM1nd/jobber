@@ -41,3 +41,15 @@ function fmt(d: Date) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
+
+/** One-line follow-up hint for list rows: "Day 7 check-in · 14 Oct · Email". Null when not applicable. */
+export function followUpCell(app: { status: string; appliedAt: string | null; followUpAt: string | null; notes: string | null; contact: string | null; url: string | null; source?: string | null }, now = new Date()) {
+  const plan = followUpPlan(app, now);
+  if (!plan.active) return null;
+  if (plan.count >= 2) return { text: 'Done · wait for reply', due: false };
+  const email = /@/.test(app.contact || '');
+  const channel = email ? 'Email' : /linkedin/i.test(app.source || '') || plan.count === 1 ? 'LinkedIn' : 'Email';
+  const step = plan.count === 0 ? 'Day 7 check-in' : 'Last nudge';
+  const when = !plan.due ? null : plan.overdue ? 'Due' : fmt(new Date(plan.due));
+  return { text: [step, when, channel].filter(Boolean).join(' · '), due: plan.overdue };
+}

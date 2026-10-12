@@ -9,6 +9,7 @@ import { EmptyState, fieldClass, fitOf, FIT_TEXT } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
 import { FitPanel, FollowUpPanel } from '@/components/tracker-extras';
+import { followUpCell } from '@/lib/tracker/followup-plan';
 import type { DemoApplication } from '@/lib/demo/store';
 
 type App = DemoApplication;
@@ -98,13 +99,14 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
   const setStatus = (id: string, status: string) => { haptic('light'); void patch(id, { status }); };
 
   const row = (a: App) => {
-    const date = a.followUpAt && ['applied', 'on_hold'].includes(a.status) ? a.followUpAt : a.appliedAt;
+    const fu = followUpCell({ ...a, contact: a.contact ?? null });
+    const date = fu ? null : a.appliedAt;
     return (
       <li key={a.id}>
         <button
           type="button"
           onClick={() => setOpenId(a.id)}
-          className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-2/70 active:bg-surface-2 lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_72px_132px_88px] lg:gap-4"
+          className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-2/70 active:bg-surface-2 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_56px_132px_minmax(0,1.3fr)] lg:gap-4"
         >
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <span title={a.priority ? `${a.priority} priority` : undefined} className={cn('size-2 shrink-0 rounded-full', PRIO_DOT[a.priority ?? ''] || 'bg-transparent ring-1 ring-line-strong ring-inset')} />
@@ -114,18 +116,20 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
                 {a.company}
                 <span className="lg:hidden">{a.location ? ` · ${a.location}` : ''}</span>
               </p>
+              {fu && <p className={cn('mt-0.5 truncate text-[11.5px] lg:hidden', fu.due ? 'font-semibold text-fit-weak' : 'text-subtle')}><BellRing className="mr-1 inline size-3 -translate-y-px" />{fu.text}</p>}
             </div>
           </div>
           <p className="hidden truncate text-[13px] text-muted lg:block">{a.location || '—'}</p>
           <p className={cn('hidden text-[13px] font-semibold tabular-nums lg:block', a.score != null ? FIT_TEXT[fitOf(a.score)] : 'text-subtle')}>{a.score ?? '—'}</p>
           <div className="hidden lg:block"><StatusPill status={a.status} onChange={(s) => setStatus(a.id, s)} /></div>
-          <div className="flex shrink-0 flex-col items-end gap-1 lg:items-start">
+          <div className="flex min-w-0 shrink-0 flex-col items-end gap-1 lg:items-start">
             <div className="lg:hidden"><StatusPill status={a.status} onChange={(s) => setStatus(a.id, s)} /></div>
-            {date ? (
-              <span className={cn('inline-flex items-center gap-1 text-[11.5px] tabular-nums', isDue(a) ? 'font-semibold text-fit-weak' : 'text-subtle')}>
-                {date === a.followUpAt && <BellRing className="size-3" />}
-                {day(date)}
+            {fu ? (
+              <span className={cn('hidden truncate text-[12.5px] lg:inline-flex lg:items-center lg:gap-1', fu.due ? 'font-semibold text-fit-weak' : 'text-muted')}>
+                <BellRing className="size-3 shrink-0" />{fu.text}
               </span>
+            ) : date ? (
+              <span className="text-[11.5px] tabular-nums text-subtle">Applied {day(date)}</span>
             ) : <span className="hidden text-[12px] text-subtle lg:inline">—</span>}
           </div>
         </button>
@@ -181,8 +185,8 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
         <p className="py-10 text-center text-[13px] text-muted">Nothing here{query ? ` for “${query}”` : ''}.</p>
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-bg">
-          <div className="hidden grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_72px_132px_88px] gap-4 border-b border-line px-4 py-2 text-[11.5px] font-medium uppercase tracking-[0.12em] text-subtle lg:grid">
-            <span className="pl-5">Role</span><span>Location</span><span>Score</span><span>Status</span><span>Date</span>
+          <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_56px_132px_minmax(0,1.3fr)] gap-4 border-b border-line px-4 py-2 text-[11.5px] font-medium uppercase tracking-[0.12em] text-subtle lg:grid">
+            <span className="pl-5">Role</span><span>Location</span><span>Score</span><span>Status</span><span>Follow-up</span>
           </div>
           {due.length > 0 && (
             <>
