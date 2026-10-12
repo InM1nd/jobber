@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getPrisma } from '@/lib/db/prisma';
-import { APP_STATUSES, checkAgentAuth, companyRoleKey, getOwner, mapStatus, normalizeUrl, serialize, upsertAgentJob } from '@/lib/agent/api';
+import { listOwnerApplications } from '@/lib/agent/list';
+import { APP_STATUSES, checkAgentAuth, getOwner, serialize, upsertAgentJob } from '@/lib/agent/api';
 
 export const instant = false;
 export const maxDuration = 60;
@@ -11,31 +11,7 @@ export async function GET(request: Request) {
   if (denied) return denied;
   const owner = await getOwner();
   if (!owner) return NextResponse.json({ error: 'Owner user not found' }, { status: 404 });
-  const sp = new URL(request.url).searchParams;
-  const where: Record<string, unknown> = { userId: owner.id };
-  const status = sp.get('status');
-  if (status) {
-    const st = status.split(',').map((s) => mapStatus(s)).filter(Boolean) as string[];
-    where.status = { in: st };
-  }
-  const url = sp.get('url');
-  const company = sp.get('company');
-  const role = sp.get('role');
-  if (url || (company && role)) {
-    const keys = [normalizeUrl(url), company && role ? companyRoleKey(company, role) : null].filter(Boolean) as string[];
-    where.OR = [
-      { dedupeKey: { in: keys } },
-      ...(company && role ? [{ company: { equals: company, mode: 'insensitive' }, role: { equals: role, mode: 'insensitive' } }] : []),
-    ];
-  } else if (company) {
-    where.company = { contains: company, mode: 'insensitive' };
-  }
-  const q = sp.get('q');
-  if (q) where.AND = [{ OR: [{ company: { contains: q, mode: 'insensitive' } }, { role: { contains: q, mode: 'insensitive' } }] }];
-  const since = sp.get('updatedSince');
-  if (since && !isNaN(Date.parse(since))) where.updatedAt = { gte: new Date(since) };
-  const limit = Math.min(Math.max(Number(sp.get('limit')) || 500, 1), 1000);
-  const rows = await getPrisma().application.findMany({ where, orderBy: { updatedAt: 'desc' }, take: limit });
+  const rows = await listOwnerApplications(owner.id, new URL(request.url).searchParams);
   return NextResponse.json({ count: rows.length, statuses: APP_STATUSES, items: rows.map(serialize) });
 }
 
