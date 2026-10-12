@@ -3,15 +3,27 @@ import { NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db/prisma';
 
 /** Private API for the owner's assistant agent. Bearer AGENT_API_KEY; writes to OWNER_TELEGRAM_ID's tracker. */
+const digest = (v: string) => createHash('sha256').update(v).digest();
+const same = (a: string, b: string) => timingSafeEqual(digest(a), digest(b));
+
+/**
+ * Bearer auth. AGENT_API_KEY = full access (assistant agent). AGENT_API_KEY_CLAUDE = read-only unless
+ * AGENT_API_KEY_CLAUDE_WRITE=true; remove that env var to revoke Claude independently.
+ */
 export function checkAgentAuth(request: Request): NextResponse | null {
-  const key = process.env.AGENT_API_KEY;
-  if (!key || key.length < 24) return NextResponse.json({ error: 'Agent API disabled' }, { status: 503 });
+  const main = process.env.AGENT_API_KEY;
+  const claude = process.env.AGENT_API_KEY_CLAUDE;
+  const valid = (k?: string) => Boolean(k && k.length >= 24);
+  if (!valid(main) && !valid(claude)) return NextResponse.json({ error: 'Agent API disabled' }, { status: 503 });
   const header = request.headers.get('authorization') || '';
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-  const a = createHash('sha256').update(token).digest();
-  const b = createHash('sha256').update(key).digest();
-  if (!token || !timingSafeEqual(a, b)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  return null;
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (valid(main) && same(token, main!)) return null;
+  if (valid(claude) && same(token, claude!)) {
+    const write = request.method === 'GET' || request.method === 'HEAD' || process.env.AGENT_API_KEY_CLAUDE_WRITE === 'true';
+    return write ? null : NextResponse.json({ error: 'This key is read-only. Write access is disabled (AGENT_API_KEY_CLAUDE_WRITE is not true).', code: 'read_only' }, { status: 403 });
+  }
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
 export async function getOwner() {

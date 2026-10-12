@@ -4,6 +4,18 @@ import { checkAgentAuth, getOwner, mapStatus, parseDate, serialize } from '@/lib
 
 export const instant = false;
 
+/** GET: one application. */
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = checkAgentAuth(request);
+  if (denied) return denied;
+  const owner = await getOwner();
+  if (!owner) return NextResponse.json({ error: 'Owner user not found' }, { status: 404 });
+  const { id } = await params;
+  const app = await getPrisma().application.findFirst({ where: { id, userId: owner.id } });
+  if (!app) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json({ application: serialize(app) });
+}
+
 /** PATCH: update status (+ optional appliedAt, followUpAt, notes, appendNote, nextAction). */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const denied = checkAgentAuth(request);
