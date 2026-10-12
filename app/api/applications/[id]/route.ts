@@ -17,6 +17,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     status: data.status ? String(data.status) : undefined,
     notes: data.notes === undefined ? undefined : String(data.notes),
     followUpSent: data.followUpSent === undefined ? undefined : Boolean(data.followUpSent),
+    appliedAt: data.appliedAt === undefined ? undefined : data.appliedAt ? String(data.appliedAt) : null,
+    followUpAt: data.followUpAt === undefined ? undefined : data.followUpAt ? String(data.followUpAt) : null,
+    nextAction: data.nextAction === undefined ? undefined : String(data.nextAction).slice(0, 4000),
+    priority: data.priority === undefined ? undefined : ['high', 'medium', 'low'].includes(String(data.priority)) ? String(data.priority) : null,
   });
 
   if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });

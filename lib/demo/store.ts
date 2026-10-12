@@ -67,6 +67,8 @@ export interface DemoMatch {
   };
 }
 
+import { demoTrackerSample } from './tracker-sample';
+
 export interface DemoApplication {
   id: string;
   company: string;
@@ -80,6 +82,14 @@ export interface DemoApplication {
   salaryExpectation: string | null;
   notes: string | null;
   coverLetter: string | null;
+  location?: string | null;
+  source?: string | null;
+  priority?: string | null;
+  score?: number | null;
+  whyFit?: string | null;
+  risks?: string | null;
+  nextAction?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface DemoKey {
@@ -232,36 +242,7 @@ function initialState(): DemoState {
         },
       },
     ],
-    applications: [
-      {
-        id: 'a1',
-        company: 'Bitpanda',
-        role: 'Frontend Engineer',
-        url: 'https://www.bitpanda.com/en/career',
-        status: 'applied',
-        appliedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-        followUpAt: new Date(Date.now() + 4 * 86400000).toISOString(),
-        followUpSent: false,
-        contact: null,
-        salaryExpectation: '€65k gross',
-        notes: 'Sent the product-engineer CV. Letter mentions the Vienna rental tool.',
-        coverLetter: SAMPLE_LETTER,
-      },
-      {
-        id: 'a2',
-        company: 'Example GmbH',
-        role: 'Frontend Developer',
-        url: null,
-        status: 'to_apply',
-        appliedAt: null,
-        followUpAt: null,
-        followUpSent: false,
-        contact: null,
-        salaryExpectation: null,
-        notes: 'Check that the listing is still live.',
-        coverLetter: null,
-      },
-    ],
+    applications: demoTrackerSample(SAMPLE_LETTER),
     keys: [],
     invites: [],
   };

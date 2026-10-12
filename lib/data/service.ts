@@ -228,6 +228,14 @@ export async function getApplications(userId: string): Promise<DemoApplication[]
     salaryExpectation: app.salaryExpectation,
     notes: app.notes,
     coverLetter: app.coverLetter,
+    location: app.location,
+    source: app.source,
+    priority: app.priority,
+    score: app.score,
+    whyFit: app.whyFit,
+    risks: app.risks,
+    nextAction: app.nextAction,
+    updatedAt: app.updatedAt.toISOString(),
   }));
 }
 
@@ -296,6 +304,7 @@ export async function updateApplication(
     );
     return demoStore.updateApplication(id, {
       ...patch,
+      updatedAt: new Date().toISOString(),
       status,
       appliedAt: dates.appliedAt?.toISOString() ?? null,
       followUpAt: dates.followUpAt?.toISOString() ?? null,
@@ -324,7 +333,9 @@ export async function updateApplication(
       salaryExpectation: patch.salaryExpectation,
       appliedAt: dates.appliedAt,
       followUpAt: dates.followUpAt,
-      followUpSent: patch.followUpSent,
+      followUpSent: patch.followUpAt !== undefined ? false : patch.followUpSent,
+      nextAction: patch.nextAction,
+      priority: patch.priority,
     },
   });
 }
