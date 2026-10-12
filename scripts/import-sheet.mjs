@@ -7,6 +7,7 @@ const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
 const DRY = args.includes('--dry-run');
 const BASE = opt('--base', 'https://jobber-check.vercel.app').replace(/\/$/, '');
+const BATCH = Number(opt('--batch', '10'));
 const DIR = opt('--dir', '/workspace/jobber_import');
 const KEY = process.env.AGENT_API_KEY;
 if (!DRY && !KEY) { console.error('AGENT_API_KEY env is required'); process.exit(1); }
@@ -60,10 +61,10 @@ if (unmapped.length) console.log('UNMAPPED values:', JSON.stringify(unmapped, nu
 if (DRY) { console.log('dry run, sample:', JSON.stringify(items[0], null, 1)); process.exit(unmapped.length ? 2 : 0); }
 
 let created = 0, updated = 0; const errors = [];
-for (let i = 0; i < items.length; i += 50) {
+for (let i = 0; i < items.length; i += BATCH) {
   const res = await fetch(`${BASE}/api/agent/applications`, {
     method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${KEY}` },
-    body: JSON.stringify({ items: items.slice(i, i + 50) }),
+    body: JSON.stringify({ items: items.slice(i, i + BATCH) }),
   });
   const j = await res.json().catch(() => ({}));
   if (!res.ok) { console.error(`batch ${i}: HTTP ${res.status}`, j); process.exit(1); }
