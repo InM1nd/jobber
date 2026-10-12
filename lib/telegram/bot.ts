@@ -1,3 +1,4 @@
+import { linkApplications, notTracked } from '@/lib/tracker/link';
 import { Bot, webhookCallback } from 'grammy';
 import { getPrisma } from '@/lib/db/prisma';
 import { miniAppUrl } from '@/lib/telegram/mini-app';
@@ -225,11 +226,13 @@ export async function sendTelegramMessage(telegramId: string, message: string) {
 export async function sendDailyDigest(userId: string) {
   const profile = await getPrisma().profile.findUnique({ where: { userId }, select: { alertFrequency: true, alertThreshold: true } });
   if (profile?.alertFrequency === 'off' || profile?.alertFrequency === 'instant') return;
+  await linkApplications(userId).catch(() => []);
   const user = await getPrisma().user.findUnique({
     where: { id: userId },
     include: {
       matches: {
         where: {
+          ...notTracked(userId),
           createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
           score: { gte: profile?.alertThreshold ?? 70 },
           filtered: false,

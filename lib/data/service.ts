@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { cache } from 'react';
 import { isDemoMode } from '@/lib/demo/mode';
+import { linkApplications, notTracked } from '@/lib/tracker/link';
 import { demoStore, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
 import { getPrisma } from '@/lib/db/prisma';
 import { readSessionUserId } from '@/lib/auth/session';
@@ -119,8 +120,9 @@ export async function getMatches(userId: string) {
   if (isDemoMode()) return demoStore.matches();
 
   const prisma = getPrisma();
+  await linkApplications(userId).catch(() => []);
   const matches = await prisma.jobMatch.findMany({
-    where: { userId, filtered: false },
+    where: { userId, filtered: false, ...notTracked(userId) },
     include: { job: { include: { source: true } } },
     orderBy: { score: 'desc' },
     take: 120,
@@ -272,7 +274,7 @@ export async function createApplication(
   if (isDemoMode()) return demoStore.addApplication(record);
 
   const prisma = getPrisma();
-  return prisma.application.create({
+  const created = await prisma.application.create({
     data: {
       userId,
       company: record.company,
@@ -286,6 +288,8 @@ export async function createApplication(
       notes: record.notes,
     },
   });
+  await linkApplications(userId, { applicationIds: [created.id] }).catch(() => []);
+  return created;
 }
 
 export async function updateApplication(

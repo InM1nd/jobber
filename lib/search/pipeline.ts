@@ -1,3 +1,4 @@
+import { linkApplications, notTracked } from '@/lib/tracker/link';
 import type { SearchRun } from '@prisma/client';
 import { getPrisma } from '@/lib/db/prisma';
 import { ingestSource } from '@/lib/jobs/ingest';
@@ -215,8 +216,9 @@ async function notifyRunDone(userId: string, runId: string) {
   if (runs > 1 && profile?.alertFrequency !== 'instant') return;
   const threshold = runs > 1 ? profile?.alertThreshold ?? 70 : 0;
   const run = await prisma.searchRun.findUnique({ where: { id: runId } });
+  await linkApplications(userId).catch(() => []);
   const top = await prisma.jobMatch.findMany({
-    where: { userId, filtered: false, score: { gte: threshold }, ...(runs > 1 && run ? { createdAt: { gte: run.createdAt } } : {}) },
+    where: { userId, filtered: false, ...notTracked(userId), score: { gte: threshold }, ...(runs > 1 && run ? { createdAt: { gte: run.createdAt } } : {}) },
     include: { job: { include: { source: true } } },
     orderBy: { score: 'desc' },
     take: 5,
