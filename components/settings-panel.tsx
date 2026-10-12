@@ -118,8 +118,8 @@ export function SettingsPanel({
           ? 'Running on your own Gemini key.'
           : `Jobber shares one free Gemini quota between everyone (${shared.left} requests left today across all users). Limits reset at 09:00 Vienna time.`}
       >
-        <Row icon={Gauge} label="Scoring" detail={`Each request scores up to 5 pre-filtered jobs`} trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.score} / {usage.limits.score}</span>} />
-        <Row icon={PenLine} label="Letters & CV advice" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.write} / {usage.limits.write}</span>} />
+        <Row icon={Gauge} label="Scoring" detail={`Each request scores up to 12 pre-filtered jobs`} trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.score} / {usage.limits.score < 0 ? '∞' : usage.limits.score}</span>} />
+        <Row icon={PenLine} label="Letters & CV advice" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.write} / {usage.limits.write < 0 ? '∞' : usage.limits.write}</span>} />
       </Group>
 
       <Group title="Appearance" footer="System follows your device on the web and your Telegram theme in the app.">

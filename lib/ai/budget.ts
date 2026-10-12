@@ -34,9 +34,12 @@ export function budgetLeft(used: number, model: string, onboarding: boolean) {
   return Math.max(0, cap - used);
 }
 
+/** Budget row id per shared key: key 0 keeps the plain model name (existing counters), others get "#2", "#3"… */
+export const budgetModelId = (model: string, keyIndex = 0) => (keyIndex > 0 ? `${model}#${keyIndex + 1}` : model);
+
 export class BudgetExhaustedError extends Error {
   constructor(public model: string) {
-    super('The shared AI has used today’s free quota. It resets at 09:00 Vienna time — or add your own free Gemini key in Settings.');
+    super('The shared free AI quota is used up for today (every shared key). It resets at 09:00 Vienna time — or add your own free Gemini key in Settings to keep going.');
     this.name = 'BudgetExhaustedError';
   }
 }
@@ -44,23 +47,24 @@ export class BudgetExhaustedError extends Error {
 const demo = new Map<string, number>();
 
 /** Atomically takes one request from today's shared budget, or throws. */
-export async function takeShared(model: string, onboarding: boolean) {
+export async function takeShared(model: string, onboarding: boolean, keyIndex = 0) {
   const day = pacificDay();
+  const id = budgetModelId(model, Math.max(0, keyIndex));
   const b = dailyBudget(model);
   const cap = b.limit - b.margin - (onboarding ? 0 : b.onboardingReserve);
   if (isDemoMode()) {
-    const k = `${day}:${model}`;
+    const k = `${day}:${id}`;
     const used = demo.get(k) || 0;
     if (used >= cap) throw new BudgetExhaustedError(model);
     demo.set(k, used + 1);
     return;
   }
   const rows = await getPrisma().$queryRaw<Array<{ count: number }>>`
-    insert into "GlobalAiUsage" ("day", "model", "count", "updatedAt") values (${day}, ${model}, 1, now())
+    insert into "GlobalAiUsage" ("day", "model", "count", "updatedAt") values (${day}, ${id}, 1, now())
     on conflict ("day", "model") do update set "count" = "GlobalAiUsage"."count" + 1, "updatedAt" = now()
     where "GlobalAiUsage"."count" < ${cap}
     returning "count"`;
-  if (!rows.length) throw new BudgetExhaustedError(model);
+  if (!rows.length) throw new BudgetExhaustedError(id);
 }
 
 export async function sharedUsageToday() {

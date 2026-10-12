@@ -17,8 +17,8 @@ describe('quota maths', () => {
     process.env.AI_DAILY_SCORE_CALLS = '25';
     expect(dailyLimits().score).toBe(25);
     process.env.AI_DAILY_SCORE_CALLS = 'lots';
-    expect(dailyLimits().score).toBe(6);
-    expect(dailyLimits(true).score).toBe(80);
+    expect(dailyLimits().score).toBe(20);
+    expect(dailyLimits(true).score).toBe(240);
   });
 
   it('uses UTC days', () => {

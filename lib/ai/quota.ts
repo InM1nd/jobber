@@ -4,7 +4,7 @@ import { AiKind, allowance, dailyLimits, utcDay } from './limiter';
 
 export class QuotaExceededError extends Error {
   constructor(public kind: AiKind, public limit: number) {
-    super(`You’ve used today’s ${kind === 'score' ? 'scoring' : kind === 'parse' ? 'CV reading' : 'writing'} limit (${limit}). It resets at 02:00 Vienna time — or add your own free Gemini key in Settings for more.`);
+    super(`You’ve used today’s ${kind === 'score' ? 'scoring' : kind === 'parse' ? 'CV reading' : 'writing'} limit (${limit} requests). It resets at 02:00 Vienna time. Add your own free Gemini key in Settings for much higher limits.`);
     this.name = 'QuotaExceededError';
   }
 }
@@ -35,8 +35,21 @@ export async function addUsage(userId: string, kind: AiKind, n = 1) {
   });
 }
 
+/** The owner (OWNER_TELEGRAM_ID) has no per-user limits; the shared-key budget still applies. */
+const ownerCache = new Map<string, boolean>();
+export async function isUnlimited(userId: string) {
+  const owner = process.env.OWNER_TELEGRAM_ID;
+  if (!owner || isDemoMode()) return false;
+  if (!ownerCache.has(userId)) {
+    const u = await getPrisma().user.findUnique({ where: { id: userId }, select: { telegramId: true } });
+    ownerCache.set(userId, u?.telegramId === owner);
+  }
+  return ownerCache.get(userId)!;
+}
+
 /** How many `kind` calls the user may still make today (capped at wanted). */
 export async function quotaAllowance(userId: string, kind: AiKind, wanted: number, ownKey = false) {
+  if (await isUnlimited(userId)) return wanted;
   return allowance(wanted, await usedToday(userId, kind), dailyLimits(ownKey)[kind]);
 }
 
@@ -47,7 +60,7 @@ export async function assertQuota(userId: string, kind: AiKind, ownKey = false) 
 }
 
 export async function usageSummary(userId: string, ownKey = false) {
-  const limits = dailyLimits(ownKey);
+  const limits = (await isUnlimited(userId)) ? { score: -1, write: -1, parse: -1 } : dailyLimits(ownKey);
   const [score, write, parse] = await Promise.all([
     usedToday(userId, 'score'),
     usedToday(userId, 'write'),

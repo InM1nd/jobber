@@ -53,9 +53,17 @@ function limiter(model: string, keyId: string) {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function hasSharedAi() {
-  return Boolean(process.env.GEMINI_API_KEY);
+/** Shared key pool: GEMINI_API_KEYS (comma-separated) plus GEMINI_API_KEY, deduped. Order is stable (budget ids depend on it). */
+export function sharedKeys(): string[] {
+  const list = [process.env.GEMINI_API_KEY, ...(process.env.GEMINI_API_KEYS || '').split(/[,\s]+/)].map((k) => k?.trim()).filter((k): k is string => Boolean(k));
+  return [...new Set(list)];
 }
+
+export function hasSharedAi() {
+  return sharedKeys().length > 0;
+}
+
+const pool = globalThis as unknown as { geminiNextKey?: number };
 
 export interface GeminiOptions {
   tier: GeminiTier;
@@ -65,17 +73,37 @@ export interface GeminiOptions {
   maxTokens?: number;
   /** A user's own key; defaults to the shared GEMINI_API_KEY. */
   apiKey?: string;
-  /** Called once per HTTP request actually sent (for budget accounting). */
-  onRequest?: (model: string) => void | Promise<void>;
+  /** Called once per HTTP request actually sent (for budget accounting). keyIndex = index in the shared pool. */
+  onRequest?: (model: string, keyIndex: number) => void | Promise<void>;
   /** Longest we are willing to wait for the limiter / a retry, in ms. */
   maxWaitMs?: number;
   timeoutMs?: number;
 }
 
+/**
+ * Runs on the user's own key, or on the shared pool: starts at a rotating key and falls
+ * through to the next key when one is rate-limited (429), out of its daily budget, or busy.
+ */
 export async function gemini(prompt: string, opts: GeminiOptions): Promise<string> {
-  const key = opts.apiKey || process.env.GEMINI_API_KEY;
-  if (!key) throw new AiUnavailableError('GEMINI_API_KEY is not set');
-  const keyId = opts.apiKey ? `u${opts.apiKey.slice(-6)}` : 'shared';
+  if (opts.apiKey) return geminiOne(prompt, opts, opts.apiKey, `u${opts.apiKey.slice(-6)}`, -1);
+  const keys = sharedKeys();
+  if (!keys.length) throw new AiUnavailableError('GEMINI_API_KEY is not set');
+  const start = (pool.geminiNextKey = ((pool.geminiNextKey ?? -1) + 1) % keys.length);
+  let last: unknown;
+  for (let i = 0; i < keys.length; i++) {
+    const idx = (start + i) % keys.length;
+    try {
+      return await geminiOne(prompt, opts, keys[idx], idx === 0 ? 'shared' : `shared${idx}`, idx);
+    } catch (error) {
+      last = error;
+      const name = error instanceof Error ? error.name : '';
+      if (name !== 'AiUnavailableError' && name !== 'BudgetExhaustedError') throw error;
+    }
+  }
+  throw last;
+}
+
+async function geminiOne(prompt: string, opts: GeminiOptions, key: string, keyId: string, keyIndex: number): Promise<string> {
   const maxWait = opts.maxWaitMs ?? 20_000;
   let lastError: unknown;
 
@@ -89,7 +117,7 @@ export async function gemini(prompt: string, opts: GeminiOptions): Promise<strin
       }
       if (wait > 0) await sleep(wait);
       lim.record();
-      await opts.onRequest?.(model);
+      await opts.onRequest?.(model, keyIndex);
 
       let res: Response;
       try {

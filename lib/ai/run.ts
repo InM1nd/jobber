@@ -21,7 +21,7 @@ export async function runAi(
   const text = await gemini(prompt, {
     ...rest,
     apiKey: own || undefined,
-    onRequest: own ? undefined : (model) => takeShared(model, Boolean(onboarding)),
+    onRequest: own ? undefined : (model, keyIndex) => takeShared(model, Boolean(onboarding), keyIndex),
   });
   await addUsage(userId, kind, 1);
   return text;

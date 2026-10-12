@@ -25,15 +25,15 @@ function intEnv(name: string, fallback: number) {
 export function dailyLimits(ownKey = false): QuotaLimits {
   if (ownKey) {
     return {
-      score: intEnv('AI_BYO_DAILY_SCORE_CALLS', 80),
-      write: intEnv('AI_BYO_DAILY_WRITES', 60),
-      parse: intEnv('AI_BYO_DAILY_CV_PARSES', 20),
+      score: intEnv('AI_BYO_DAILY_SCORE_CALLS', 240),
+      write: intEnv('AI_BYO_DAILY_WRITES', 180),
+      parse: intEnv('AI_BYO_DAILY_CV_PARSES', 60),
     };
   }
   return {
-    score: intEnv('AI_DAILY_SCORE_CALLS', 6),
-    write: intEnv('AI_DAILY_WRITES', 4),
-    parse: intEnv('AI_DAILY_CV_PARSES', 5),
+    score: intEnv('AI_DAILY_SCORE_CALLS', 20),
+    write: intEnv('AI_DAILY_WRITES', 15),
+    parse: intEnv('AI_DAILY_CV_PARSES', 15),
   };
 }
 
