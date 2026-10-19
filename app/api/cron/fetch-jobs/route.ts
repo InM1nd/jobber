@@ -3,9 +3,12 @@ import type { JobSource } from '@prisma/client';
 import { getPrisma } from '@/lib/db/prisma';
 import { ingestSource } from '@/lib/jobs/ingest';
 import { sendDailyDigest } from '@/lib/telegram/bot';
+import { recheckCareersOnly } from '@/lib/companies/recheck';
 import { planRun, timeoutFor, withTimeout } from '@/lib/jobs/schedule';
 
 export const maxDuration = 60;
+// Near Austria/Supabase (eu-west-1); StepStone times out from iad1.
+export const preferredRegion = 'fra1';
 
 const CONCURRENCY = 6;
 const BUDGET_MS = 50_000;
@@ -18,10 +21,13 @@ export async function GET(req: NextRequest) {
   const prisma = getPrisma();
   const started = Date.now();
   const force = req.nextUrl.searchParams.get('all') === '1';
+  const only = req.nextUrl.searchParams.get('only'); // e.g. "scrape:stepstone" for a targeted test run
   try {
+    // Weekly: careers-only companies -> public ATS board if their careers page now links one.
+    const recheck = await recheckCareersOnly({ force: req.nextUrl.searchParams.get('recheck') === '1' }).catch((e) => [{ error: String(e) }]);
     const dueBefore = new Date(Date.now() - (force ? 0 : DUE_AFTER_MS));
     const due = await prisma.jobSource.findMany({
-      where: { isActive: true, sourceType: { not: 'manual' }, OR: [{ lastFetchedAt: null }, { lastFetchedAt: { lt: dueBefore } }] },
+      where: { isActive: true, sourceType: only ? only : { not: 'manual' }, OR: [{ lastFetchedAt: null }, { lastFetchedAt: { lt: dueBefore } }] },
       orderBy: [{ lastFetchedAt: { sort: 'asc', nulls: 'first' } }],
     });
     const queue = planRun(due);
@@ -68,7 +74,7 @@ export async function GET(req: NextRequest) {
 
     // Daily digest once per day, from the scheduled run.
     let digests = 0;
-    if (!force) {
+    if (!force && !only) {
       const today = new Date().toISOString().slice(0, 10);
       const mark = await prisma.cronJob.findUnique({ where: { name: 'daily-digest' } });
       if (mark?.lastStatus !== today) {
@@ -81,7 +87,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ message: 'Run complete', ...stats, remainingDue, digests, ms: Date.now() - started, errors });
+    return NextResponse.json({ message: 'Run complete', ...stats, remainingDue, recheck, digests, ms: Date.now() - started, errors });
   } catch (error) {
     console.error('Cron job error:', error);
     await prisma.cronJob
