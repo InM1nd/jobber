@@ -45,7 +45,7 @@ ${STYLE}
 Questions (JSON):
 ${JSON.stringify(qs)}
 
-Return JSON only: {"answers":[{"id":"<question id>","answer":"<text>"}]} with one entry per question, same ids.`;
+Return JSON only: {"answers":[{"id":"<question id>","answer":"<text>"}]} with one entry per question, same ids. In the cover letter, separate the 3 paragraphs with \\n\\n and put the sign-off on its own lines (\\n\\nBest,\\nOleksandr).`;
 }
 
 export function mergeAnswers(questions: FormQuestion[], raw: unknown, company: string): DraftItem[] {
@@ -54,7 +54,13 @@ export function mergeAnswers(questions: FormQuestion[], raw: unknown, company: s
   return questions.map((q) => ({ ...q, label: q.label.replace('{company}', company), answer: clean(byId.get(q.id) || '') }));
 }
 
-const clean = (s: string) => s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/Marswalk Media/g, 'marswalk media').trim();
+export const clean = (s: string) =>
+  s
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/Marswalk Media/g, 'marswalk media')
+    // Sign-off always on its own lines.
+    .replace(/\s*(Best|Kind regards|Best regards),\s*\n?\s*Oleksandr\s*$/i, '\n\nBest,\nOleksandr')
+    .trim();
 
 export async function generateDrafts(userId: string, input: Parameters<typeof draftsPrompt>[0], source: FormSource): Promise<ApplicationDrafts> {
   const reply = await runAi(userId, 'write', draftsPrompt(input), {

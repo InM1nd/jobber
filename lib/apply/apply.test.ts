@@ -32,3 +32,10 @@ describe('application form questions', () => {
     expect(parseDrafts(JSON.stringify({ v: 1, source: "standard", generatedAt: "x", items }))!.items).toHaveLength(1);
   });
 });
+
+import { clean } from './drafts';
+describe('clean', () => {
+  it('puts the sign-off on its own lines', () => {
+    expect(clean('…start on 1 November 2026. Best,\nOleksandr')).toBe('…start on 1 November 2026.\n\nBest,\nOleksandr');
+  });
+});
