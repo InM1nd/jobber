@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const app = await getPrisma().application.findFirst({ where: { id, userId: owner.id } });
   if (!app) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ application: serialize(app) });
+  return NextResponse.json({ application: serialize(app, { drafts: true }) });
 }
 
 /** PATCH: update status (+ optional appliedAt, followUpAt, notes, appendNote, nextAction). */

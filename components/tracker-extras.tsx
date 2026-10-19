@@ -8,6 +8,7 @@ import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
 import { followUpPlan } from '@/lib/tracker/followup-plan';
 import type { DemoApplication } from '@/lib/demo/store';
+import { parseDrafts, type ApplicationDrafts } from '@/lib/apply/format';
 
 const SUB_LABEL: Record<string, string> = { role: 'Role fit', skills: 'Skills', seniority: 'Level', location: 'Location', language: 'Language', salary: 'Salary' };
 const bar = (v: number) => (v >= 75 ? 'bg-fit-strong' : v >= 55 ? 'bg-fit-good' : v >= 35 ? 'bg-fit-ok' : 'bg-fit-weak');
@@ -178,6 +179,101 @@ export function FollowUpPanel({ app }: { app: DemoApplication }) {
         <button type="button" disabled={!!busy} onClick={() => call('done')} className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent-soft py-2.5 text-[13px] font-semibold text-accent disabled:opacity-60">
           {busy === 'done' ? <Loader2 className="size-3.5 animate-spin" /> : <MailCheck className="size-4" />} Mark followed up
         </button>
+      )}
+      {error && <p className="text-[13px] text-danger">{error}</p>}
+    </section>
+  );
+}
+
+const SOURCE_LABEL: Record<string, string> = { greenhouse: 'Questions from the Greenhouse form', workable: 'Questions from the Workable form', recruitee: 'Questions from the Recruitee form', standard: 'Standard questions (this ATS doesn’t publish its form)' };
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button type="button" aria-label="Copy" onClick={async () => { await navigator.clipboard?.writeText(text).catch(() => {}); setCopied(true); haptic('light'); setTimeout(() => setCopied(false), 1400); }} className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12px] font-medium text-muted hover:bg-surface-2 hover:text-fg">
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+}
+
+export function PrepareApplicationPanel({ app }: { app: DemoApplication }) {
+  const [drafts, setDrafts] = useState<ApplicationDrafts | null>(() => parseDrafts(app.coverLetter));
+  const [dirty, setDirty] = useState(false);
+  const [busy, setBusy] = useState<'' | 'gen' | 'save'>('');
+  const [error, setError] = useState('');
+  const [open, setOpen] = useState(false);
+
+  async function generate() {
+    if (drafts && dirty && !confirm('Replace your edited drafts with new ones?')) return;
+    setBusy('gen');
+    setError('');
+    const res = await fetch(`/api/applications/${app.id}/prepare`, { method: 'POST' }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
+    setBusy('');
+    if (!res?.ok) { haptic('error'); setError(data.error || 'Couldn’t prepare drafts. Try again.'); return; }
+    haptic('success');
+    setDrafts(data.drafts);
+    setDirty(false);
+    setOpen(true);
+  }
+
+  async function save() {
+    if (!drafts) return;
+    setBusy('save');
+    const res = await fetch(`/api/applications/${app.id}/prepare`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: drafts.items.map((i) => ({ id: i.id, answer: i.answer })) }) }).catch(() => null);
+    setBusy('');
+    if (!res?.ok) { setError('Couldn’t save. Try again.'); return; }
+    haptic('success');
+    setDirty(false);
+  }
+
+  const edit = (id: string, answer: string) => {
+    setDrafts((d) => (d ? { ...d, items: d.items.map((i) => (i.id === id ? { ...i, answer } : i)) } : d));
+    setDirty(true);
+  };
+
+  return (
+    <section className="space-y-3 rounded-[18px] border border-line p-4">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[14.5px] font-semibold">Application drafts</p>
+          <p className="truncate text-[12.5px] text-muted">
+            {drafts ? `${drafts.items.length} answers · ${SOURCE_LABEL[drafts.source] || ''}` : 'Cover letter and form answers, drafted from your CV'}
+          </p>
+        </div>
+        <button type="button" disabled={!!busy} onClick={generate} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 text-[13px] font-semibold transition-colors hover:bg-surface-2 disabled:opacity-60">
+          {busy === 'gen' ? <Loader2 className="size-3.5 animate-spin" /> : drafts ? <RefreshCw className="size-3.5" /> : <Sparkles className="size-3.5 text-accent" />}
+          {busy === 'gen' ? 'Drafting…' : drafts ? 'Redo' : 'Prepare application'}
+        </button>
+      </div>
+      {drafts && !open && (
+        <button type="button" onClick={() => setOpen(true)} className="text-[12.5px] font-medium text-accent">Show drafts</button>
+      )}
+      {drafts && open && (
+        <div className="space-y-4">
+          {drafts.items.map((it) => (
+            <div key={it.id} className="space-y-1.5">
+              <div className="flex items-start justify-between gap-2">
+                <p className="pt-1 text-[13px] font-medium leading-snug">{it.label}{it.required && <span className="text-subtle"> *</span>}</p>
+                <CopyButton text={it.answer} />
+              </div>
+              {it.options && <p className="text-[11.5px] text-subtle">Options: {it.options.join(' · ')}</p>}
+              <textarea
+                className={cn(fieldClass, 'text-[13.5px] leading-relaxed')}
+                rows={it.id === 'cover_letter' || it.label === 'Cover letter' ? 10 : Math.min(6, Math.max(2, Math.ceil(it.answer.length / 70)))}
+                value={it.answer}
+                onChange={(e) => edit(it.id, e.target.value)}
+              />
+            </div>
+          ))}
+          <div className="flex items-center gap-2">
+            <button type="button" disabled={!dirty || !!busy} onClick={save} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-bg disabled:opacity-40">
+              {busy === 'save' ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}{dirty ? 'Save edits' : 'Saved'}
+            </button>
+            <button type="button" onClick={() => setOpen(false)} className="h-9 rounded-full px-3 text-[13px] text-muted hover:text-fg">Hide</button>
+          </div>
+          <p className="text-[11.5px] text-subtle">Drafts only. Nothing is submitted; check every “[fill in]” / “[check]” before you paste.</p>
+        </div>
       )}
       {error && <p className="text-[13px] text-danger">{error}</p>}
     </section>

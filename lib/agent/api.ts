@@ -1,3 +1,4 @@
+import { parseDrafts } from '@/lib/apply/format';
 import { createHash, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db/prisma';
@@ -165,12 +166,14 @@ export function serialize(a: {
   id: string; company: string; role: string; url: string | null; location: string | null; source: string | null;
   priority: string | null; score: number | null; whyFit: string | null; risks: string | null; nextAction: string | null;
   status: string; appliedAt: Date | null; followUpAt: Date | null; notes: string | null; dedupeKey: string | null;
-  createdAt: Date; updatedAt: Date;
-}) {
+  createdAt: Date; updatedAt: Date; coverLetter?: string | null;
+}, opts: { drafts?: boolean } = {}) {
   return {
     id: a.id, company: a.company, role: a.role, url: a.url, location: a.location, source: a.source,
     priority: a.priority, score: a.score, whyFit: a.whyFit, risks: a.risks, nextAction: a.nextAction,
     status: a.status, appliedAt: a.appliedAt, followUpAt: a.followUpAt, notes: a.notes, dedupeKey: a.dedupeKey,
     createdAt: a.createdAt, updatedAt: a.updatedAt,
+    hasDrafts: Boolean(a.coverLetter),
+    ...(opts.drafts ? { drafts: parseDrafts(a.coverLetter) } : {}),
   };
 }

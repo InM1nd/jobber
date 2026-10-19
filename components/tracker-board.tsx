@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState, fieldClass, fitOf, FIT_TEXT } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
-import { FitPanel, FollowUpPanel } from '@/components/tracker-extras';
+import { FitPanel, FollowUpPanel, PrepareApplicationPanel } from '@/components/tracker-extras';
 import { followUpCell } from '@/lib/tracker/followup-plan';
 import type { DemoApplication } from '@/lib/demo/store';
 
@@ -285,6 +285,7 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
 
         <FollowUpPanel app={app} />
         <FitPanel app={app} />
+        <PrepareApplicationPanel key={app.id} app={app} />
 
         {app.whyFit && <Field label="Why it fits"><p className="text-[14px] leading-relaxed">{app.whyFit}</p></Field>}
         {app.risks && <Field label="Risks"><p className="whitespace-pre-line text-[14px] leading-relaxed text-muted">{app.risks}</p></Field>}

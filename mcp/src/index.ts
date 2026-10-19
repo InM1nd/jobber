@@ -57,7 +57,7 @@ server.registerTool(
 
 server.registerTool(
   'get_application',
-  { description: 'Get one tracker application by id (all fields: status, dates, whyFit, risks, notes, next action).', inputSchema: { id: z.string() } },
+  { description: 'Get one tracker application by id (all fields: status, dates, whyFit, risks, notes, next action, saved application-form drafts).', inputSchema: { id: z.string() } },
   async ({ id }) => api('GET', `/applications/${encodeURIComponent(id)}`),
 );
 

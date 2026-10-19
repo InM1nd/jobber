@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const owner = await getOwner();
   if (!owner) return NextResponse.json({ error: 'Owner user not found' }, { status: 404 });
   const rows = await listOwnerApplications(owner.id, new URL(request.url).searchParams);
-  return NextResponse.json({ count: rows.length, statuses: APP_STATUSES, items: rows.map(serialize) });
+  return NextResponse.json({ count: rows.length, statuses: APP_STATUSES, items: rows.map((a) => serialize(a)) });
 }
 
 /** POST: upsert one job ({...}) or many ({items:[...]}, max 200). Dedup by normalized url, then company+role. */

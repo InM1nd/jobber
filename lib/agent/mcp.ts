@@ -41,15 +41,15 @@ function buildServer(ownerId: string) {
       const sp = new URLSearchParams();
       for (const [k, v] of Object.entries({ ...args, limit: args.limit ?? 100 })) if (v !== undefined && v !== '') sp.set(k, String(v));
       const rows = await listOwnerApplications(ownerId, sp);
-      return out({ count: rows.length, items: rows.map(serialize) });
+      return out({ count: rows.length, items: rows.map((a) => serialize(a)) });
     },
   );
   server.registerTool(
     'get_application',
-    { description: 'Get one tracker application by id (status, dates, whyFit, risks, notes, next action).', inputSchema: { id: z.string() }, annotations: { readOnlyHint: true } },
+    { description: 'Get one tracker application by id (status, dates, whyFit, risks, notes, next action, and saved application-form answer drafts).', inputSchema: { id: z.string() }, annotations: { readOnlyHint: true } },
     async ({ id }) => {
       const a = await getPrisma().application.findFirst({ where: { id, userId: ownerId } });
-      return a ? out({ application: serialize(a) }) : err('Not found');
+      return a ? out({ application: serialize(a, { drafts: true }) }) : err('Not found');
     },
   );
   server.registerTool(
