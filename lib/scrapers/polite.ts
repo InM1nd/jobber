@@ -15,6 +15,11 @@ g.scrapeLast ??= new Map();
 g.scrapeCache ??= new Map();
 const CACHE_MS = 6 * 3600 * 1000;
 
+/** Per-platform daily page caps (karriere.at: JSON search pages, 2 runs/day x ~10 queries x <=2 pages). */
+const PLATFORM_PAGES: Record<string, number> = { karriere: 48 };
+/** Per-platform minimum gap between requests to the same host. */
+const PLATFORM_DELAY: Record<string, number> = { karriere: 1200 };
+
 export class BudgetError extends Error {}
 
 async function takePage(platform: string) {
@@ -23,24 +28,27 @@ async function takePage(platform: string) {
   const prisma = getPrisma();
   const row = await prisma.cronJob.findUnique({ where: { name } });
   const used = Number(row?.lastStatus || 0);
-  if (used >= MAX_PAGES_PER_DAY) throw new BudgetError(`${platform}: daily page budget (${MAX_PAGES_PER_DAY}) used`);
+  const max = Number(process.env[`SCRAPER_MAX_PAGES_${platform.toUpperCase()}`] || PLATFORM_PAGES[platform] || MAX_PAGES_PER_DAY);
+  if (used >= max) throw new BudgetError(`${platform}: daily page budget (${max}) used`);
   await prisma.cronJob.upsert({ where: { name }, create: { name, lastStatus: '1' }, update: { lastStatus: String(used + 1) } });
 }
 
-export async function politeGet(platform: string, url: string): Promise<string> {
+export async function politeGet(platform: string, url: string, opts: { json?: boolean } = {}): Promise<string> {
   const hit = g.scrapeCache!.get(url);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.body;
   await takePage(platform);
   const host = new URL(url).host;
-  const wait = (g.scrapeLast!.get(host) || 0) + DELAY_MS - Date.now();
-  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  g.scrapeLast!.set(host, Date.now());
+  // Reserve the next slot before waiting so parallel callers to one host queue up instead of firing together.
+  const gap = Number(process.env[`SCRAPER_DELAY_${platform.toUpperCase()}_MS`] || PLATFORM_DELAY[platform] || DELAY_MS);
+  const slot = Math.max(Date.now(), (g.scrapeLast!.get(host) || 0) + gap);
+  g.scrapeLast!.set(host, slot);
+  if (slot > Date.now()) await new Promise((r) => setTimeout(r, slot - Date.now()));
   // StepStone is slow from Vercel: longer timeout and one retry on timeout.
   const slow = platform === 'stepstone';
   const timeoutMs = Number(process.env[`SCRAPER_TIMEOUT_${platform.toUpperCase()}_MS`] || (slow ? 30_000 : 20_000));
   const doFetch = (ms: number) =>
     fetch(url, {
-      headers: { 'user-agent': SCRAPER_UA, accept: 'text/html,application/xhtml+xml', 'accept-language': 'de-AT,de;q=0.9,en;q=0.8' },
+      headers: { 'user-agent': SCRAPER_UA, accept: opts.json ? 'application/json' : 'text/html,application/xhtml+xml', 'accept-language': 'de-AT,de;q=0.9,en;q=0.8', ...(opts.json ? { 'x-requested-with': 'XMLHttpRequest' } : {}) },
       signal: AbortSignal.timeout(ms),
       redirect: 'follow',
     });

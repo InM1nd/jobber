@@ -16,6 +16,8 @@ export interface Platform {
   note: string;
   searchUrl?: (keyword: string, city: string) => string;
   parseList?: (html: string, base: string) => RawJob[];
+  /** Optional: fetch the list through the site's own public search JSON instead of parsing HTML. */
+  fetchList?: (keyword: string, city: string) => Promise<RawJob[]>;
   /** Fills the description from the job page (also a public page). */
   detail?: (html: string) => string;
 }
@@ -75,6 +77,7 @@ export const PLATFORMS: Platform[] = [
         .get()
         .filter(Boolean) as RawJob[];
     },
+    fetchList: (k, c) => fetchKarriere(k, c),
     detail: (html) => mainText(html, ['iframe.m-jobContent__iFrame', '.m-jobContent__jobText', '.m-jobContent']),
   },
   {
@@ -147,6 +150,47 @@ export const PLATFORMS: Platform[] = [
   { id: 'indeed', name: 'Indeed AT', status: 'blocked', note: 'Search returns HTTP 403 with a captcha for non-browser clients.' },
 ];
 
+/** karriere.at search JSON (same endpoint its "load more" button uses): /jobs/<keyword>/<location>?page=N. */
+export function parseKarriereJson(body: string, opts: { remoteOnly?: boolean } = {}): { jobs: RawJob[]; total: number; hasNext: boolean } {
+  const data = JSON.parse(body)?.data?.jobsSearchList || {};
+  const items: any[] = data.activeItems?.items || [];
+  const jobs = items
+    .map((x) => x.jobsItem)
+    .filter((j) => j?.id && j.title && (!opts.remoteOnly || j.isHomeOffice))
+    .map((j) => {
+      const sal = String(j.salary || '').match(/([\d.]+)(?:,\d+)?\s*€\s*(jährlich|monatlich)?/);
+      const amount = sal ? Number(sal[1].replace(/\./g, '')) * (sal[2] === 'monatlich' ? 14 : 1) : undefined;
+      return {
+        externalId: `karriere:${j.id}`,
+        company: j.company?.isChiffre ? 'Confidential' : j.company?.name || 'Unknown',
+        title: String(j.title),
+        location: (j.locations || []).map((l: any) => l.name).join(', ') || j.company?.mainLocation,
+        remote: Boolean(j.isHomeOffice),
+        description: [j.summary, j.employmentTypes, j.salary].filter(Boolean).join('\n'),
+        salaryMin: amount && amount > 10000 ? amount : undefined,
+        currency: amount ? 'EUR' : undefined,
+        url: String(j.link || `https://www.karriere.at/jobs/${j.id}`),
+        postedAt: daysAgo(String(j.date || '')),
+      } satisfies RawJob;
+    });
+  return { jobs, total: Number(data.jobsListHeader?.count || 0), hasNext: Boolean(data.loadMoreJobsButton?.active && items.length) };
+}
+
+const KARRIERE_PAGES = Number(process.env.SCRAPER_KARRIERE_PAGES || 2);
+async function fetchKarriere(keyword: string, city: string): Promise<RawJob[]> {
+  // "oesterreich" = whole of Austria, home-office jobs only (remote from Austria).
+  const remoteOnly = /^(oesterreich|österreich|austria|remote)$/i.test(city.trim());
+  const loc = remoteOnly ? 'oesterreich' : slug(city.split(',')[0]).replace(/^vienna$/, 'wien');
+  const out: RawJob[] = [];
+  for (let page = 1; page <= KARRIERE_PAGES; page++) {
+    const url = `https://www.karriere.at/jobs/${slug(keyword)}/${loc}${page > 1 ? `?page=${page}` : ''}`;
+    const { jobs, hasNext } = parseKarriereJson(await politeGet('karriere', url, { json: true }), { remoteOnly });
+    out.push(...jobs);
+    if (!hasNext) break;
+  }
+  return [...new Map(out.map((j) => [j.externalId, j])).values()];
+}
+
 const PERSONAL_SAFE = (j: RawJob): RawJob => ({ ...j, description: scrubPersonal(j.description) });
 
 /** Description for one job page (public). Used lazily, only for jobs that are about to be AI-scored. */
@@ -161,7 +205,7 @@ export async function scrapePlatform(id: string, keyword: string, city: string, 
   const p = PLATFORMS.find((x) => x.id === id);
   if (!p || p.status !== 'enabled' || !p.searchUrl || !p.parseList) return [];
   const url = p.searchUrl(keyword, city);
-  const jobs = p.parseList(await politeGet(p.id, url), url);
+  const jobs = p.fetchList ? await p.fetchList(keyword, city) : p.parseList(await politeGet(p.id, url), url);
   // Detail pages only for titles that look like the searched role (cheap check; saves 2.5s per skipped page).
   const rank = (title: string) => bestRoleSimilarity([keyword], title) + (ROLE_TITLE.test(title) ? 0.5 : 0);
   const thin = jobs.filter((j) => j.description.trim().length < 300);
