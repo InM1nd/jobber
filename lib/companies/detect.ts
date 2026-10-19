@@ -15,6 +15,7 @@ const PATTERNS: Array<[SeedAts, RegExp]> = [
   ['smartrecruiters', /(?:careers|jobs)\.smartrecruiters\.com\/([\w-]+)/i],
   ['teamtailor', /([\w-]+)\.teamtailor\.com/i],
   ['bamboohr', /([\w-]+)\.bamboohr\.com/i],
+  ['join', /join\.com\/companies\/([\w-]+)/i],
 ];
 const WORKDAY = /([\w-]+)\.(wd\d+)\.myworkdayjobs\.com\/(?:[a-z]{2}-[A-Z]{2}\/)?([\w-]+)/i;
 

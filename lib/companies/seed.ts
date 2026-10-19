@@ -1,7 +1,7 @@
 import seed from './seed.json';
 
 export type SeedAts =
-  | 'greenhouse' | 'lever' | 'ashby' | 'workable' | 'personio' | 'recruitee' | 'smartrecruiters' | 'teamtailor' | 'bamboohr' | 'workday';
+  | 'greenhouse' | 'lever' | 'ashby' | 'workable' | 'personio' | 'recruitee' | 'smartrecruiters' | 'teamtailor' | 'bamboohr' | 'workday' | 'join';
 
 export interface SeedCompany {
   name: string;
@@ -45,6 +45,8 @@ export function boardUrl(c: { ats: string; slug: string }): string {
       return `https://${c.slug}.teamtailor.com/jobs.rss`;
     case 'bamboohr':
       return `https://${c.slug}.bamboohr.com/careers/list`;
+    case 'join':
+      return `https://join.com/companies/${c.slug}`;
     case 'workday': {
       const [tenant, wd, site] = c.slug.split(':');
       return `https://${tenant}.${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`;

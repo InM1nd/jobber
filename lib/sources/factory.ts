@@ -10,6 +10,7 @@ import { RssSource } from './rss';
 import { SmartRecruitersSource } from './smartrecruiters';
 import { KeywordBoardSource } from './boards';
 import { MoreSource } from './more';
+import { JoinSource } from './join';
 import { SCRAPER_TYPES, ScraperSource } from '@/lib/scrapers';
 
 export const SUPPORTED_SOURCE_TYPES = [
@@ -35,6 +36,7 @@ export const SUPPORTED_SOURCE_TYPES = [
   'jooble',
   'bamboohr',
   'workday',
+  'join',
 ] as const;
 
 export function isSupportedSourceType(type: string): boolean {
@@ -71,6 +73,8 @@ export function createJobSource(config: JobSourceConfig): JobSource {
       return new RssSource(config);
     case 'smartrecruiters':
       return new SmartRecruitersSource(config);
+    case 'join':
+      return new JoinSource(config);
     case 'jobicy':
     case 'himalayas':
     case 'arbeitnow':

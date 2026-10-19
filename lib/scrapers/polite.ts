@@ -35,11 +35,23 @@ export async function politeGet(platform: string, url: string): Promise<string> 
   const wait = (g.scrapeLast!.get(host) || 0) + DELAY_MS - Date.now();
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   g.scrapeLast!.set(host, Date.now());
-  const res = await fetch(url, {
-    headers: { 'user-agent': SCRAPER_UA, accept: 'text/html,application/xhtml+xml', 'accept-language': 'de-AT,de;q=0.9,en;q=0.8' },
-    signal: AbortSignal.timeout(20_000),
-    redirect: 'follow',
-  });
+  // StepStone is slow from Vercel: longer timeout and one retry on timeout.
+  const slow = platform === 'stepstone';
+  const timeoutMs = Number(process.env[`SCRAPER_TIMEOUT_${platform.toUpperCase()}_MS`] || (slow ? 30_000 : 20_000));
+  const doFetch = (ms: number) =>
+    fetch(url, {
+      headers: { 'user-agent': SCRAPER_UA, accept: 'text/html,application/xhtml+xml', 'accept-language': 'de-AT,de;q=0.9,en;q=0.8' },
+      signal: AbortSignal.timeout(ms),
+      redirect: 'follow',
+    });
+  let res: Response;
+  try {
+    res = await doFetch(timeoutMs);
+  } catch (e) {
+    if (!slow || !/timeout|aborted/i.test(String((e as Error)?.message || e))) throw e;
+    await new Promise((r) => setTimeout(r, 1500));
+    res = await doFetch(15_000);
+  }
   const body = await res.text();
   if (!res.ok) throw new Error(`${platform}: HTTP ${res.status}`);
   if (/cf-chl|captcha|just a moment\.\.\./i.test(body.slice(0, 20000))) throw new Error(`${platform}: blocked by a bot check — stopping`);

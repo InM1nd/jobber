@@ -158,7 +158,7 @@ describe('job source parsers', () => {
   it('knows which source types have an adapter', () => {
     expect(isSupportedSourceType('greenhouse')).toBe(true);
     expect(isSupportedSourceType('html')).toBe(false);
-    expect(isSupportedSourceType('join')).toBe(false);
+    expect(isSupportedSourceType('join')).toBe(true);
   });
 });
 
