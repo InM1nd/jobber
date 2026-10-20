@@ -7,8 +7,8 @@ import { recheckCareersOnly } from '@/lib/companies/recheck';
 import { planRun, timeoutFor, withTimeout } from '@/lib/jobs/schedule';
 
 export const maxDuration = 60;
-// Near Austria/Supabase (eu-west-1); StepStone times out from iad1.
-export const preferredRegion = 'fra1';
+// Same AWS region as Supabase (eu-west-1).
+export const preferredRegion = 'dub1';
 
 const CONCURRENCY = 6;
 const BUDGET_MS = 50_000;

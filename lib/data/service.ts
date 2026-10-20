@@ -116,21 +116,40 @@ export async function saveProfile(userId: string, patch: Partial<DemoProfile>) {
   return next;
 }
 
-export async function getMatches(userId: string) {
-  if (isDemoMode()) return demoStore.matches();
-
-  const prisma = getPrisma();
+/** linkApplications scans every match; on page views run it at most every few minutes per user (explicit calls still link at once). */
+const g = globalThis as unknown as { linkedAt?: Map<string, number> };
+g.linkedAt ??= new Map();
+async function linkThrottled(userId: string) {
+  const last = g.linkedAt!.get(userId) || 0;
+  if (Date.now() - last < 5 * 60_000) return;
+  g.linkedAt!.set(userId, Date.now());
   await linkApplications(userId).catch(() => []);
-  const matches = await prisma.jobMatch.findMany({
-    where: { userId, filtered: false, ...notTracked(userId) },
-    include: { job: { include: { source: true } } },
-    orderBy: { score: 'desc' },
-    take: 120,
-  });
-  const cvIds = [...new Set(matches.map((m) => m.cvId).filter((v): v is string => Boolean(v)))];
-  const cvs = cvIds.length ? await prisma.cv.findMany({ where: { id: { in: cvIds }, userId }, select: { id: true, label: true } }) : [];
-  const cvLabel = new Map(cvs.map((c) => [c.id, c.label]));
+}
 
+const matchJobSelect = {
+  id: true, title: true, company: true, location: true, remote: true, url: true,
+  salaryMin: true, salaryMax: true, currency: true, postedAt: true,
+  source: { select: { company: true, sector: true } },
+} as const;
+
+type MatchRowDb = Awaited<ReturnType<typeof loadMatchRows>>[number];
+function loadMatchRows(userId: string, where: object, take: number, withDescription: boolean) {
+  return getPrisma().jobMatch.findMany({
+    where: { userId, ...where },
+    select: {
+      id: true, score: true, priority: true, reasons: true, redFlags: true, coverLetter: true, cvAdvice: true, tailoredCv: true,
+      cvId: true, locationTier: true, subScores: true, createdAt: true,
+      job: { select: { ...matchJobSelect, description: withDescription } },
+    },
+    orderBy: { score: 'desc' },
+    take,
+  });
+}
+
+async function shapeMatches(userId: string, matches: MatchRowDb[]) {
+  const cvIds = [...new Set(matches.map((m) => m.cvId).filter((v): v is string => Boolean(v)))];
+  const cvs = cvIds.length ? await getPrisma().cv.findMany({ where: { id: { in: cvIds }, userId }, select: { id: true, label: true } }) : [];
+  const cvLabel = new Map(cvs.map((c) => [c.id, c.label]));
   return matches.map((match) => ({
     cvLabel: match.cvId ? cvLabel.get(match.cvId) ?? null : null,
     id: match.id,
@@ -152,7 +171,8 @@ export async function getMatches(userId: string) {
       location: match.job.location,
       remote: match.job.remote,
       url: match.job.url,
-      description: match.job.description,
+      // List views skip the (up to 20 KB) description; getMatch loads it for the detail.
+      description: (match.job as { description?: string }).description ?? '',
       salaryMin: match.job.salaryMin,
       salaryMax: match.job.salaryMax,
       currency: match.job.currency,
@@ -162,7 +182,12 @@ export async function getMatches(userId: string) {
   }));
 }
 
-/** Jobs the rule-based filter skipped (no AI used), newest first. */
+export async function getMatches(userId: string, opts: { withDescription?: boolean } = {}) {
+  if (isDemoMode()) return demoStore.matches();
+  await linkThrottled(userId);
+  return shapeMatches(userId, await loadMatchRows(userId, { filtered: false, ...notTracked(userId) }, 120, Boolean(opts.withDescription)));
+}
+
 export async function getSkipped(userId: string) {
   if (isDemoMode()) return [];
   const rows = await getPrisma().jobMatch.findMany({
@@ -191,9 +216,11 @@ export async function countSkipped(userId: string) {
   return getPrisma().jobMatch.count({ where: { userId, filtered: true } });
 }
 
+/** One match with its full description (no list scan). */
 export async function getMatch(userId: string, matchId: string) {
-  const matches = await getMatches(userId);
-  return matches.find((match) => match.id === matchId) || null;
+  if (isDemoMode()) return demoStore.matches().find((m) => m.id === matchId) || null;
+  const rows = await loadMatchRows(userId, { id: matchId }, 1, true);
+  return rows.length ? (await shapeMatches(userId, rows))[0] : null;
 }
 
 export async function saveCoverLetter(userId: string, matchId: string, letter: string) {

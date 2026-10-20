@@ -123,6 +123,7 @@ model JobSource {
   
   @@unique([company, sourceUrl])
   @@index([isActive])
+  @@index([isActive, lastFetchedAt])
 }
 
 model Job {
@@ -191,6 +192,8 @@ model JobMatch {
   @@unique([userId, jobId])
   @@index([userId, score])
   @@index([userId, filtered])
+  @@index([userId, filtered, score(sort: Desc)])
+  @@index([jobId])
 }
 
 model Application {
@@ -233,6 +236,8 @@ model Application {
   @@index([userId, status])
   @@index([followUpAt])
   @@index([userId, dedupeKey])
+  @@index([jobId, userId])
+  @@index([userId, updatedAt(sort: Desc)])
 }
 
 model InviteCode {
