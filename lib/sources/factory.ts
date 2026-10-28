@@ -12,6 +12,7 @@ import { KeywordBoardSource } from './boards';
 import { MoreSource } from './more';
 import { JoinSource } from './join';
 import { HackerNewsSource } from './hackernews';
+import { JSearchSource } from './jsearch';
 import { SCRAPER_TYPES, ScraperSource } from '@/lib/scrapers';
 
 export const SUPPORTED_SOURCE_TYPES = [
@@ -39,6 +40,7 @@ export const SUPPORTED_SOURCE_TYPES = [
   'workday',
   'join',
   'hackernews',
+  'jsearch',
 ] as const;
 
 export function isSupportedSourceType(type: string): boolean {
@@ -79,6 +81,8 @@ export function createJobSource(config: JobSourceConfig): JobSource {
       return new JoinSource(config);
     case 'hackernews':
       return new HackerNewsSource(config);
+    case 'jsearch':
+      return new JSearchSource(config);
     case 'jobicy':
     case 'himalayas':
     case 'arbeitnow':

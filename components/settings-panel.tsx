@@ -9,6 +9,7 @@ import { ThemeSegmented } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Group, Notice, Row, fieldClass } from '@/components/ui/kit';
 import { GeminiKeyCard } from '@/components/gemini-key';
+import { JSearchKeyCard, type JSearchState } from '@/components/jsearch-key';
 import { haptic, insideTelegram } from '@/components/telegram-ui';
 import type { LinkedAccounts } from '@/lib/data/service';
 
@@ -20,6 +21,7 @@ export function SettingsPanel({
   botUsername,
   isOwner,
   demo,
+  jsearch,
 }: {
   usage: { limits: { score: number; write: number; parse: number }; used: { score: number; write: number; parse: number } };
   geminiKey: { addedAt: string } | null;
@@ -28,6 +30,7 @@ export function SettingsPanel({
   botUsername: string;
   isOwner: boolean;
   demo?: boolean;
+  jsearch?: JSearchState;
 }) {
   const router = useRouter();
   const [invite, setInvite] = useState('');
@@ -111,6 +114,7 @@ export function SettingsPanel({
       {error && <Notice tone="danger">{error}</Notice>}
 
       <GeminiKeyCard initial={geminiKey} />
+      {jsearch && <JSearchKeyCard initial={jsearch} />}
 
       <Group
         title="AI today"

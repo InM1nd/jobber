@@ -3,6 +3,7 @@ import { LetterPanel } from '@/components/letter-panel';
 import { TailorCv } from '@/components/tailor-cv';
 import { RequirementsList } from '@/components/app/requirements-list';
 import { refineChips } from '@/lib/apply/letter';
+import { viaOf } from '@/lib/sources/via';
 import { FIT_LABEL, FIT_TEXT, Note, ScoreRing, fitOf } from '@/components/ui/kit';
 import { MatchMeta } from '@/components/app/match-card';
 import { WEIGHTS } from '@/lib/search/rubric';
@@ -41,6 +42,7 @@ export function MatchDetail({
         <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-white/55">
           <span className={`font-semibold ${FIT_TEXT[fitOf(match.score)]}`}>{FIT_LABEL[fitOf(match.score)]}</span>
           {place && <span>· {place}</span>}
+          {viaOf(match.job.description) && <span>· via {viaOf(match.job.description)}</span>}
           {salary && <span>· {salary}</span>}
         </div>
         <a href={match.job.url} target="_blank" rel="noreferrer" className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-white/10 px-4 text-[14px] font-semibold transition-colors hover:bg-white/15">

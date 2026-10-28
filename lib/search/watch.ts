@@ -2,6 +2,7 @@ import { PLATFORMS, scraperSourceUrl, scrapersEnabledFor } from '@/lib/scrapers'
 import { getPrisma } from '@/lib/db/prisma';
 import { boardUrl } from '@/lib/companies/seed';
 import { ensureBoardSources, ensureSourceRows, sourceSpecs } from './pipeline';
+import { jsearchKeyFor, jsearchSourceUrl } from '@/lib/sources/jsearch';
 
 export interface WatchCompany {
   name: string;
@@ -50,11 +51,34 @@ export async function rebuildSources(userId: string, companies?: Array<WatchComp
     names = current.map((c) => c.name);
   }
   const scraperIds = await ownerScraperSources(userId, keywords, profile.location);
+  const jsearchIds = await jsearchSources(userId, keywords, where);
   // Keep the user's own "Added by you" source.
   const manual = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, sector: 'manual' }, select: { id: true } });
-  const sourceIds = [...new Set([...scraperIds, ...companyIds, ...boardIds, ...manual.map((m) => m.id)])];
+  const sourceIds = [...new Set([...jsearchIds, ...scraperIds, ...companyIds, ...boardIds, ...manual.map((m) => m.id)])];
   await prisma.profile.update({ where: { userId }, data: { sourceIds, watchedCompanies: names } });
   return sourceIds;
+}
+
+/** JSearch (Google for Jobs: LinkedIn, Indeed…) for users with a key: two keywords, one row each, per user. */
+async function jsearchSources(userId: string, keywords: string[], place: { city: string | null; country: string | null; remote: boolean }) {
+  const on = process.env.JSEARCH_SOURCE !== 'off' && Boolean(await jsearchKeyFor(userId));
+  const kws = on ? [...new Set(keywords.map((k) => k.trim().toLowerCase()).filter(Boolean))].slice(0, Number(process.env.JSEARCH_KEYWORDS || 2)) : [];
+  const ids = await ensureSourceRows(kws.map((k) => ({
+    company: `JSearch · ${k}${place.city ? ` · ${place.city}` : ''}`,
+    sourceType: 'jsearch',
+    sourceUrl: jsearchSourceUrl(userId, k, place),
+    sector: 'board',
+  })));
+  // Rows for old keywords or places would keep spending this user's requests: switch them off.
+  await deactivateJSearch(userId, ids);
+  return ids;
+}
+
+export async function deactivateJSearch(userId: string, keep: string[] = []) {
+  await getPrisma().jobSource.updateMany({
+    where: { sourceType: 'jsearch', sourceUrl: { endsWith: `#user=${userId}` }, isActive: true, ...(keep.length ? { id: { notIn: keep } } : {}) },
+    data: { isActive: false },
+  });
 }
 
 /** Allow-listed Austrian platform scrapers (OWNER_SCRAPERS=true + OWNER_TELEGRAM_ID or SCRAPER_TELEGRAM_IDS). */

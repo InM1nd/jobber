@@ -44,6 +44,7 @@ The owner tests it first. Friends get in with an invite code. Nobody pastes keys
   - Funnel on the tracker: applied → reply → interview → offer with rates, 30/90 days/all, and applications per week.
   - SSRF-safe fetching of user links (`lib/net/safe-fetch.ts`): public addresses only (checked after DNS), every redirect re-checked, standard ports, size and time limits.
   - Interviews to the calendar: when a reply settles a time, the bot and the tracker offer "Add to Google Calendar" and an `.ics` file (`/api/applications/[id]/interview.ics`).
+  - LinkedIn, Indeed & more through JSearch (Google for Jobs, `lib/sources/jsearch.ts`): each user adds their own free OpenWeb Ninja or RapidAPI key in Settings (encrypted in `ApiKey`, provider `jsearch`), or the owner uses `JSEARCH_API_KEY`. Two keywords per user, fetched at most once a day, capped at `JSEARCH_MONTHLY_LIMIT` (180) requests a month; the employer's own apply link is preferred, and the match shows "via LinkedIn".
 - `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
 - Local demo mode when Supabase is not configured, so the screens can be clicked through with sample matches.
 
@@ -51,7 +52,7 @@ The owner tests it first. Friends get in with an invite code. Nobody pastes keys
 
 All public and used per their terms; no LinkedIn or logged-in scraping. Re-check live with `npx tsx scripts/verify-sources.mts`; rebuild the company list with `node scripts/verify-seed.mjs`.
 
-- Keyword boards: Remotive, Jobicy, Himalayas, Arbeitnow, RemoteOK (link back required), We Work Remotely (RSS), Working Nomads, The Muse, Bundesagentur für Arbeit Jobsuche API (Germany, local search), Adzuna (`ADZUNA_APP_ID`/`ADZUNA_APP_KEY`, free key, optional), Jooble (`JOOBLE_API_KEY`, free key, optional).
+- Keyword boards: JSearch (Google for Jobs: LinkedIn, Indeed…, own key), Remotive, Jobicy, Himalayas, Arbeitnow, RemoteOK (link back required), We Work Remotely (RSS), Working Nomads, The Muse, Bundesagentur für Arbeit Jobsuche API (Germany, local search), Adzuna (`ADZUNA_APP_ID`/`ADZUNA_APP_KEY`, free key, optional), Jooble (`JOOBLE_API_KEY`, free key, optional).
 - Company ATS boards: Greenhouse, Lever, Ashby, Workable, Personio, Recruitee, SmartRecruiters, Teamtailor, BambooHR, Workday (public CXS endpoint).
 - Not included: AMS eJob-Room / karriere.at (no public API or feed; AMS search API needs login), EURES (no public API), LinkedIn, Join.com (public API needs a numeric company id).
 

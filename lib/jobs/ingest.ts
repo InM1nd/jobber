@@ -3,6 +3,7 @@ import { getPrisma } from '@/lib/db/prisma';
 import { jobUrlKey, makeDedupeKey } from './dedupe';
 import { fetchJobsFromSource } from '@/lib/sources/factory';
 import { SCRAPE_FRESH_MS } from '@/lib/scrapers';
+import { JSEARCH_FRESH_MS } from '@/lib/sources/jsearch';
 
 /** Fetches one source and upserts its jobs. Returns how many jobs it saw. */
 export async function ingestSource(source: DbSource, maxJobs = 80): Promise<number> {
@@ -10,6 +11,8 @@ export async function ingestSource(source: DbSource, maxJobs = 80): Promise<numb
   // Shared scraper rows: one fetch serves every allowed user; don't refetch inside the window.
   if (source.sourceType.startsWith('scrape:') && source.lastSuccessAt && Date.now() - source.lastSuccessAt.getTime() < SCRAPE_FRESH_MS) return 0;
   if (source.sourceType === 'manual') return 0;
+  // JSearch costs the user's monthly requests: once a day is plenty.
+  if (source.sourceType === 'jsearch' && source.lastFetchedAt && Date.now() - source.lastFetchedAt.getTime() < JSEARCH_FRESH_MS) return 0;
   try {
     const jobs = (
       await fetchJobsFromSource({
