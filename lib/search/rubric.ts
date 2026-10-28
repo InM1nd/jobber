@@ -3,8 +3,9 @@
  * salary) + AI sub-scores (role fit, skills) → weighted 0-100.
  * Pure functions; unit tested.
  */
-import { LEVEL_INDEX, speaksGerman, titleLevel, type LocationTier } from '@/lib/jobs/prefilter';
+import { LEVEL_INDEX, titleLevel, type LocationTier } from '@/lib/jobs/prefilter';
 import { parseRequirements, type RawRequirement } from './requirements';
+import { languageFit } from './digest';
 
 export const WEIGHTS = { role: 0.3, skills: 0.3, seniority: 0.15, location: 0.1, language: 0.07, salary: 0.08 } as const;
 export type SubScores = Record<keyof typeof WEIGHTS, number>;
@@ -15,11 +16,9 @@ export function locationScore(tier: LocationTier | null | undefined) {
   return { city: 100, country: 85, remote: 78, relocation: 45, other: 10 }[tier || 'country'] ?? 70;
 }
 
+/** German and English: the level the ad asks for (CEFR) against the candidate's (lib/search/digest.ts). */
 export function languageScore(languages: string[], description: string) {
-  if (speaksGerman(languages)) return 100;
-  if (/german[^.\n]{0,30}(plus|nice to have|advantage|bonus|von vorteil)|deutsch[^.\n]{0,30}(von vorteil|wünschenswert)/i.test(description)) return 75;
-  if (/\b(german|deutsch)\b/i.test(description.slice(0, 4000)) && /(required|must|erforderlich|voraussetzung)/i.test(description.slice(0, 4000))) return 45;
-  return 100;
+  return languageFit(languages, description);
 }
 
 /** Years asked for in the ad, e.g. "5+ years" → 5. */

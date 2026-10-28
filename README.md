@@ -39,6 +39,11 @@ The owner tests it first. Friends get in with an invite code. Nobody pastes keys
   - Hacker News "Who is hiring?" as a keyword board (`lib/sources/hackernews.ts`, public Algolia API, `HN_SOURCE=off` to disable). Existing users get it the next time they save their profile.
   - "Write it with Claude" (owner, with the MCP connector): opens a claude.ai chat that reads the match with `get_match` / `get_profile` and saves the letter with `save_cover_letter` (fact-checked, kept in versions). New MCP tools: `get_profile`, `list_matches`, `get_match`, `save_cover_letter`.
   - Dedupe by link too: the same posting found through two boards (or with tracking parameters) is stored once (`Job.urlKey`).
+  - Sharper scoring: the scorer reads each ad's requirements and tasks sections (`lib/search/digest.ts`) instead of the first 1200 characters (usually the company blurb); German/English levels are compared as CEFR (A1–C2) against what the ad asks and whether it's optional; and your own recent tracker decisions (applied, interview, skipped) calibrate role fit (`lib/search/calibration.ts`).
+  - Agent drafts (`lib/agent/drafts.ts`, cron `/api/cron/agent-drafts` at 09:40 UTC): cover letters for the best new matches (score ≥ 75, at most `AGENT_DRAFTS_PER_DAY`=3), fact-checked and marked "Letter ready", with a Telegram note. Never sent. Owner by default (`AGENT_DRAFTS=off` to stop); users with their own Gemini key when `AGENT_DRAFTS_ALL=true`.
+  - Funnel on the tracker: applied → reply → interview → offer with rates, 30/90 days/all, and applications per week.
+  - SSRF-safe fetching of user links (`lib/net/safe-fetch.ts`): public addresses only (checked after DNS), every redirect re-checked, standard ports, size and time limits.
+  - Interviews to the calendar: when a reply settles a time, the bot and the tracker offer "Add to Google Calendar" and an `.ics` file (`/api/applications/[id]/interview.ics`).
 - `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
 - Local demo mode when Supabase is not configured, so the screens can be clicked through with sample matches.
 

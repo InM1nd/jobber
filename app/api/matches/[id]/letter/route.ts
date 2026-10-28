@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getMatch, getProfile, requireUser, saveCoverLetter } from '@/lib/data/service';
-import { editCoverLetter, generateCoverLetter, letterUnverified, type JobData, type UserProfile } from '@/lib/llm/matcher';
+import { getMatch, requireUser, saveCoverLetter } from '@/lib/data/service';
+import { letterInputs } from '@/lib/apply/letter-inputs';
+import { editCoverLetter, generateCoverLetter, letterUnverified } from '@/lib/llm/matcher';
 import { userChatClient } from '@/lib/ai/shared-client';
-import { getPrisma } from '@/lib/db/prisma';
 import { aiErrorResponse } from '@/lib/ai/errors';
-import { isDemoMode } from '@/lib/demo/mode';
 import { stamp, type VersionCause } from '@/lib/ai/meta';
 import { replaceParagraph, splitLetter } from '@/lib/apply/letter';
 
@@ -18,34 +17,7 @@ type Body = {
   instruction?: string;
 };
 
-async function inputs(userId: string, match: NonNullable<Awaited<ReturnType<typeof getMatch>>>) {
-  const profile = await getProfile(userId);
-  const cv = match.cvId && !isDemoMode() ? await getPrisma().cv.findFirst({ where: { id: match.cvId, userId } }).catch(() => null) : null;
-  const profileInput: UserProfile = {
-    cvText: cv?.text || profile.cvText || undefined,
-    skills: profile.skills,
-    location: profile.location || undefined,
-    remoteOnly: profile.remoteOnly,
-    languages: profile.languages,
-    salaryMin: profile.salaryMin || undefined,
-    salaryMax: profile.salaryMax || undefined,
-    stackKeywords: profile.stackKeywords,
-    skillGaps: profile.skillGaps,
-    writingRules: profile.writingRules || undefined,
-    facts: profile.facts || undefined,
-    fullName: profile.fullName || undefined,
-  };
-  const jobInput: JobData = {
-    title: match.job.title,
-    company: match.job.company,
-    location: match.job.location || undefined,
-    remote: match.job.remote,
-    description: match.job.description,
-    salaryMin: match.job.salaryMin || undefined,
-    salaryMax: match.job.salaryMax || undefined,
-  };
-  return { profileInput, jobInput };
-}
+const inputs = letterInputs;
 
 /** Writes, rewrites one paragraph of, or refines the cover letter. The replaced letter is kept as a version. */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {

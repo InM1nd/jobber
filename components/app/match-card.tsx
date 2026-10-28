@@ -64,6 +64,9 @@ export function MatchRow({ match, now, place = {}, href, selected, compact }: { 
           {isNew(match, now) && (
             <span className="shrink-0 rounded-[4px] bg-accent-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-accent">New</span>
           )}
+          {match.coverLetter && match.aiMeta?.letter?.cause === 'agent' && (
+            <span className="shrink-0 rounded-[4px] bg-surface-2 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-muted">Letter ready</span>
+          )}
         </div>
         <p className="mt-0.5 truncate text-[14px] text-muted">
           {match.job.company}

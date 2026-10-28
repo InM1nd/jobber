@@ -11,6 +11,8 @@ import { scrapeDetail } from '@/lib/scrapers';
 import { fetchByHost } from './hosts';
 import { priorityFromScore } from '@/lib/llm/matcher';
 import { blendSkills, classifyRequirements } from './requirements';
+import { jobDigest } from './digest';
+import { calibrationBlock, loadDecisions, type Decision } from './calibration';
 import {
   RUBRIC_SYSTEM, combine, languageScore, locationScore, parseAiScores, salaryScore, seniorityScore, type SubScores,
 } from './rubric';
@@ -80,7 +82,7 @@ function cvDigest(cv: CvLite, i: number, budget: number) {
   return `[${LETTERS[i]}] "${cv.label}"\n${cv.text.replace(/\s+/g, ' ').slice(0, budget)}`;
 }
 
-export function rubricPrompt(profile: Profile, cvs: CvLite[], jobs: Array<{ key: string; job: PoolJob; tier: LocationTier }>) {
+export function rubricPrompt(profile: Profile, cvs: CvLite[], jobs: Array<{ key: string; job: PoolJob; tier: LocationTier }>, decisions: Decision[] = []) {
   const per = Math.max(900, Math.floor(4200 / Math.max(1, cvs.length)));
   return `CANDIDATE
 Target roles: ${profile.targetRoles.join(', ') || 'see CVs'}
@@ -91,9 +93,10 @@ ${profile.scoringInstructions ? `Candidate's own scoring rules (apply them to ro
 CVS
 ${cvs.map((c, i) => cvDigest(c, i, per)).join('\n\n')}
 
+${calibrationBlock(decisions)}
 JOBS
 ${jobs
-  .map(({ key, job }) => `<${key}> ${job.title} — ${job.company || job.source.company} (${job.location || (job.remote ? 'Remote' : 'n/a')})\n${job.description.replace(/\s+/g, ' ').slice(0, 1200)}`)
+  .map(({ key, job }) => `<${key}> ${job.title} — ${job.company || job.source.company} (${job.location || (job.remote ? 'Remote' : 'n/a')})\n${jobDigest(job.description, 1600)}`)
   .join('\n\n')}
 
 Return {"results":[{"id":"<job id>","roleFit":0-100,"skills":0-100,"cv":"letter of best CV","reasons":["2 short concrete reasons"],"redFlags":["0-2 concrete concerns, e.g. missing must-have"],"requirements":[{"text":"short requirement","must":true,"skill":"exact name from Skills or null"}]}]} with one entry per job.`;
@@ -125,7 +128,8 @@ export async function scoreJobs(
 ) {
   const prisma = getPrisma();
   const keyed = items.map((it, i) => ({ ...it, key: `j${i + 1}` }));
-  const reply = await runAi(userId, 'score', rubricPrompt(profile, cvs, keyed), {
+  const decisions = await loadDecisions(userId).catch(() => []);
+  const reply = await runAi(userId, 'score', rubricPrompt(profile, cvs, keyed, decisions), {
     tier: 'lite',
     system: RUBRIC_SYSTEM,
     json: true,

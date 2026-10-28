@@ -1,4 +1,5 @@
 import { boardUrl, SEED_COMPANIES, type SeedAts } from './seed';
+import { safeFetchText } from '@/lib/net/safe-fetch';
 import { createJobSource } from '@/lib/sources/factory';
 
 /** Recognises a careers-page URL (or a page linking to one) as a public ATS board. */
@@ -69,8 +70,8 @@ export async function detectCompany(input: string): Promise<DetectedCompany | nu
     }
     // Look inside the careers page for an ATS link / embed.
     try {
-      const res = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 Jobber/1.0' }, signal: AbortSignal.timeout(10_000), redirect: 'follow' });
-      const html = (await res.text()).slice(0, 600_000);
+      const res = await safeFetchText(url, { headers: { 'user-agent': 'Mozilla/5.0 Jobber/1.0' }, timeoutMs: 10_000, maxBytes: 600_000 });
+      const html = res.text;
       const found = detectAtsFromUrl(res.url) || detectAtsFromUrl(html);
       if (found) {
         const jobs = await countJobs(found.ats, found.slug);

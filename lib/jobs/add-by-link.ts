@@ -6,6 +6,7 @@ import { parseJsonLoose } from '@/lib/ai/gemini';
 import { makeDedupeKey } from './dedupe';
 import { jobFromHeuristics, jobFromJsonLd, looksBlocked, pageText, type ExtractedJob } from './extract';
 import { scrubPersonal, SCRAPER_UA } from '@/lib/scrapers/polite';
+import { safeFetchText, UnsafeUrlError } from '@/lib/net/safe-fetch';
 
 export class NeedTextError extends Error {}
 
@@ -23,19 +24,19 @@ export function checkUrl(raw: string) {
   return u;
 }
 
-/** One fetch of one page, only because the user asked for it. */
+/** One fetch of one page, only because the user asked for it. Every hop is checked (no private network). */
 export async function fetchJobPage(url: URL): Promise<string> {
-  let res: Response;
+  let res: Awaited<ReturnType<typeof safeFetchText>>;
   try {
-    res = await fetch(url, {
+    res = await safeFetchText(url, {
       headers: { 'user-agent': SCRAPER_UA, accept: 'text/html,application/xhtml+xml', 'accept-language': 'en,de;q=0.8' },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(15_000),
+      timeoutMs: 15_000,
+      maxBytes: 3_000_000,
     });
-  } catch {
-    throw new NeedTextError('The site did not respond.');
+  } catch (error) {
+    throw new NeedTextError(error instanceof UnsafeUrlError ? error.message : 'The site did not respond.');
   }
-  const html = (await res.text()).slice(0, 3_000_000);
+  const html = res.text;
   if (looksBlocked(res.status, html)) throw new NeedTextError('This site does not let us open the page (login or bot check).');
   if (!res.ok) throw new NeedTextError(`The site answered with an error (${res.status}).`);
   return html;

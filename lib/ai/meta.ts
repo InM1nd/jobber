@@ -17,7 +17,7 @@ export const PROMPT_VERSIONS = {
 } as const;
 export type AiOutput = keyof typeof PROMPT_VERSIONS;
 
-export type VersionCause = 'generated' | 'rewritten' | 'paragraph' | 'edited' | 'restored' | 'claude';
+export type VersionCause = 'generated' | 'rewritten' | 'paragraph' | 'edited' | 'restored' | 'claude' | 'agent';
 
 export interface LetterVersion {
   text: string;

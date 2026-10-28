@@ -10,7 +10,7 @@ import { isStale, type LetterVersion, type OutputMeta } from '@/lib/ai/meta';
 import { cn } from '@/lib/utils';
 
 const CAUSE: Record<string, string> = {
-  generated: 'Written', rewritten: 'Rewritten', paragraph: 'Paragraph rewritten', edited: 'Your edit', restored: 'Restored', claude: 'Written with Claude',
+  generated: 'Written', rewritten: 'Rewritten', paragraph: 'Paragraph rewritten', edited: 'Your edit', restored: 'Restored', claude: 'Written with Claude', agent: 'Drafted by the agent',
 };
 
 const when = (iso: string) => {

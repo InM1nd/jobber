@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Copy, Loader2, MailCheck, RefreshCw, Sparkles } from 'lucide-react';
 import { PROMPT_VERSIONS } from '@/lib/ai/meta';
+import { googleCalendarUrl, interviewTitle, latestInterview } from '@/lib/replies/calendar';
 import { CheckFacts, Note, FIT_LABEL, FIT_TEXT, ScoreRing, fieldClass, fitOf } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
@@ -291,6 +292,18 @@ const REPLY_KIND: Record<string, string> = {
 };
 
 /** "Got a reply?": paste the employer's email; Jobber reads it, updates the status and drafts an answer. */
+function CalendarButtons({ app, start }: { app: DemoApplication; start: Date }) {
+  const google = googleCalendarUrl({ title: interviewTitle(app.company, app.role), start, details: app.url || undefined });
+  const when = start.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
+      <span className="text-muted">Interview <span className="font-medium text-fg">{when}</span></span>
+      <a href={google} target="_blank" rel="noreferrer" className="rounded-full border border-line px-2.5 py-1 font-medium hover:bg-surface-2">Google Calendar</a>
+      <a href={`/api/applications/${app.id}/interview.ics`} className="rounded-full border border-line px-2.5 py-1 font-medium hover:bg-surface-2">.ics</a>
+    </div>
+  );
+}
+
 export function ReplyPanel({ app }: { app: DemoApplication }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -337,6 +350,10 @@ export function ReplyPanel({ app }: { app: DemoApplication }) {
           </button>
         </div>
       )}
+      {(() => {
+        const at = result?.reading.interviewAt ? new Date(result.reading.interviewAt) : latestInterview(app.notes);
+        return at && !Number.isNaN(at.getTime()) ? <CalendarButtons app={app} start={at} /> : null;
+      })()}
       {result && (
         <div className="space-y-2.5 rounded-[12px] bg-surface-2 p-3.5">
           <p className="text-[13.5px]"><span className="font-semibold">{REPLY_KIND[result.reading.kind] || 'Message'}</span> · {result.reading.summary}</p>

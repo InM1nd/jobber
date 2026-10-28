@@ -8,6 +8,7 @@ import { confirmLogin, loginInvite } from '@/lib/auth/bot-login';
 import { loginStore } from '@/lib/auth/bot-login-store';
 import { handleReply, type ReplyOutcome } from '@/lib/replies/handle';
 import { KIND_LABEL, STATUS_LABEL } from '@/lib/replies/classify';
+import { googleCalendarUrl, interviewTitle } from '@/lib/replies/calendar';
 
 let botInstance: Bot | null = null;
 
@@ -229,10 +230,15 @@ function setupBotCommands(bot: Bot) {
     try {
       const outcome = await handleReply(user.id, text.slice(0, 12_000), { apply: true });
       const msg = replyMessage(outcome);
-      const undo = outcome.application && outcome.newStatus && outcome.previousStatus
-        ? { reply_markup: { inline_keyboard: [[{ text: `Undo (back to ${STATUS_LABEL[outcome.previousStatus] || outcome.previousStatus})`, callback_data: `U:${outcome.application.id}:${outcome.previousStatus}` }]] } }
-        : {};
-      await ctx.reply(msg.slice(0, 4000), undo);
+      const rows: Array<Array<{ text: string; callback_data: string } | { text: string; url: string }>> = [];
+      if (outcome.reading.interviewAt) {
+        const who = outcome.application || { company: outcome.reading.company || 'the company', role: outcome.reading.role || 'Interview' };
+        rows.push([{ text: 'Add to Google Calendar', url: googleCalendarUrl({ title: interviewTitle(who.company, who.role), start: new Date(outcome.reading.interviewAt), details: outcome.reading.summary }) }]);
+      }
+      if (outcome.application && outcome.newStatus && outcome.previousStatus) {
+        rows.push([{ text: `Undo (back to ${STATUS_LABEL[outcome.previousStatus] || outcome.previousStatus})`, callback_data: `U:${outcome.application.id}:${outcome.previousStatus}` }]);
+      }
+      await ctx.reply(msg.slice(0, 4000), rows.length ? { reply_markup: { inline_keyboard: rows } } : {});
     } catch (error) {
       const quota = error instanceof Error && /quota|limit|budget/i.test(error.message);
       await ctx.reply(quota ? 'Today’s AI limit is used up. Try again tomorrow, or add your own Gemini key in Settings.' : 'Couldn’t read that one. Try again in a minute.');
