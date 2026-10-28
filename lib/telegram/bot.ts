@@ -6,6 +6,8 @@ import { readLinkCode } from '@/lib/auth/link-code';
 import { linkTelegramToUser, signInWithTelegram } from '@/lib/data/service';
 import { confirmLogin, loginInvite } from '@/lib/auth/bot-login';
 import { loginStore } from '@/lib/auth/bot-login-store';
+import { handleReply, type ReplyOutcome } from '@/lib/replies/handle';
+import { KIND_LABEL, STATUS_LABEL } from '@/lib/replies/classify';
 
 let botInstance: Bot | null = null;
 
@@ -122,6 +124,8 @@ function setupBotCommands(bot: Bot) {
         '/matches — recent scores',
         '/profile — profile summary',
         '/reminders — follow-ups that are due',
+        '',
+        'Forward me an employer’s email and I’ll update the tracker and draft an answer.',
       ].join('\n'),
     );
   });
@@ -207,11 +211,70 @@ function setupBotCommands(bot: Bot) {
       await ctx.reply('Reminders are unavailable until the database is connected.');
     }
   });
+
+  // An employer's reply forwarded or pasted to the bot: read it, update the tracker, draft an answer.
+  bot.on('message:text', async (ctx) => {
+    const text = ctx.message.text || '';
+    if (text.startsWith('/')) return;
+    const user = await getPrisma().user.findUnique({ where: { telegramId: String(ctx.from?.id) }, select: { id: true } }).catch(() => null);
+    if (!user) {
+      await ctx.reply('Open Jobber from /start first.');
+      return;
+    }
+    if (text.trim().length < 80) {
+      await ctx.reply('Forward me an email or message from an employer (or paste it) and I’ll update the tracker and draft an answer.');
+      return;
+    }
+    await ctx.replyWithChatAction('typing').catch(() => {});
+    try {
+      const outcome = await handleReply(user.id, text.slice(0, 12_000), { apply: true });
+      const msg = replyMessage(outcome);
+      const undo = outcome.application && outcome.newStatus && outcome.previousStatus
+        ? { reply_markup: { inline_keyboard: [[{ text: `Undo (back to ${STATUS_LABEL[outcome.previousStatus] || outcome.previousStatus})`, callback_data: `U:${outcome.application.id}:${outcome.previousStatus}` }]] } }
+        : {};
+      await ctx.reply(msg.slice(0, 4000), undo);
+    } catch (error) {
+      const quota = error instanceof Error && /quota|limit|budget/i.test(error.message);
+      await ctx.reply(quota ? 'Today’s AI limit is used up. Try again tomorrow, or add your own Gemini key in Settings.' : 'Couldn’t read that one. Try again in a minute.');
+    }
+  });
+
+  bot.callbackQuery(/^U:([\w-]{8,64}):([a-z_]{2,20})$/, async (ctx) => {
+    const [, appId, status] = ctx.match;
+    const user = await getPrisma().user.findUnique({ where: { telegramId: String(ctx.from?.id) }, select: { id: true } }).catch(() => null);
+    const app = user ? await getPrisma().application.findFirst({ where: { id: appId, userId: user.id }, select: { id: true } }) : null;
+    if (!app || !STATUS_LABEL[status]) {
+      await ctx.answerCallbackQuery({ text: 'Can’t undo this one.', show_alert: true });
+      return;
+    }
+    await getPrisma().application.update({ where: { id: app.id }, data: { status } });
+    await ctx.answerCallbackQuery({ text: `Back to ${STATUS_LABEL[status]}` });
+    await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+  });
+}
+
+/** The bot's answer to a forwarded reply. */
+export function replyMessage(o: ReplyOutcome): string {
+  const r = o.reading;
+  const head = `${KIND_LABEL[r.kind]}${o.application ? ` — ${o.application.company} · ${o.application.role}` : r.company ? ` — ${r.company}` : ''}`;
+  const lines = [head, r.summary];
+  if (o.application) {
+    lines.push(o.newStatus ? `Tracker: ${STATUS_LABEL[o.previousStatus || ''] || o.previousStatus} → ${STATUS_LABEL[o.newStatus] || o.newStatus}. Noted in the application.` : 'Noted in the application.');
+  } else {
+    lines.push('I couldn’t tell which application this is about, so nothing changed. Add the company name and send it again, or paste it on the application in the app.');
+  }
+  if (r.questions.length) lines.push(`They ask:\n${r.questions.map((q) => `– ${q}`).join('\n')}`);
+  if (r.draft) {
+    lines.push(`Draft answer:\n\n${r.draft}`);
+    if (r.unverified.length) lines.push(`Check before sending: ${r.unverified.join(', ')} (not in your CV, facts or their message).`);
+  }
+  return lines.join('\n\n');
 }
 
 export function handleTelegramWebhook(req: Request) {
   const bot = getBot();
-  return webhookCallback(bot, 'std/http')(req);
+  // Reading a forwarded reply takes one AI call (up to ~25 s): don't let grammY time out at its 10 s default.
+  return webhookCallback(bot, 'std/http', { timeoutMilliseconds: 50_000 })(req);
 }
 
 export async function sendTelegramMessage(telegramId: string, message: string) {

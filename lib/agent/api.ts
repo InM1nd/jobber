@@ -1,3 +1,4 @@
+import { normalizeUrl, isGenericCareersUrl } from '@/lib/jobs/dedupe';
 import { parseDrafts } from '@/lib/apply/format';
 import { createHash, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
@@ -59,28 +60,7 @@ export function mapPriority(v: unknown): string | null {
   return null;
 }
 
-const TRACKING = /^(utm_|gclid|fbclid|ref|refid|trk|src|source|mc_)/i;
-export function normalizeUrl(raw: unknown): string | null {
-  if (!raw) return null;
-  try {
-    const u = new URL(String(raw).trim());
-    if (!/^https?:$/.test(u.protocol)) return null;
-    u.hash = '';
-    for (const k of [...u.searchParams.keys()]) if (TRACKING.test(k)) u.searchParams.delete(k);
-    u.searchParams.sort();
-    const host = u.hostname.toLowerCase().replace(/^www\./, '');
-    const path = u.pathname.replace(/\/+$/, '');
-    const q = u.searchParams.toString();
-    return `url:${host}${path}${q ? '?' + q : ''}`;
-  } catch {
-    return null;
-  }
-}
-export function isGenericCareersUrl(key: string | null) {
-  if (!key) return false;
-  const path = key.replace(/^url:[^/?]+/, '').split('?')[0].toLowerCase();
-  return path === '' || /\/(careers?|jobs?|karriere|stellen(angebote)?|join(-us)?|work-with-us|open-positions)$/.test(path);
-}
+export { normalizeUrl, isGenericCareersUrl };
 const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 export function companyRoleKey(company: string, role: string) {
   return `cr:${norm(company)}|${norm(role)}`;

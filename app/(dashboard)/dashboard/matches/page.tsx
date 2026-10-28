@@ -11,7 +11,8 @@ import { ChevronRight, Filter } from 'lucide-react';
 import { EmptyState, FIT_LABEL, FitDot, PageHeader, CtaLink, capsClass, fitOf, type Fit } from '@/components/ui/kit';
 import { cn } from '@/lib/utils';
 import { connection } from 'next/server';
-import { countSkipped, getMatch, getMatches, getProfile, getSkipped, requireUser, skippedReasons } from '@/lib/data/service';
+import { countSkipped, getMatch, getMatches, getProfile, getSkipped, isOwner, requireUser, skippedReasons } from '@/lib/data/service';
+import { claudeConnectorOn, claudeLetterUrl } from '@/lib/agent/handoff';
 import { isDemoMode } from '@/lib/demo/mode';
 import { MatchDetail } from '@/components/app/match-detail';
 import { getPrisma } from '@/lib/db/prisma';
@@ -71,6 +72,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const ordered = groups.flatMap((g) => g.items);
   const selected = ordered.find((m) => m.id === query.m) || ordered[0] || null;
   // The list has no descriptions; load the full one only for the match shown in the side panel.
+  const claudeOk = Boolean(selected) && !demo && claudeConnectorOn() && (await isOwner(user));
   const [cvs, selectedFull] = selected && !demo
     ? await Promise.all([
         getPrisma().cv.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }, select: { id: true, label: true } }),
@@ -181,7 +183,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
     </div>
     {selected && (
       <aside className="sticky top-6 hidden max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto rounded-[var(--radius-card)] border border-line p-5 lg:block" aria-label="Selected match">
-        <MatchDetail match={selectedFull || selected} profile={profile} cvs={cvs} />
+        <MatchDetail match={selectedFull || selected} profile={profile} cvs={cvs} claudeUrl={claudeOk ? claudeLetterUrl(selected.id, `${selected.job.title} at ${selected.job.company}`) : null} />
       </aside>
     )}
     </div>

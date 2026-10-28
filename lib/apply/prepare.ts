@@ -28,6 +28,8 @@ export async function prepareApplication(userId: string, id: string): Promise<Ap
   const drafts = await generateDrafts(userId, {
     company: app.company, role: app.role, description: description || `${app.role} at ${app.company}`, cvText,
     writingRules: profile.writingRules ?? null, notes: app.notes, questions,
+    facts: profile.facts ?? null, fullName: profile.fullName ?? null,
+    profileFacts: [profile.location, profile.country, ...profile.languages, ...profile.skills].filter((v): v is string => Boolean(v)),
   }, source);
   await prisma.application.update({ where: { id }, data: { coverLetter: JSON.stringify(drafts) } });
   return drafts;

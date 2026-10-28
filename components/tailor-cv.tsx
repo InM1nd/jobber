@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Check, Copy, Loader2, RefreshCw, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { capsClass } from '@/components/ui/kit';
+import { CheckFacts, Note, capsClass } from '@/components/ui/kit';
+import { isStale, type OutputMeta } from '@/lib/ai/meta';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
 import type { CvAdvice } from '@/lib/ai/cv-advice';
@@ -33,10 +34,12 @@ export function TailorCv({
   initialCv,
   cvs = [],
   cvId,
+  initialMeta,
 }: {
   matchId: string;
   initialAdvice: CvAdvice | null;
   initialCv: string | null;
+  initialMeta?: { advice?: OutputMeta; tailoredCv?: OutputMeta };
   cvs?: Array<{ id: string; label: string }>;
   cvId?: string | null;
 }) {
@@ -46,6 +49,7 @@ export function TailorCv({
   const [loading, setLoading] = useState<'advice' | 'cv' | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [meta, setMeta] = useState(initialMeta || {});
 
   async function run(kind: 'advice' | 'cv', refresh = false) {
     setLoading(kind);
@@ -64,6 +68,7 @@ export function TailorCv({
     }
     if (kind === 'advice') setAdvice(body.advice);
     else setCv(body.tailoredCv || '');
+    setMeta((m) => ({ ...m, [kind === 'advice' ? 'advice' : 'tailoredCv']: body.meta || undefined }));
     haptic('success');
   }
 
@@ -100,6 +105,7 @@ export function TailorCv({
         </div>
       ) : (
         <div className="animate-in space-y-5 px-5 py-5">
+          {isStale('advice', meta.advice, true) && <Note tone="warning">Made with an older prompt. Refresh for the current one.</Note>}
           {advice.verdict && <p className="text-[15px] font-medium leading-snug tracking-[-0.01em]">{advice.verdict}</p>}
           <List title="Put first" items={advice.emphasize} />
           <List title="Bring up from your CV" items={advice.add} />
@@ -137,6 +143,11 @@ export function TailorCv({
                   </Button>
                 </div>
                 <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-[var(--radius-field)] bg-surface-2 p-3.5 font-sans text-[13px] leading-relaxed">{cv}</pre>
+                <CheckFacts items={meta.tailoredCv?.unverified} />
+                {isStale('tailoredCv', meta.tailoredCv, true) && <Note tone="warning">Made with an older prompt.</Note>}
+                <Button size="sm" variant="ghost" onClick={() => run('cv', true)} disabled={loading !== null}>
+                  {loading === 'cv' ? <Loader2 className="animate-spin" /> : <RefreshCw />}Rewrite
+                </Button>
               </div>
             ) : (
               <Button variant="soft" onClick={() => run('cv')} disabled={loading !== null}>

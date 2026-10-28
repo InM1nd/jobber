@@ -1,6 +1,6 @@
 import type { JobSource as DbSource } from '@prisma/client';
 import { getPrisma } from '@/lib/db/prisma';
-import { makeDedupeKey } from './dedupe';
+import { jobUrlKey, makeDedupeKey } from './dedupe';
 import { fetchJobsFromSource } from '@/lib/sources/factory';
 import { SCRAPE_FRESH_MS } from '@/lib/scrapers';
 
@@ -39,6 +39,7 @@ export async function ingestSource(source: DbSource, maxJobs = 80): Promise<numb
           postedAt: job.postedAt && !Number.isNaN(job.postedAt.getTime()) ? job.postedAt : undefined,
           url: job.url,
           dedupeKey: makeDedupeKey(company, job.title, job.location),
+          urlKey: jobUrlKey(job.url, source.sourceType),
         },
       };
     });
@@ -46,13 +47,23 @@ export async function ingestSource(source: DbSource, maxJobs = 80): Promise<numb
       (await prisma.job.findMany({ where: { sourceId: source.id, externalId: { in: rows.map((r) => r.externalId) } }, select: { externalId: true } })).map((j) => j.externalId),
     );
     const fresh = rows.filter((r) => !existing.has(r.externalId));
-    const dupes = new Set(
-      fresh.length
-        ? (await prisma.job.findMany({ where: { dedupeKey: { in: fresh.map((r) => r.data.dedupeKey) } }, select: { dedupeKey: true } })).map((j) => j.dedupeKey)
-        : [],
-    );
+    // Same company + title + place, or the same posting link, already stored (from any source) = duplicate.
+    const urlKeys = fresh.map((r) => r.data.urlKey).filter((k): k is string => Boolean(k));
+    const known: Array<{ dedupeKey: string | null; urlKey: string | null }> = fresh.length
+      ? await prisma.job.findMany({
+          where: { OR: [{ dedupeKey: { in: fresh.map((r) => r.data.dedupeKey) } }, ...(urlKeys.length ? [{ urlKey: { in: urlKeys } }] : [])] },
+          select: { dedupeKey: true, urlKey: true },
+        })
+      : [];
+    const dupes = new Set(known.flatMap((j) => [j.dedupeKey, j.urlKey]).filter((k): k is string => Boolean(k)));
     const seen = new Set<string>();
-    const toCreate = fresh.filter((r) => !dupes.has(r.data.dedupeKey) && !seen.has(r.data.dedupeKey) && seen.add(r.data.dedupeKey));
+    const isNew = (r: (typeof fresh)[number]) => {
+      const keys = [r.data.dedupeKey, r.data.urlKey].filter((k): k is string => Boolean(k));
+      if (keys.some((k) => dupes.has(k) || seen.has(k))) return false;
+      keys.forEach((k) => seen.add(k));
+      return true;
+    };
+    const toCreate = fresh.filter(isNew);
     if (toCreate.length) {
       await prisma.job.createMany({ data: toCreate.map((r) => ({ sourceId: source.id, externalId: r.externalId, ...r.data })), skipDuplicates: true });
     }

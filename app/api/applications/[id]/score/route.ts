@@ -7,6 +7,8 @@ import { aiErrorResponse } from '@/lib/ai/errors';
 import { checkUrl, extractJob, fetchJobPage, NeedTextError, saveManualJob } from '@/lib/jobs/add-by-link';
 import { scoreOne } from '@/lib/search/score';
 import { adviseCv } from '@/lib/ai/cv-advice';
+import { parseAiMeta, stamp } from '@/lib/ai/meta';
+import { gapNames, parseStoredRequirements } from '@/lib/search/requirements';
 
 export const instant = false;
 export const maxDuration = 60;
@@ -67,8 +69,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       const cv = match.cvId ? await prisma.cv.findFirst({ where: { id: match.cvId, userId: user.id } }) : null;
       const cvText = cv?.text || profile.cvText;
       if (cvText) {
-        const advice = await adviseCv(user.id, cvText, { title: match.job.title, company: match.job.company || app.company, description: match.job.description });
-        await prisma.jobMatch.update({ where: { id: match.id }, data: { cvAdvice: advice as object } });
+        const gaps = gapNames(parseStoredRequirements(match.requirements), 6);
+        const advice = await adviseCv(user.id, cvText, { title: match.job.title, company: match.job.company || app.company, description: match.job.description }, gaps);
+        await prisma.jobMatch.update({ where: { id: match.id }, data: { cvAdvice: advice as object, aiMeta: { ...parseAiMeta(match.aiMeta), advice: stamp('advice') } as object } });
       }
     } catch {}
 

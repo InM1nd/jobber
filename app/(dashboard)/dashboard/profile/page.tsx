@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   return (
     <div>
       <PageHeader title="Profile" subtitle="This is what Jobber searches and scores with. Your CVs only filled it in." />
-      <ProfilePanel initial={draftFromProfile(profile)} writingRules={profile.writingRules || ''} />
+      <ProfilePanel initial={draftFromProfile(profile)} writingRules={profile.writingRules || ''} facts={profile.facts || ''} />
     </div>
   );
 }

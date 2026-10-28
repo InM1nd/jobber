@@ -1,3 +1,4 @@
+import { withNewLetter } from '@/lib/ai/meta';
 import crypto from 'crypto';
 import { encryptApiKey } from '@/lib/crypto/encryption';
 
@@ -14,6 +15,7 @@ export interface DemoProfile {
   stackKeywords: string[];
   skillGaps: string[];
   writingRules: string | null;
+  facts?: string | null;
   watchedCompanies: string[];
   fullName?: string | null;
   targetRoles?: string[];
@@ -43,12 +45,14 @@ export interface DemoMatch {
   reasons: string[];
   redFlags: string[];
   coverLetter: string | null;
+  aiMeta?: import('@/lib/ai/meta').AiMeta;
   cvAdvice?: import('@/lib/ai/cv-advice').CvAdvice | null;
   tailoredCv?: string | null;
   cvId?: string | null;
   cvLabel?: string | null;
   locationTier?: string | null;
   subScores?: Record<string, number> | null;
+  requirements?: import('@/lib/search/requirements').RequirementItem[] | null;
   /** When Jobber scored it; drives the "new" badge. */
   createdAt?: string;
   job: {
@@ -158,6 +162,12 @@ function initialState(): DemoState {
       {
         id: 'm1',
         subScores: { role: 92, skills: 85, seniority: 100, location: 100, language: 100, salary: 70 },
+        requirements: [
+          { text: 'React + TypeScript', must: true, skill: 'React', result: 'covered', note: 'In your skills and CV' },
+          { text: 'Next.js in production', must: true, skill: 'Next.js', result: 'covered', note: 'In your skills and CV' },
+          { text: 'Design systems', must: false, skill: 'Figma', result: 'partial', note: 'In your skills, but no CV shows it' },
+          { text: 'GraphQL', must: false, skill: null, result: 'gap', note: 'Not in your profile (nice to have)' },
+        ],
         createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
         score: 86,
         priority: 'high',
@@ -292,9 +302,10 @@ export const demoStore = {
   match(id: string) {
     return state().matches.find((match) => match.id === id) || null;
   },
-  saveCoverLetter(id: string, letter: string) {
+  saveCoverLetter(id: string, letter: string, meta: import('@/lib/ai/meta').OutputMeta) {
     const match = state().matches.find((item) => item.id === id);
     if (!match) return null;
+    match.aiMeta = withNewLetter(match.aiMeta || {}, match.coverLetter, meta);
     match.coverLetter = letter;
     return match;
   },

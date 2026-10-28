@@ -10,6 +10,7 @@ import { getGeminiKey } from '@/lib/data/keys';
 import { scrapeDetail } from '@/lib/scrapers';
 import { fetchByHost } from './hosts';
 import { priorityFromScore } from '@/lib/llm/matcher';
+import { blendSkills, classifyRequirements } from './requirements';
 import {
   RUBRIC_SYSTEM, combine, languageScore, locationScore, parseAiScores, salaryScore, seniorityScore, type SubScores,
 } from './rubric';
@@ -95,7 +96,7 @@ ${jobs
   .map(({ key, job }) => `<${key}> ${job.title} — ${job.company || job.source.company} (${job.location || (job.remote ? 'Remote' : 'n/a')})\n${job.description.replace(/\s+/g, ' ').slice(0, 1200)}`)
   .join('\n\n')}
 
-Return {"results":[{"id":"<job id>","roleFit":0-100,"skills":0-100,"cv":"letter of best CV","reasons":["2 short concrete reasons"],"redFlags":["0-2 concrete concerns, e.g. missing must-have"]}]} with one entry per job.`;
+Return {"results":[{"id":"<job id>","roleFit":0-100,"skills":0-100,"cv":"letter of best CV","reasons":["2 short concrete reasons"],"redFlags":["0-2 concrete concerns, e.g. missing must-have"],"requirements":[{"text":"short requirement","must":true,"skill":"exact name from Skills or null"}]}]} with one entry per job.`;
 }
 
 export interface ScoreBatchResult {
@@ -129,7 +130,7 @@ export async function scoreJobs(
     system: RUBRIC_SYSTEM,
     json: true,
     temperature: 0.1,
-    maxTokens: 400 + 230 * items.length,
+    maxTokens: 400 + 380 * items.length,
     maxWaitMs: 8_000,
   });
   let parsed: unknown = null;
@@ -144,9 +145,10 @@ export async function scoreJobs(
   for (const { key, job, tier, preScore } of keyed) {
     const ai = scores.get(key);
     if (!ai) continue; // stays unscored → retried next time
+    const requirements = classifyRequirements(ai.requirements, profile.skills, cvs.map((c) => c.text));
     const sub: SubScores = {
       role: ai.roleFit,
-      skills: ai.skills,
+      skills: blendSkills(ai.skills, requirements),
       seniority: seniorityScore(profile, job.title, job.description),
       location: locationScore(tier),
       language: languageScore(profile.languages, job.description),
@@ -164,6 +166,7 @@ export async function scoreJobs(
       cvId: cv?.id || null,
       locationTier: tier,
       subScores: sub,
+      requirements: requirements.length ? (requirements as unknown as object) : undefined,
       preScore: preScore ?? null,
     };
     await prisma.jobMatch.upsert({

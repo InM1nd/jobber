@@ -63,6 +63,16 @@ export function Note({ tone = 'neutral', children, className }: { tone?: 'neutra
   );
 }
 
+/** Fact guard result: what an AI draft says that nothing in the profile or job post backs. */
+export function CheckFacts({ items, className }: { items?: string[] | null; className?: string }) {
+  if (!items?.length) return null;
+  return (
+    <Note tone="warning" className={className}>
+      Check before sending: <span className="font-medium text-fg">{items.join(', ')}</span>. Not found in your CV, facts or the job post.
+    </Note>
+  );
+}
+
 export type Fit = 'strong' | 'good' | 'ok' | 'weak';
 
 export function fitOf(score: number): Fit {

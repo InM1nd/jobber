@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { handleTelegramWebhook } from '@/lib/telegram/bot';
 
 export const instant = false;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {

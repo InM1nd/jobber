@@ -1,6 +1,8 @@
 import { ArrowUpRight } from 'lucide-react';
 import { LetterPanel } from '@/components/letter-panel';
 import { TailorCv } from '@/components/tailor-cv';
+import { RequirementsList } from '@/components/app/requirements-list';
+import { refineChips } from '@/lib/apply/letter';
 import { FIT_LABEL, FIT_TEXT, Note, ScoreRing, fitOf } from '@/components/ui/kit';
 import { MatchMeta } from '@/components/app/match-card';
 import { WEIGHTS } from '@/lib/search/rubric';
@@ -14,8 +16,11 @@ export function MatchDetail({
   match,
   profile,
   cvs,
+  claudeUrl,
 }: {
   match: DemoMatch;
+  /** "Write it with Claude" link when the Claude connector is on. */
+  claudeUrl?: string | null;
   profile: { location?: string | null; country?: string | null };
   cvs: Array<{ id: string; label: string }>;
 }) {
@@ -66,6 +71,8 @@ export function MatchDetail({
         </section>
       )}
 
+      <RequirementsList items={match.requirements} />
+
       {(match.reasons.length > 0 || match.redFlags.length > 0) && (
         <div className="space-y-2 px-1">
           {match.reasons.map((r) => <Note key={r}>{r}</Note>)}
@@ -73,9 +80,16 @@ export function MatchDetail({
         </div>
       )}
 
-      <TailorCv matchId={match.id} initialAdvice={match.cvAdvice ?? null} initialCv={match.tailoredCv ?? null} cvs={cvs} cvId={match.cvId} />
+      <TailorCv matchId={match.id} initialAdvice={match.cvAdvice ?? null} initialCv={match.tailoredCv ?? null} cvs={cvs} cvId={match.cvId} initialMeta={match.aiMeta} />
 
-      <LetterPanel matchId={match.id} initial={match.coverLetter} />
+      <LetterPanel
+        matchId={match.id}
+        initial={match.coverLetter}
+        initialMeta={match.aiMeta?.letter}
+        initialHistory={match.aiMeta?.letterHistory}
+        chips={refineChips(match.requirements, match.job.company)}
+        claudeUrl={claudeUrl}
+      />
 
       <details className="group border-t border-line">
         <summary className="cursor-pointer list-none py-4 text-[14px] font-medium">

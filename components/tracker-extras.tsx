@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Copy, Loader2, MailCheck, RefreshCw, Sparkles } from 'lucide-react';
-import { FIT_LABEL, FIT_TEXT, ScoreRing, fieldClass, fitOf } from '@/components/ui/kit';
+import { PROMPT_VERSIONS } from '@/lib/ai/meta';
+import { CheckFacts, Note, FIT_LABEL, FIT_TEXT, ScoreRing, fieldClass, fitOf } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
 import { followUpPlan } from '@/lib/tracker/followup-plan';
@@ -112,6 +113,7 @@ export function FollowUpPanel({ app }: { app: DemoApplication }) {
   const plan = followUpPlan({ ...app, contact: app.contact ?? null });
   const [channel, setChannel] = useState<(typeof CH)[number]['key']>('email');
   const [draft, setDraft] = useState('');
+  const [flags, setFlags] = useState<string[]>([]);
   const [busy, setBusy] = useState<'' | 'draft' | 'done'>('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -129,7 +131,7 @@ export function FollowUpPanel({ app }: { app: DemoApplication }) {
       return;
     }
     haptic('success');
-    if (action === 'draft') setDraft(data.draft || '');
+    if (action === 'draft') { setDraft(data.draft || ''); setFlags(data.unverified || []); }
     else router.refresh();
   }
 
@@ -159,7 +161,8 @@ export function FollowUpPanel({ app }: { app: DemoApplication }) {
       <p className="text-[13px] leading-relaxed text-muted">{plan.channels.find((c) => c.label.toLowerCase().startsWith(channel === 'careers' ? 'careers' : channel === 'linkedin' ? 'linkedin' : 'email'))?.detail}</p>
       {draft ? (
         <div className="space-y-2">
-          <textarea className={cn(fieldClass, 'text-[13.5px] leading-relaxed')} rows={9} value={draft} onChange={(e) => setDraft(e.target.value)} />
+          <textarea className={cn(fieldClass, 'text-[13.5px] leading-relaxed')} rows={9} value={draft} onChange={(e) => { setDraft(e.target.value); setFlags([]); }} />
+          <CheckFacts items={flags} />
           <div className="flex items-center gap-2">
             <button type="button" onClick={async () => { await navigator.clipboard?.writeText(draft).catch(() => {}); setCopied(true); haptic('light'); setTimeout(() => setCopied(false), 1500); }} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-semibold text-bg">
               {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied ? 'Copied' : 'Copy'}
@@ -228,7 +231,8 @@ export function PrepareApplicationPanel({ app }: { app: DemoApplication }) {
   }
 
   const edit = (id: string, answer: string) => {
-    setDrafts((d) => (d ? { ...d, items: d.items.map((i) => (i.id === id ? { ...i, answer } : i)) } : d));
+    // An edited answer is the user's own: its fact-guard flags no longer apply.
+    setDrafts((d) => (d ? { ...d, items: d.items.map((i) => (i.id === id ? { ...i, answer, unverified: undefined } : i)) } : d));
     setDirty(true);
   };
 
@@ -264,6 +268,7 @@ export function PrepareApplicationPanel({ app }: { app: DemoApplication }) {
                 value={it.answer}
                 onChange={(e) => edit(it.id, e.target.value)}
               />
+              <CheckFacts items={it.unverified} />
             </div>
           ))}
           <div className="flex items-center gap-2">
@@ -272,7 +277,82 @@ export function PrepareApplicationPanel({ app }: { app: DemoApplication }) {
             </button>
             <button type="button" onClick={() => setOpen(false)} className="h-9 rounded-full px-3 text-[13px] text-muted hover:text-fg">Hide</button>
           </div>
+          {drafts.promptVersion !== PROMPT_VERSIONS.drafts && <Note tone="warning">Drafted with an older prompt. Redo for the current one.</Note>}
           <p className="text-[11.5px] text-subtle">Drafts only. Nothing is submitted; check every “[fill in]” / “[check]” before you paste.</p>
+        </div>
+      )}
+      {error && <p className="text-[13px] text-danger">{error}</p>}
+    </section>
+  );
+}
+
+const REPLY_KIND: Record<string, string> = {
+  rejection: 'Rejection', interview: 'Interview invite', question: 'Question', offer: 'Offer', acknowledgement: 'Received confirmation', other: 'Message',
+};
+
+/** "Got a reply?": paste the employer's email; Jobber reads it, updates the status and drafts an answer. */
+export function ReplyPanel({ app }: { app: DemoApplication }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [result, setResult] = useState<null | {
+    reading: { kind: string; summary: string; questions: string[]; interviewAt: string | null; draft: string; unverified: string[] };
+    newStatus: string | null;
+  }>(null);
+
+  async function read() {
+    setBusy(true);
+    setError('');
+    const res = await fetch('/api/replies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, applicationId: app.id, apply: true }) }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
+    setBusy(false);
+    if (!res?.ok) { haptic('error'); setError(data.error || 'Couldn’t read it. Try again.'); return; }
+    haptic('success');
+    setResult(data);
+    setText('');
+    if (data.newStatus) router.refresh();
+  }
+
+  return (
+    <section className="space-y-3 rounded-[18px] border border-line p-4">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[14.5px] font-semibold">Got a reply?</p>
+          <p className="truncate text-[12.5px] text-muted">Paste their email: status, notes and a draft answer. You can also forward it to the bot.</p>
+        </div>
+        {!open && (
+          <button type="button" onClick={() => setOpen(true)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 text-[13px] font-semibold hover:bg-surface-2">
+            <MailCheck className="size-3.5" /> Paste
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="space-y-2">
+          <textarea className={cn(fieldClass, 'text-[13.5px] leading-relaxed')} rows={6} value={text} placeholder="Paste the whole email or message" onChange={(e) => setText(e.target.value)} />
+          <button type="button" disabled={busy || text.trim().length < 20} onClick={read} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-bg disabled:opacity-40">
+            {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />} Read it
+          </button>
+        </div>
+      )}
+      {result && (
+        <div className="space-y-2.5 rounded-[12px] bg-surface-2 p-3.5">
+          <p className="text-[13.5px]"><span className="font-semibold">{REPLY_KIND[result.reading.kind] || 'Message'}</span> · {result.reading.summary}</p>
+          {result.newStatus && <p className="text-[12.5px] text-muted">Status changed to <span className="font-medium text-fg">{result.newStatus.replace('_', ' ')}</span>, noted in the application.</p>}
+          {result.reading.questions.length > 0 && (
+            <ul className="space-y-1">{result.reading.questions.map((q) => <li key={q}><Note>{q}</Note></li>)}</ul>
+          )}
+          {result.reading.draft && (
+            <div className="space-y-1.5">
+              <pre className="whitespace-pre-wrap rounded-[10px] bg-bg p-3 font-sans text-[13px] leading-relaxed">{result.reading.draft}</pre>
+              <CheckFacts items={result.reading.unverified} />
+              <button type="button" onClick={async () => { await navigator.clipboard?.writeText(result.reading.draft).catch(() => {}); setCopied(true); }} className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium text-muted hover:text-fg">
+                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied ? 'Copied' : 'Copy draft'}
+              </button>
+            </div>
+          )}
         </div>
       )}
       {error && <p className="text-[13px] text-danger">{error}</p>}

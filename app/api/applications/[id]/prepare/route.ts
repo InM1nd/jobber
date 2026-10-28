@@ -43,7 +43,11 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   const current = parseDrafts(app?.coverLetter);
   if (!app || !current) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const edits = new Map(body.items.map((i) => [i.id, String(i.answer ?? '').slice(0, 8000)]));
-  const next: ApplicationDrafts = { ...current, editedAt: new Date().toISOString(), items: current.items.map((it) => (edits.has(it.id) ? { ...it, answer: edits.get(it.id)! } : it)) };
+  const next: ApplicationDrafts = { ...current, editedAt: new Date().toISOString(), items: current.items.map((it) => {
+    if (!edits.has(it.id) || edits.get(it.id) === it.answer) return it;
+    const { unverified: _flags, ...rest } = it; // edited by hand: the user vouches for it
+    return { ...rest, answer: edits.get(it.id)! };
+  }) };
   await prisma.application.update({ where: { id }, data: { coverLetter: JSON.stringify(next) } });
   return NextResponse.json({ ok: true, drafts: next });
 }

@@ -33,9 +33,31 @@ describe('application form questions', () => {
   });
 });
 
-import { clean } from './drafts';
+import { clean, draftsPrompt, guardDrafts } from './drafts';
 describe('clean', () => {
-  it('puts the sign-off on its own lines', () => {
-    expect(clean('…start on 1 November 2026. Best,\nOleksandr')).toBe('…start on 1 November 2026.\n\nBest,\nOleksandr');
+  it('puts the sign-off on its own lines, with the profile name', () => {
+    expect(clean('…start on 1 November 2026. Best,\nOleksandr', 'Oleksandr')).toBe('…start on 1 November 2026.\n\nBest,\nOleksandr');
+    expect(clean('…soon. Best regards, Anna', 'Anna')).toBe('…soon.\n\nBest,\nAnna');
+  });
+});
+
+describe('drafts for any user', () => {
+  const base = { company: 'Acme', role: 'Frontend Engineer', description: 'React app for logistics.', cvText: 'Anna Berg. React developer in Berlin since 2020.', writingRules: null, notes: null, questions: [] };
+  it('uses the profile facts and name, never the owner’s', () => {
+    const p = draftsPrompt({ ...base, facts: '- Available from 1 March\nNo visa needed in Germany', fullName: 'Anna Berg' });
+    expect(p).toContain('- Available from 1 March');
+    expect(p).toContain('Anna');
+    expect(p).not.toMatch(/Oleksandr|Vienna|RWR|60,000/);
+  });
+  it('asks for [fill in] when there are no facts', () => {
+    expect(draftsPrompt({ ...base, facts: null, fullName: null })).toContain('[fill in: …]');
+  });
+  it('flags unbacked claims in text answers only', () => {
+    const items = guardDrafts([
+      { id: 'a', label: 'Why Acme?', kind: 'text', required: false, answer: 'I built React apps at Zalando for 5 years.' },
+      { id: 'b', label: 'Visa?', kind: 'boolean', required: false, options: ['Yes', 'No'], answer: 'No' },
+    ], { ...base, facts: null, fullName: 'Anna Berg' });
+    expect(items[0].unverified).toEqual(['Zalando', '5']);
+    expect(items[1].unverified).toBeUndefined();
   });
 });

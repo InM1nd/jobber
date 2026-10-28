@@ -53,6 +53,8 @@ model Profile {
   
   // Writing rules for cover letters
   writingRules      String?   @db.Text
+  // "Facts about me": true things not in the CV (availability, permit, salary, links), one per line
+  facts             String?   @db.Text
   
   // Company watchlist
   watchedCompanies  String[]
@@ -145,6 +147,8 @@ model Job {
   postedAt          DateTime?
   url               String
   dedupeKey         String?
+  // Normalized posting link (no tracking params) — the same ad found via two boards is one job
+  urlKey            String?
 
   isActive          Boolean   @default(true)
   
@@ -158,6 +162,7 @@ model Job {
   @@index([isActive])
   @@index([postedAt])
   @@index([dedupeKey])
+  @@index([urlKey])
 }
 
 model JobMatch {
@@ -173,11 +178,15 @@ model JobMatch {
   priority          String    // "high", "medium", "low"
   
   coverLetter       String?   @db.Text
+  // AI output metadata: prompt versions, fact-guard flags, earlier letter versions (lib/ai/meta.ts)
+  aiMeta            Json?
   cvAdvice          Json?
   tailoredCv        String?   @db.Text
   cvId              String?   // which of the user's CVs fits this job best
   locationTier      String?   // "city" | "country" | "remote" | "relocation" | "other"
   subScores         Json?
+  // Requirement matching: [{text, must, skill, result: covered|partial|gap, note}]
+  requirements      Json?
   // true = rejected by the rule pre-filter, never sent to the model, hidden in the UI
   filtered          Boolean   @default(false)
   /// Deterministic 0-100 pre-score used to rank jobs before AI scoring.

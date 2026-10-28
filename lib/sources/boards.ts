@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { JobSource, JobSourceConfig, RawJob } from './types';
 import { stripHtml } from './html';
+import { hackerNewsSourceUrl } from './hackernews';
 
 /**
  * Keyword job boards that need no company watchlist. All public, no key.
@@ -8,7 +9,7 @@ import { stripHtml } from './html';
  */
 
 export const KEYWORD_BOARDS = [
-  'remotive', 'jobicy', 'himalayas', 'arbeitnow', 'remoteok', 'weworkremotely', 'workingnomads', 'themuse', 'bundesagentur', 'adzuna', 'jooble',
+  'remotive', 'jobicy', 'himalayas', 'arbeitnow', 'remoteok', 'weworkremotely', 'workingnomads', 'themuse', 'bundesagentur', 'adzuna', 'jooble', 'hackernews',
 ] as const;
 export type KeywordBoard = (typeof KEYWORD_BOARDS)[number];
 
@@ -31,6 +32,8 @@ export function boardsFor(opts: { country?: string | null; remote: boolean }) {
   if (!c || ['germany', 'austria', 'switzerland'].includes(c)) list.push('arbeitnow');
   if (c === 'united states' || c === 'united kingdom' || !c) list.push('themuse');
   if (opts.remote) list.push(...REMOTE_BOARDS);
+  // HN "Who is hiring?" has on-site roles worldwide too; the pre-filter keeps what fits the user.
+  if (process.env.HN_SOURCE !== 'off') list.push('hackernews');
   return list;
 }
 
@@ -58,6 +61,8 @@ export function keywordSourceUrl(board: KeywordBoard, keyword: string, place: { 
       return `https://jobicy.com/api/v2/remote-jobs?count=50&tag=${q}`;
     case 'himalayas':
       return `https://himalayas.app/jobs/api/search?q=${q}&limit=40`;
+    case 'hackernews':
+      return hackerNewsSourceUrl(keyword);
     case 'arbeitnow':
       // No server-side search: we filter the newest pages by keyword (see #q=).
       return `https://www.arbeitnow.com/api/job-board-api#q=${q}`;

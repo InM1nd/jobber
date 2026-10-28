@@ -1,8 +1,20 @@
 import type { FormQuestion, FormSource } from './questions';
 
 /** Saved on Application.coverLetter as JSON (no schema change). Plain text there = an old cover letter. */
-export interface DraftItem extends FormQuestion { answer: string }
-export interface ApplicationDrafts { v: 1; source: FormSource; generatedAt: string; editedAt?: string; items: DraftItem[] }
+export interface DraftItem extends FormQuestion {
+  answer: string;
+  /** Fact guard: names/numbers in the answer that the CV, facts and job post don't back. */
+  unverified?: string[];
+}
+export interface ApplicationDrafts {
+  v: 1;
+  source: FormSource;
+  generatedAt: string;
+  editedAt?: string;
+  /** Prompt version that wrote them (lib/ai/meta.ts PROMPT_VERSIONS.drafts). */
+  promptVersion?: string;
+  items: DraftItem[];
+}
 
 export function parseDrafts(raw: string | null | undefined): ApplicationDrafts | null {
   if (!raw) return null;

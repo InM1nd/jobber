@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Notice, capsClass } from '@/components/ui/kit';
+import { Notice, capsClass, fieldClass } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { CvManager, type CvItem } from '@/components/cv-manager';
 import { CompaniesWatch, keyOf, type CompanyOption } from '@/components/companies-watch';
@@ -27,10 +27,16 @@ function Block({ title, hint, children }: { title: string; hint?: string; childr
 }
 
 /** Everything from the guided form, editable later. The form (not the CVs) drives search and scoring. */
-export function ProfilePanel({ initial, writingRules: initialRules }: { initial: Draft; writingRules: string }) {
+const FACTS_PLACEHOLDER = `Available from 1 March, no notice period
+Work permit for Austria, no sponsorship needed
+Salary expectation: €55,000–65,000 gross per year
+Portfolio: https://example.dev`;
+
+export function ProfilePanel({ initial, writingRules: initialRules, facts: initialFacts }: { initial: Draft; writingRules: string; facts: string }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
   const [rules, setRules] = useState(initialRules);
+  const [facts, setFacts] = useState(initialFacts);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
@@ -60,7 +66,7 @@ export function ProfilePanel({ initial, writingRules: initialRules }: { initial:
   async function save() {
     setSaving(true);
     setMsg(null);
-    const res = await fetch('/api/profile', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ draft, writingRules: rules }) }).catch(() => null);
+    const res = await fetch('/api/profile', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ draft, writingRules: rules, facts }) }).catch(() => null);
     let ok = Boolean(res?.ok);
     if (ok && watchDirty && companies) {
       const list = companies.filter((c) => picked.has(keyOf(c))).map(({ name, ats, slug }) => ({ name, ats, slug }));
@@ -106,6 +112,16 @@ export function ProfilePanel({ initial, writingRules: initialRules }: { initial:
         ) : (
           <div className="flex items-center gap-2 px-1 text-[13px] text-muted"><Loader2 className="size-4 animate-spin" /> Loading…</div>
         )}
+      </Block>
+
+      <Block title="Facts about me" hint="True things that aren’t in your CV, one per line: when you can start, work permit, salary, links, how to spell your company. Letters and form answers use them, and never claim anything that isn’t here or in your CV.">
+        <textarea
+          className={cn(fieldClass, 'min-h-[132px] resize-y text-[14px] leading-relaxed')}
+          value={facts}
+          placeholder={FACTS_PLACEHOLDER}
+          maxLength={4000}
+          onChange={(e) => { setFacts(e.target.value); setDirty(true); setMsg(null); }}
+        />
       </Block>
 
       <Block title={SECTION_COPY.tuning.title} hint={SECTION_COPY.tuning.hint}>

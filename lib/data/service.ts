@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import { parseStoredRequirements } from '@/lib/search/requirements';
+import { parseAiMeta, withNewLetter, type AiMeta, type OutputMeta } from '@/lib/ai/meta';
 import { cache } from 'react';
 import { isDemoMode } from '@/lib/demo/mode';
 import { linkApplications, notTracked } from '@/lib/tracker/link';
@@ -86,6 +88,7 @@ export async function getProfile(userId: string): Promise<DemoProfile> {
       stackKeywords: [],
       skillGaps: [],
       writingRules: null,
+      facts: null,
       watchedCompanies: [],
       fullName: null,
       targetRoles: [],
@@ -137,8 +140,8 @@ function loadMatchRows(userId: string, where: object, take: number, withDescript
   return getPrisma().jobMatch.findMany({
     where: { userId, ...where },
     select: {
-      id: true, score: true, priority: true, reasons: true, redFlags: true, coverLetter: true, cvAdvice: true, tailoredCv: true,
-      cvId: true, locationTier: true, subScores: true, createdAt: true,
+      id: true, score: true, priority: true, reasons: true, redFlags: true, coverLetter: true, aiMeta: true, cvAdvice: true, tailoredCv: true,
+      cvId: true, locationTier: true, subScores: true, requirements: true, createdAt: true,
       job: { select: { ...matchJobSelect, description: withDescription } },
     },
     orderBy: { score: 'desc' },
@@ -158,11 +161,13 @@ async function shapeMatches(userId: string, matches: MatchRowDb[]) {
     reasons: match.reasons,
     redFlags: match.redFlags,
     coverLetter: match.coverLetter,
+    aiMeta: parseAiMeta(match.aiMeta),
     cvAdvice: (match.cvAdvice as CvAdvice | null) ?? null,
     tailoredCv: match.tailoredCv,
     cvId: match.cvId,
     locationTier: match.locationTier,
     subScores: (match.subScores as Record<string, number> | null) ?? null,
+    requirements: parseStoredRequirements(match.requirements),
     job: {
       id: match.job.id,
       title: match.job.title,
@@ -223,15 +228,16 @@ export async function getMatch(userId: string, matchId: string) {
   return rows.length ? (await shapeMatches(userId, rows))[0] : null;
 }
 
-export async function saveCoverLetter(userId: string, matchId: string, letter: string) {
-  if (isDemoMode()) return demoStore.saveCoverLetter(matchId, letter);
+/** Saves a new letter; the one it replaces goes into the version history. */
+export async function saveCoverLetter(userId: string, matchId: string, letter: string, meta: OutputMeta) {
+  if (isDemoMode()) return demoStore.saveCoverLetter(matchId, letter, meta);
 
   const prisma = getPrisma();
   const match = await prisma.jobMatch.findFirst({ where: { id: matchId, userId } });
   if (!match) return null;
   return prisma.jobMatch.update({
     where: { id: matchId },
-    data: { coverLetter: letter },
+    data: { coverLetter: letter, aiMeta: withNewLetter(parseAiMeta(match.aiMeta), match.coverLetter, meta) as object },
   });
 }
 
@@ -601,6 +607,7 @@ export async function saveMatchExtras(
   userId: string,
   matchId: string,
   data: { cvAdvice?: CvAdvice; tailoredCv?: string },
+  meta: Partial<Pick<AiMeta, 'advice' | 'tailoredCv'>> = {},
 ) {
   if (isDemoMode()) return null;
   const prisma = getPrisma();
@@ -608,6 +615,10 @@ export async function saveMatchExtras(
   if (!match) return null;
   return prisma.jobMatch.update({
     where: { id: matchId },
-    data: { ...(data.cvAdvice ? { cvAdvice: data.cvAdvice } : {}), ...(data.tailoredCv ? { tailoredCv: data.tailoredCv } : {}) },
+    data: {
+      ...(data.cvAdvice ? { cvAdvice: data.cvAdvice } : {}),
+      ...(data.tailoredCv ? { tailoredCv: data.tailoredCv } : {}),
+      aiMeta: { ...parseAiMeta(match.aiMeta), ...meta } as object,
+    },
   });
 }

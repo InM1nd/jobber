@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState, fieldClass, fitOf, FIT_TEXT } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
-import { FitPanel, FollowUpPanel, PrepareApplicationPanel } from '@/components/tracker-extras';
+import { FitPanel, FollowUpPanel, PrepareApplicationPanel, ReplyPanel } from '@/components/tracker-extras';
 import { followUpCell } from '@/lib/tracker/followup-plan';
 import type { DemoApplication } from '@/lib/demo/store';
 
@@ -284,6 +284,7 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
         </div>
 
         <FollowUpPanel app={app} />
+        <ReplyPanel key={`reply-${app.id}`} app={app} />
         <FitPanel app={app} />
         <PrepareApplicationPanel key={app.id} app={app} />
 

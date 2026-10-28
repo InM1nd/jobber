@@ -28,6 +28,17 @@ The owner tests it first. Friends get in with an invite code. Nobody pastes keys
 - "Tailor CV" on each match: concrete emphasise/add/reword suggestions, missing keywords, and a "don't claim" list; optional tailored CV text. Cached per user+job on `JobMatch`.
 - Database changes: run `supabase/migrations/002_shared_ai_onboarding.sql`, then `supabase/migrations/003_guided_form_multi_cv.sql` in the Supabase SQL editor (both idempotent).
 - Application tracker with statuses and a 7-day follow-up date.
+- Ideas from [AienTech/dossier](https://github.com/AienTech/dossier), rewritten for Jobber (database: run `supabase/migrations/006_profile_facts.sql` once):
+  - "Facts about me" in Profile: true things that aren't in the CV (start date, work permit, salary, links), one per line. Letters, form drafts, follow-ups and reply drafts use them; nothing about the owner is hard-coded.
+  - Fact guard (`lib/ai/fact-guard.ts`, no AI call): names, numbers, links and credentials in a letter, draft, tailored CV or follow-up that the CV, facts and job post don't back are shown as "Check before sending".
+  - Requirement matching (`lib/search/requirements.ts`): the scoring call also lists each job's key requirements and which of your skills each is about; code decides covered / partial / gap from your skills and CVs, blends that into the Skills sub-score and shows it on the match. The model can't add a skill by naming it.
+  - Trust nothing from the model: CV advice keeps only rewordings that quote the real CV, drops "missing" keywords the CV has, and always lists the code-found gaps under "Don't claim". Job and email texts are marked as material, not instructions.
+  - Prompt versions (`lib/ai/meta.ts`): each letter, CV advice, tailored CV and draft remembers which prompt wrote it; older ones say so and can be rewritten.
+  - Cover letter versions: every rewrite keeps the previous letter (last 12), with Restore. Tap a paragraph to rewrite only that one; refine by a note or by chips built from the match ("Lead with React", "Address “German C1” honestly"). Hand edits are saved too.
+  - Employer replies: forward an email to the bot (or paste it on an application): one AI call reads what it is (rejection / interview / question / offer / confirmation), which application, what they ask and a confirmed interview time, then the tracker is updated (status, dated note, next action) with an Undo button, and a draft answer comes back.
+  - Hacker News "Who is hiring?" as a keyword board (`lib/sources/hackernews.ts`, public Algolia API, `HN_SOURCE=off` to disable). Existing users get it the next time they save their profile.
+  - "Write it with Claude" (owner, with the MCP connector): opens a claude.ai chat that reads the match with `get_match` / `get_profile` and saves the letter with `save_cover_letter` (fact-checked, kept in versions). New MCP tools: `get_profile`, `list_matches`, `get_match`, `save_cover_letter`.
+  - Dedupe by link too: the same posting found through two boards (or with tracking parameters) is stored once (`Job.urlKey`).
 - `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
 - Local demo mode when Supabase is not configured, so the screens can be clicked through with sample matches.
 

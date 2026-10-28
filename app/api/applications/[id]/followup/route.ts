@@ -4,7 +4,7 @@ import { getPrisma } from '@/lib/db/prisma';
 import { isDemoMode } from '@/lib/demo/mode';
 import { demoStore } from '@/lib/demo/store';
 import { aiErrorResponse } from '@/lib/ai/errors';
-import { draftFollowUp, followUpPlan } from '@/lib/tracker/followup';
+import { draftFollowUp, followUpUnverified, followUpPlan } from '@/lib/tracker/followup';
 
 export const instant = false;
 export const maxDuration = 30;
@@ -45,11 +45,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
   try {
     const profile = await getProfile(user.id);
-    const draft = await draftFollowUp(user.id, {
+    const input = {
       company: app.company, role: app.role, appliedAt: app.appliedAt, notes: app.notes, whyFit: app.whyFit ?? null,
-      channel: CHANNELS[channel], count: plan.count, writingRules: profile.writingRules ?? null, fullName: (profile as { fullName?: string | null }).fullName ?? null,
-    });
-    return NextResponse.json({ draft });
+      channel: CHANNELS[channel], count: plan.count, writingRules: profile.writingRules ?? null, fullName: profile.fullName ?? null, facts: profile.facts ?? null,
+    };
+    const draft = await draftFollowUp(user.id, input);
+    const unverified = followUpUnverified(draft, { ...input, extra: [profile.cvText || '', profile.location || '', app.contact || ''] });
+    return NextResponse.json({ draft, unverified });
   } catch (error) {
     return aiErrorResponse(error);
   }
