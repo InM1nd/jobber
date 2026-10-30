@@ -81,6 +81,8 @@ model Profile {
   alertThreshold      Int       @default(70)
   alertFrequency      String    @default("daily") // "instant" | "daily" | "off"
   maxJobAgeDays       Int       @default(45)
+  // Days with no reply before an application counts as silent (3, 5, 7, 10, 14, 21, 30).
+  quietDays           Int       @default(14)
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -221,6 +223,8 @@ model Application {
   appliedAt         DateTime?
   followUpAt        DateTime?
   followUpSent      Boolean   @default(false)
+  // When the interview is, including one that already happened. Notes stay as the fallback.
+  interviewAt       DateTime?
   
   contact           String?
   salaryExpectation String?

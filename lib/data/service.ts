@@ -3,6 +3,8 @@ import { parseStoredRequirements } from '@/lib/search/requirements';
 import { parseAiMeta, withNewLetter, type AiMeta, type OutputMeta } from '@/lib/ai/meta';
 import { cache } from 'react';
 import { isDemoMode } from '@/lib/demo/mode';
+import { notesAfterInterview } from '@/lib/tracker/funnel';
+import { latestInterview } from '@/lib/replies/calendar';
 import { linkApplications, notTracked } from '@/lib/tracker/link';
 import { demoStore, type AppFit, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
 import { getPrisma } from '@/lib/db/prisma';
@@ -97,6 +99,7 @@ export async function getProfile(userId: string): Promise<DemoProfile> {
       searchKeywords: [],
       sourceIds: [],
       onboardedAt: null,
+      quietDays: 14,
     };
   }
 
@@ -117,6 +120,12 @@ export async function saveProfile(userId: string, patch: Partial<DemoProfile>) {
     update: next,
   });
   return next;
+}
+
+/** The tracker setting for how many days of silence count as "no reply". */
+export async function setQuietDays(userId: string, quietDays: number) {
+  if (isDemoMode()) return demoStore.saveProfile({ quietDays });
+  return getPrisma().profile.update({ where: { userId }, data: { quietDays } });
 }
 
 /** linkApplications scans every match; on page views run it at most every few minutes per user (explicit calls still link at once). */
@@ -273,6 +282,7 @@ export async function getApplications(userId: string): Promise<DemoApplication[]
     whyFit: app.whyFit,
     risks: app.risks,
     nextAction: app.nextAction,
+    interviewAt: app.interviewAt?.toISOString() ?? null,
     updatedAt: app.updatedAt.toISOString(),
     jobId: app.jobId,
     fit: (() => {
@@ -339,6 +349,18 @@ export async function createApplication(
   return created;
 }
 
+function heldAt(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  return Number.isNaN(Date.parse(value)) ? null : value;
+}
+
+/** An explicit interview date wins. Otherwise keep the latest time written in the notes. */
+function interviewAtFrom(explicit: string | null | undefined, notes: string | null | undefined): string | null | undefined {
+  if (explicit !== undefined) return explicit ? heldAt(explicit) : null;
+  return latestInterview(notes)?.toISOString();
+}
+
 export async function updateApplication(
   userId: string,
   id: string,
@@ -348,13 +370,18 @@ export async function updateApplication(
     const current = demoStore.applications().find((item) => item.id === id);
     if (!current) return null;
     const status = patch.status || current.status;
+    const notesInput = patch.notes === undefined ? current.notes : patch.notes;
+    const remembered = notesAfterInterview(current.status, status, notesInput, new Date(), patch.interviewAt !== undefined ? patch.interviewAt : current.interviewAt);
     const dates = followUpDates(
       status,
       patch.appliedAt === undefined ? current.appliedAt : patch.appliedAt,
       patch.followUpAt === undefined ? current.followUpAt : patch.followUpAt,
     );
+    const interviewAt = interviewAtFrom(patch.interviewAt, remembered !== undefined ? remembered : notesInput);
     return demoStore.updateApplication(id, {
       ...patch,
+      ...(remembered !== undefined ? { notes: remembered } : {}),
+      ...(interviewAt !== undefined ? { interviewAt } : {}),
       updatedAt: new Date().toISOString(),
       status,
       appliedAt: dates.appliedAt?.toISOString() ?? null,
@@ -366,11 +393,14 @@ export async function updateApplication(
   const current = await prisma.application.findFirst({ where: { id, userId } });
   if (!current) return null;
   const status = patch.status || current.status;
+  const notesInput = patch.notes === undefined ? current.notes : patch.notes;
+  const remembered = notesAfterInterview(current.status, status, notesInput, new Date(), patch.interviewAt !== undefined ? patch.interviewAt : heldAt(current.interviewAt));
   const dates = followUpDates(
     status,
     patch.appliedAt === undefined ? current.appliedAt?.toISOString() : patch.appliedAt,
     patch.followUpAt === undefined ? current.followUpAt?.toISOString() : patch.followUpAt,
   );
+  const interviewAt = interviewAtFrom(patch.interviewAt, remembered !== undefined ? remembered : notesInput);
 
   return prisma.application.update({
     where: { id },
@@ -379,7 +409,7 @@ export async function updateApplication(
       company: patch.company,
       role: patch.role,
       url: patch.url,
-      notes: patch.notes,
+      notes: remembered !== undefined ? remembered : patch.notes,
       contact: patch.contact,
       salaryExpectation: patch.salaryExpectation,
       appliedAt: dates.appliedAt,
@@ -387,6 +417,7 @@ export async function updateApplication(
       followUpSent: patch.followUpAt !== undefined ? false : patch.followUpSent,
       nextAction: patch.nextAction,
       priority: patch.priority,
+      ...(interviewAt !== undefined ? { interviewAt: interviewAt ? new Date(interviewAt) : null } : {}),
     },
   });
 }

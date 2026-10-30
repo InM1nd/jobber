@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Copy, Loader2, MailCheck, RefreshCw, Sparkles } from 'lucide-react';
 import { PROMPT_VERSIONS } from '@/lib/ai/meta';
-import { googleCalendarUrl, interviewTitle, latestInterview } from '@/lib/replies/calendar';
+import { googleCalendarUrl, interviewStart, interviewTitle } from '@/lib/replies/calendar';
 import { CheckFacts, Note, FIT_LABEL, FIT_TEXT, ScoreRing, fieldClass, fitOf } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
@@ -351,7 +351,7 @@ export function ReplyPanel({ app }: { app: DemoApplication }) {
         </div>
       )}
       {(() => {
-        const at = result?.reading.interviewAt ? new Date(result.reading.interviewAt) : latestInterview(app.notes);
+        const at = result?.reading.interviewAt ? new Date(result.reading.interviewAt) : interviewStart(app);
         return at && !Number.isNaN(at.getTime()) ? <CalendarButtons app={app} start={at} /> : null;
       })()}
       {result && (

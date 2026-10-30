@@ -36,6 +36,7 @@ export interface DemoProfile {
   alertThreshold?: number;
   alertFrequency?: string;
   maxJobAgeDays?: number;
+  quietDays?: number;
 }
 
 export interface DemoMatch {
@@ -93,6 +94,7 @@ export interface DemoApplication {
   whyFit?: string | null;
   risks?: string | null;
   nextAction?: string | null;
+  interviewAt?: string | null;
   updatedAt?: string | null;
   jobId?: string | null;
   fit?: AppFit | null;
@@ -157,6 +159,7 @@ function initialState(): DemoState {
       writingRules:
         '3 paragraphs, 120–200 words. No invented facts. No template phrases. One concrete story. Sign off with the first name only. Mention Vienna and a 1 November start when it fits.',
       watchedCompanies: ['Bitpanda', 'Storyblok', 'Linear', 'Sentry'],
+      quietDays: 14,
     },
     matches: [
       {

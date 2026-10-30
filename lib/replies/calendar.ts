@@ -12,6 +12,15 @@ export interface InterviewEvent {
   location?: string;
 }
 
+/** The interview date on the card, or the latest time written into the notes. */
+export function interviewStart(app: { interviewAt?: string | Date | null; notes?: string | null }): Date | null {
+  if (app.interviewAt) {
+    const d = app.interviewAt instanceof Date ? app.interviewAt : new Date(app.interviewAt);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  return latestInterview(app.notes);
+}
+
 /** The latest interview time noted on an application, or null. */
 export function latestInterview(notes: string | null | undefined): Date | null {
   const all = [...(notes || '').matchAll(/\(interview (\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)\)/g)];

@@ -1,7 +1,16 @@
+import { latestInterview } from '@/lib/replies/calendar';
 import type { DemoApplication } from './store';
 
 // Realistic demo tracker (screenshots / demo mode). Day offsets are relative to now.
 const D = (d: number | null) => (d === null ? null : new Date(Date.now() + d * 86400000).toISOString());
+const clock = (days: number, hour: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  d.setHours(hour, 0, 0, 0);
+  return d.toISOString();
+};
+const interviewTomorrow = clock(1, 10);
+const interviewYesterday = clock(-1, 10);
 const ROWS = [
 {
 "id": "a1",
@@ -288,7 +297,7 @@ const ROWS = [
 "whyFit": "Vienna hybrid, English team, AI features in the product",
 "risks": "Remote contract only, check Austrian setup",
 "nextAction": "Follow up with the recruiter on LinkedIn if no reply",
-"notes": "Analytics. Sent the Product Engineer CV and a short letter about the rental-search tool.",
+"notes": `Analytics. Sent the Product Engineer CV and a short letter about the rental-search tool.\n(interview ${interviewTomorrow})`,
 "updated": -15
 },
 {
@@ -702,7 +711,7 @@ const ROWS = [
 "whyFit": "Next.js app with design system ownership",
 "risks": "Salary not published",
 "nextAction": null,
-"notes": "Construction SaaS. Looks good, team of ~40 in Vienna.",
+"notes": "Construction SaaS. Looks good, team of ~40 in Vienna.\n27.10: rejected after HR interview",
 "updated": -6
 },
 {
@@ -720,7 +729,7 @@ const ROWS = [
 "whyFit": "Node + Postgres + React end to end",
 "risks": null,
 "nextAction": null,
-"notes": "Edtech. Looks good, team of ~40 in Vienna.",
+"notes": `Edtech. Looks good, team of ~40 in Vienna.\nHR-интервью прошло (interview ${interviewYesterday})`,
 "updated": -11
 },
 {
@@ -749,7 +758,7 @@ export function demoTrackerSample(letter: string): DemoApplication[] {
     appliedAt: D(r.appliedAt), followUpAt: D(r.followUpAt), followUpSent: false,
     salaryExpectation: r.status === 'applied' ? '€62k gross' : null,
     notes: r.notes, coverLetter: i === 0 ? letter : null, location: r.location, source: r.source,
-    priority: r.priority, score: r.score, contact: r.status === 'applied' && i % 2 ? 'jobs@' + r.company.toLowerCase().replace(/[^a-z]/g, '') + '.com' : null, whyFit: r.whyFit, risks: r.risks, nextAction: r.nextAction, updatedAt: D(r.updated),
+    priority: r.priority, score: r.score, contact: r.status === 'applied' && i % 2 ? 'jobs@' + r.company.toLowerCase().replace(/[^a-z]/g, '') + '.com' : null, whyFit: r.whyFit, risks: r.risks, nextAction: r.nextAction, interviewAt: latestInterview(r.notes)?.toISOString() ?? null, updatedAt: D(r.updated),
     fit: r.status === 'applied' && i % 3 === 0 ? {
       score: r.score, reasons: [r.whyFit, 'Vienna-based team with English as the working language'], redFlags: r.risks ? [r.risks] : [],
       subScores: { role: 86, skills: 80, seniority: 58, location: 100, language: 92, salary: 70 },

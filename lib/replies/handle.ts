@@ -47,6 +47,7 @@ export async function handleReply(userId: string, text: string, opts: { applicat
         ...(newStatus === 'applied' ? { appliedAt: new Date(), followUpAt: new Date(Date.now() + 7 * 864e5), followUpSent: false } : {}),
         ...(newStatus === 'rejected' || newStatus === 'offer' ? { followUpAt: null } : {}),
         notes: [app.notes?.trim(), noteLine(reading)].filter(Boolean).join('\n'),
+        ...(reading.interviewAt && !Number.isNaN(Date.parse(reading.interviewAt)) ? { interviewAt: new Date(reading.interviewAt) } : {}),
         ...(nextAction ? { nextAction } : {}),
       },
     });

@@ -9,6 +9,7 @@ import { EmptyState, fieldClass, fitOf, FIT_TEXT } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
 import { FitPanel, FollowUpPanel, PrepareApplicationPanel, ReplyPanel } from '@/components/tracker-extras';
+import { OPEN_APPLICATION } from '@/lib/tracker/attention';
 import { followUpCell } from '@/lib/tracker/followup-plan';
 import type { DemoApplication } from '@/lib/demo/store';
 
@@ -42,6 +43,13 @@ const day = (v: string) => new Date(v).toLocaleDateString('en-GB', { day: 'numer
 const endOfToday = () => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); };
 const isDue = (a: App) => !!a.followUpAt && !a.followUpSent && ['applied', 'on_hold'].includes(a.status) && new Date(a.followUpAt).getTime() <= endOfToday();
 const toInput = (v: string | null) => (v ? v.slice(0, 10) : '');
+const toDateTimeLocal = (v: string | null | undefined) => {
+  if (!v) return '';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
 
 function StatusPill({ status, onChange, className }: { status: string; onChange: (s: string) => void; className?: string }) {
   return (
@@ -68,6 +76,14 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
   const [sort, setSort] = useState<SortKey>('followup');
   const [limit, setLimit] = useState(PAGE);
   const [openId, setOpenId] = useState<string | null>(null);
+  useEffect(() => {
+    const openFromLook = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      if (id) setOpenId(id);
+    };
+    window.addEventListener(OPEN_APPLICATION, openFromLook);
+    return () => window.removeEventListener(OPEN_APPLICATION, openFromLook);
+  }, []);
   const [adding, setAdding] = useState(false);
 
   const counts = useMemo(() => Object.fromEntries(TABS.map((t) => [t.key, items.filter((a) => (t.match as readonly string[]).includes(a.status)).length])), [items]);
@@ -281,6 +297,11 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
           <Field label="Follow-up">
             <input type="date" className={cn(fieldClass, 'h-10', isDue(app) && 'text-fit-weak')} value={toInput(app.followUpAt)} onChange={(e) => void onPatch({ followUpAt: e.target.value || null })} />
           </Field>
+          <div className="col-span-2">
+            <Field label="Interview">
+              <input type="datetime-local" className={cn(fieldClass, 'h-10')} value={toDateTimeLocal(app.interviewAt)} onChange={(e) => void onPatch({ interviewAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+            </Field>
+          </div>
         </div>
 
         <FollowUpPanel app={app} />

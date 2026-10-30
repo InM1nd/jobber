@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { funnel, type FunnelApp, type Period } from '@/lib/tracker/funnel';
+import { OPEN_APPLICATION, QUIET_DAYS, quietDaysOf, worthALook, type LookApp } from '@/lib/tracker/attention';
+import { funnel, type Period } from '@/lib/tracker/funnel';
 
 const PERIODS: Array<{ key: Period; label: string }> = [
   { key: '30', label: '30 days' },
@@ -10,7 +11,7 @@ const PERIODS: Array<{ key: Period; label: string }> = [
   { key: 'all', label: 'All' },
 ];
 
-function Step({ label, value, of, hint }: { label: string; value: number; of: number; hint?: string }) {
+function Step({ label, value, of, hint, note }: { label: string; value: number; of: number; hint?: string; note?: string }) {
   const width = of ? Math.max(4, Math.round((value / of) * 100)) : 0;
   return (
     <div className="space-y-1">
@@ -21,14 +22,33 @@ function Step({ label, value, of, hint }: { label: string; value: number; of: nu
       <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
         <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${width}%` }} />
       </div>
+      {note ? <p className="text-[11.5px] text-subtle">{note}</p> : null}
     </div>
   );
 }
 
 /** Applied → replied → interview → offer, from the tracker, plus a week-by-week chart. */
-export function FunnelCard({ applications }: { applications: FunnelApp[] }) {
+export function FunnelCard({ applications, quietDays = 14 }: { applications: LookApp[]; quietDays?: number }) {
   const [period, setPeriod] = useState<Period>('30');
-  const f = useMemo(() => funnel(applications, period), [applications, period]);
+  const [days, setDays] = useState(quietDaysOf(quietDays));
+  useEffect(() => { setDays(quietDaysOf(quietDays)); }, [quietDays]);
+  const f = useMemo(() => funnel(applications, period, new Date(), days), [applications, period, days]);
+  const look = useMemo(() => worthALook(applications, new Date(), 5, days), [applications, days]);
+  const interviewNote = f.interviewStopped > 0 || (f.interviews > 0 && f.interviewOpen !== f.interviews)
+    ? `${f.interviewOpen} still waiting${f.interviewStopped ? ` · ${f.interviewStopped} rejected after` : ''}`
+    : undefined;
+
+  async function chooseQuiet(next: number) {
+    const value = quietDaysOf(next);
+    const prev = days;
+    setDays(value);
+    const res = await fetch('/api/profile/quiet', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ quietDays: value }),
+    });
+    if (!res.ok) setDays(prev);
+  }
   const peak = Math.max(1, ...f.weeks.map((w) => w.count));
   if (!applications.some((a) => a.appliedAt)) return null;
 
@@ -47,9 +67,20 @@ export function FunnelCard({ applications }: { applications: FunnelApp[] }) {
         </div>
         <Step label="Applied" value={f.applied} of={f.applied} />
         <Step label="Got a reply" value={f.replied} of={f.applied} hint={f.replyRate != null ? `${f.replyRate}%` : undefined} />
-        <Step label="Interview" value={f.interviews} of={f.applied} hint={f.interviewRate != null ? `${f.interviewRate}%` : undefined} />
+        <Step label="Interview" value={f.interviews} of={f.applied} hint={f.interviewRate != null ? `${f.interviewRate}%` : undefined} note={interviewNote} />
         <Step label="Offer" value={f.offers} of={f.applied} />
-        {f.silent > 0 && <p className="text-[12px] text-subtle">{f.silent} without any answer after two weeks — worth a follow-up or letting go.</p>}
+        {f.silent > 0 && <p className="text-[12px] text-subtle">{f.silent} without any answer after {days} days — worth a follow-up or letting go.</p>}
+        <label className="flex items-center justify-between gap-2 pt-1 text-[12px] text-muted">
+          No reply after
+          <select
+            aria-label="No reply after"
+            value={days}
+            onChange={(e) => void chooseQuiet(Number(e.target.value))}
+            className="h-8 rounded-full border border-line bg-bg px-2.5 text-[12.5px] text-fg"
+          >
+            {QUIET_DAYS.map((n) => <option key={n} value={n}>{n} days</option>)}
+          </select>
+        </label>
       </div>
       <div className="flex flex-col">
         <p className="mb-3 text-[12.5px] text-muted">Applications per week</p>
@@ -66,6 +97,26 @@ export function FunnelCard({ applications }: { applications: FunnelApp[] }) {
           <span>this week</span>
         </div>
       </div>
+      {look.rows.length > 0 && (
+        <div className="border-t border-line pt-4 md:col-span-2">
+          <p className="mb-2 text-[14px] font-medium">Worth a look</p>
+          <ul className="divide-y divide-line">
+            {look.rows.map((item) => (
+              <li key={`${item.kind}-${item.id}`}>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent(OPEN_APPLICATION, { detail: item.id }))}
+                  className="flex w-full flex-col items-start gap-0.5 py-2 text-left transition-colors hover:bg-surface-2/70"
+                >
+                  <span className="text-[13.5px] font-medium leading-tight">{item.role} <span className="font-normal text-muted">· {item.company}</span></span>
+                  <span className={cn('text-[12.5px]', item.kind === 'quiet' ? 'text-subtle' : 'text-fg')}>{item.text}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {look.quietMore > 0 && <p className="pt-1 text-[12px] text-subtle">and {look.quietMore} more with no reply</p>}
+        </div>
+      )}
     </section>
   );
 }

@@ -9,6 +9,7 @@ import { parseAiMeta, stamp, withNewLetter } from '@/lib/ai/meta';
 import { factSources, unverifiedFacts } from '@/lib/ai/fact-guard';
 import { parseStoredRequirements } from '@/lib/search/requirements';
 import { factLines } from '@/lib/profile/facts';
+import { notesAfterInterview } from '@/lib/tracker/funnel';
 
 const same = (a: string, b: string) => timingSafeEqual(createHash('sha256').update(a).digest(), createHash('sha256').update(b).digest());
 const valid = (k?: string) => Boolean(k && k.length >= 24);
@@ -87,7 +88,10 @@ function buildServer(ownerId: string) {
       const ap = parseDate(appliedAt); if (ap !== undefined) data.appliedAt = ap;
       const fu = parseDate(followUpAt); if (fu !== undefined) { data.followUpAt = fu; data.followUpSent = false; }
       if (st === 'applied' && !a.appliedAt && data.appliedAt === undefined) data.appliedAt = new Date();
-      if (appendNote?.trim()) data.notes = [a.notes, appendNote.trim()].filter(Boolean).join('\n').slice(0, 8000);
+      const notesBase = appendNote?.trim() ? [a.notes, appendNote.trim()].filter(Boolean).join('\n') : a.notes;
+      const remembered = notesAfterInterview(a.status, st, notesBase, new Date(), a.interviewAt?.toISOString() ?? null);
+      const notes = remembered !== undefined ? remembered : appendNote?.trim() ? (notesBase || '').slice(0, 8000) : undefined;
+      if (notes !== undefined) data.notes = notes;
       return out({ application: serialize(await prisma.application.update({ where: { id }, data })) });
     },
   );
