@@ -5,9 +5,9 @@
  * plus lines that state salary, place, remote or language. Pure code, no AI.
  */
 
-const REQUIREMENTS = /^(?:#+\s*)?(requirements?|qualifications?|what you('|’)?ll (need|bring)|what (you|we)('|’)?re looking for|what we look for|who you are|about you|your profile|you have|you bring|you are|must[- ]haves?|nice[- ]to[- ]haves?|skills|experience|ideally you|bonus points|anforderungen|dein profil|ihr profil|das bringst du mit|was du mitbringst|was sie mitbringen|qualifikation(en)?|wir erwarten|du hast|du bringst mit)\b/i;
-const TASKS = /^(?:#+\s*)?(responsibilities|what you('|’)?ll do|what you will do|your role|the role|your tasks|in this role|day to day|your mission|you will|aufgaben|deine aufgaben|ihre aufgaben|dein job|das erwartet dich|was dich erwartet)\b/i;
-const OTHER_HEADING = /^(?:#+\s*)?(benefits|what we offer|perks|why join|about us|who we are|our offer|wir bieten|das bieten wir|unser angebot|benefits & perks|equal opportunit|diversity|how to apply|application process|bewerbung)\b/i;
+export const REQUIREMENTS = /^(?:#+\s*)?(requirements?|qualifications?|what you('|’)?ll (need|bring)|what (you|we)('|’)?re looking for|what we look for|who you are|about you|your profile|you have|you bring|you are|must[- ]haves?|nice[- ]to[- ]haves?|skills|experience|ideally you|bonus points|anforderungen|dein profil|ihr profil|das bringst du mit|was du mitbringst|was sie mitbringen|qualifikation(en)?|wir erwarten|du hast|du bringst mit)\b/i;
+export const TASKS = /^(?:#+\s*)?(responsibilities|what you('|’)?ll do|what you will do|your role|the role|your tasks|in this role|day to day|your mission|you will|aufgaben|deine aufgaben|ihre aufgaben|dein job|das erwartet dich|was dich erwartet)\b/i;
+export const OTHER_HEADING = /^(?:#+\s*)?(benefits|what we offer|perks|why join|about us|who we are|our offer|wir bieten|das bieten wir|unser angebot|benefits & perks|equal opportunit|diversity|how to apply|application process|bewerbung)\b/i;
 const SIGNAL = /(€|\$|£|eur\b|salary|gehalt|brutto|gross|per (year|annum|month)|jahresgehalt|remote|hybrid|on-?site|office|relocat|visa|sponsor|german|deutsch|english|englisch|c1|b2|years|jahre)/i;
 
 type Kind = 'intro' | 'req' | 'task' | 'other';

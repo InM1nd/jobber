@@ -90,6 +90,8 @@ export interface AiScore {
   reasons: string[];
   redFlags: string[];
   requirements: RawRequirement[];
+  /** 2-3 short lines: what you would do, and the offer when the ad states it. */
+  gist: string[];
 }
 
 export function parseAiScores(raw: unknown): AiScore[] {
@@ -105,6 +107,7 @@ export function parseAiScores(raw: unknown): AiScore[] {
       reasons: (Array.isArray(r?.reasons) ? r.reasons : []).map(String).filter(Boolean).slice(0, 3).map((s: string) => s.slice(0, 200)),
       redFlags: (Array.isArray(r?.redFlags) ? r.redFlags : []).map(String).filter(Boolean).slice(0, 3).map((s: string) => s.slice(0, 160)),
       requirements: parseRequirements(r?.requirements),
+      gist: (Array.isArray(r?.gist) ? r.gist : []).map(String).map((s: string) => s.trim()).filter(Boolean).slice(0, 3).map((s: string) => s.slice(0, 120)),
     }))
     .filter((r): r is AiScore => Boolean(r.id) && r.roleFit != null && r.skills != null);
 }

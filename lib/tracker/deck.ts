@@ -3,7 +3,7 @@ import { isDemoMode } from '@/lib/demo/mode';
 import { demoStore } from '@/lib/demo/store';
 import { parseAiMeta, type AiMeta } from '@/lib/ai/meta';
 import { parseStoredRequirements, type RequirementItem } from '@/lib/search/requirements';
-import { jobDigest } from '@/lib/search/digest';
+import { readableJob, salaryFromText, type ReadableSection } from '@/lib/jobs/readable';
 import { dropTracked, notTracked } from './link';
 
 /** Review: today's best undecided matches, one card each. */
@@ -21,6 +21,8 @@ export interface DeckCard {
   locationTier: string | null;
   agent: AiMeta['agent'] | null;
   verified: AiMeta['verified'] | null;
+  /** The scorer's 2-3 line summary, when it wrote one. */
+  gist: string[];
   job: {
     title: string;
     company: string;
@@ -31,8 +33,8 @@ export interface DeckCard {
     salaryMax: number | null;
     currency: string | null;
     postedAt: string | null;
-    /** Requirements and tasks sections of the ad, not the company blurb. */
-    digest: string;
+    /** The ad laid out for reading (lib/jobs/readable.ts). */
+    sections: ReadableSection[];
   };
 }
 
@@ -43,12 +45,23 @@ export function undecided(meta: AiMeta, now = Date.now()) {
   return s.d === 'later' && (!s.until || Date.parse(s.until) <= now);
 }
 
+/** Card fields from the ad: readable sections, and the salary written in the text when the source sent none. */
+function adFields(job: { description: string; salaryMin: number | null; salaryMax: number | null; currency: string | null }) {
+  const pay = job.salaryMin || job.salaryMax ? {} : salaryFromText(job.description);
+  return {
+    sections: readableJob(job.description),
+    salaryMin: job.salaryMin ?? pay.min ?? null,
+    salaryMax: job.salaryMax ?? pay.max ?? null,
+    currency: job.currency ?? pay.currency ?? null,
+  };
+}
+
 export async function getDeck(userId: string, minScore = 0): Promise<DeckCard[]> {
   if (isDemoMode()) {
     return demoStore.matches().filter((m) => m.score >= Math.max(DECK_MIN, minScore) && undecided(m.aiMeta || {})).slice(0, DECK_SIZE).map((m) => ({
       id: m.id, score: m.score, reasons: m.reasons, redFlags: m.redFlags, requirements: m.requirements || [], locationTier: m.locationTier ?? null,
-      agent: m.aiMeta?.agent ?? null, verified: m.aiMeta?.verified ?? null,
-      job: { ...m.job, digest: jobDigest(m.job.description, 1800) },
+      agent: m.aiMeta?.agent ?? null, verified: m.aiMeta?.verified ?? null, gist: m.aiMeta?.gist ?? [],
+      job: { title: m.job.title, company: m.job.company, location: m.job.location, remote: m.job.remote, url: m.job.url, postedAt: m.job.postedAt, ...adFields(m.job) },
     }));
   }
   const rows = await getPrisma().jobMatch.findMany({
@@ -70,17 +83,15 @@ export async function getDeck(userId: string, minScore = 0): Promise<DeckCard[]>
       locationTier: m.locationTier,
       agent: meta.agent ?? null,
       verified: meta.verified ?? null,
+      gist: meta.gist ?? [],
       job: {
         title: m.job.title,
         company: m.job.company || m.job.source.company,
         location: m.job.location,
         remote: m.job.remote,
         url: m.job.url,
-        salaryMin: m.job.salaryMin,
-        salaryMax: m.job.salaryMax,
-        currency: m.job.currency,
         postedAt: m.job.postedAt?.toISOString() ?? null,
-        digest: jobDigest(m.job.description, 1800),
+        ...adFields(m.job),
       },
     };
   });

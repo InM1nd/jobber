@@ -61,6 +61,8 @@ export interface AiMeta {
   verified?: { at: string; before: number };
   /** The user's decision in Review (lib/tracker/decide.ts). */
   swipe?: SwipeDecision;
+  /** 2-3 short lines from the scorer: what you'd do, the offer if stated (Review card). */
+  gist?: string[];
 }
 
 export interface SwipeDecision {
@@ -106,6 +108,8 @@ export function parseAiMeta(raw: unknown): AiMeta {
     if (o) meta[k] = o;
   }
   if (history?.length) meta.letterHistory = history;
+  const gist = strings(r.gist)?.slice(0, 3).map((s) => s.slice(0, 120));
+  if (gist?.length) meta.gist = gist;
   const sw = r.swipe as Partial<SwipeDecision> | null | undefined;
   if (sw && (sw.d === 'apply' || sw.d === 'skip' || sw.d === 'later') && typeof sw.at === 'string') {
     meta.swipe = {

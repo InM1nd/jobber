@@ -10,6 +10,7 @@ import { SKIP_REASONS } from '@/lib/tracker/skip';
 import { formatSalaryRange } from '@/lib/text';
 import { cn } from '@/lib/utils';
 import type { DeckCard } from '@/lib/tracker/deck';
+import type { ReadableSection } from '@/lib/jobs/readable';
 
 type Decision = 'apply' | 'skip' | 'later';
 const THRESHOLD = 110;
@@ -278,6 +279,13 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
   );
 }
 
+/** The card's "what is this job": the scorer's gist, else the first lines of "What you'd do". */
+function summaryOf(card: DeckCard): string[] {
+  if (card.gist.length) return card.gist.slice(0, 3);
+  const task = card.job.sections.find((s) => s.kind === 'task') || card.job.sections.find((s) => s.kind !== 'about');
+  return (task?.items || []).slice(0, 3).map((t) => (t.length > 110 ? `${t.slice(0, 107).trimEnd()}…` : t));
+}
+
 function CardBody({ card }: { card: DeckCard }) {
   const fit = fitOf(card.score);
   const facts = [place(card), salary(card), age(card.job.postedAt)].filter(Boolean);
@@ -302,8 +310,19 @@ function CardBody({ card }: { card: DeckCard }) {
         </p>
       )}
 
+      {summaryOf(card).length > 0 && (
+        <ul className="mt-5 space-y-1.5">
+          {summaryOf(card).map((s) => (
+            <li key={s} className="flex gap-2 text-[14px] leading-snug text-fg/85">
+              <span className="mt-[7px] size-1 shrink-0 rounded-full bg-subtle" />
+              <span className="line-clamp-2">{s}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {card.requirements.length > 0 && (
-        <ul className="mt-5 flex flex-wrap gap-1.5">
+        <ul className="mt-4 flex flex-wrap gap-1.5">
           {card.requirements.slice(0, 5).map((r) => (
             <li key={r.text} className={cn(
               'rounded-full px-2.5 py-1 text-[12.5px]',
@@ -340,10 +359,17 @@ function Details({ card }: { card: DeckCard }) {
         )}
       </div>
       {(card.reasons.length > 0 || card.redFlags.length > 0) && (
-        <div className="space-y-2 px-1">
-          {card.reasons.map((r) => <Note key={r}>{r}</Note>)}
-          {card.redFlags.map((r) => <Note key={r} tone="warning">{r}</Note>)}
-        </div>
+        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+          <p className="mb-2.5 text-[14px] font-medium">Why {card.score}</p>
+          <ul className="space-y-2">
+            {card.reasons.map((r) => (
+              <li key={r} className="flex gap-2.5 text-[14px] leading-snug"><span className="font-semibold text-fit-strong">+</span><span>{r}</span></li>
+            ))}
+            {card.redFlags.map((r) => (
+              <li key={r} className="flex gap-2.5 text-[14px] leading-snug text-muted"><span className="font-semibold text-fit-weak">−</span><span>{r}</span></li>
+            ))}
+          </ul>
+        </section>
       )}
       {card.agent?.note && (
         <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
@@ -352,13 +378,39 @@ function Details({ card }: { card: DeckCard }) {
         </section>
       )}
       <RequirementsList items={card.requirements} />
-      {card.job.digest && (
-        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
-          <p className="mb-2 text-[14px] font-medium">What the job is</p>
-          <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-muted">{card.job.digest}</p>
-        </section>
-      )}
+      {card.job.sections.map((s) => <AdSection key={`${card.id}-${s.kind}-${s.title}`} section={s} />)}
     </>
+  );
+}
+
+/** One part of the ad as a short list; long ones fold, the company blurb starts folded. */
+function AdSection({ section }: { section: ReadableSection }) {
+  const fold = section.kind === 'about';
+  const [open, setOpen] = useState(!fold);
+  const [all, setAll] = useState(false);
+  const shown = all ? section.items : section.items.slice(0, 5);
+  return (
+    <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+      <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 text-left" aria-expanded={open}>
+        <span className="text-[14px] font-medium">{section.title}</span>
+        <ChevronDown className={cn('size-4 text-subtle transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <>
+          <ul className="mt-2.5 max-w-[68ch] space-y-1.5">
+            {shown.map((it) => (
+              <li key={it} className="flex gap-2.5 text-[14px] leading-relaxed text-fg/80">
+                <span className="mt-[9px] size-1 shrink-0 rounded-full bg-subtle" />
+                <span>{it}</span>
+              </li>
+            ))}
+          </ul>
+          {section.items.length > shown.length && (
+            <button type="button" onClick={() => setAll(true)} className="mt-2 text-[13px] font-medium text-accent">Show {section.items.length - shown.length} more</button>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 

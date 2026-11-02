@@ -100,7 +100,7 @@ ${jobs
   .map(({ key, job }) => `<${key}> ${job.title} — ${job.company || job.source.company} (${job.location || (job.remote ? 'Remote' : 'n/a')})\n${jobDigest(job.description, 1600)}`)
   .join('\n\n')}
 
-Return {"results":[{"id":"<job id>","roleFit":0-100,"skills":0-100,"cv":"letter of best CV","reasons":["2 short concrete reasons"],"redFlags":["0-2 concrete concerns, e.g. missing must-have"],"requirements":[{"text":"short requirement","must":true,"skill":"exact name from Skills or null"}]}]} with one entry per job.`;
+Return {"results":[{"id":"<job id>","roleFit":0-100,"skills":0-100,"cv":"letter of best CV","reasons":["2 short concrete reasons"],"redFlags":["0-2 concrete concerns, e.g. missing must-have"],"requirements":[{"text":"short requirement","must":true,"skill":"exact name from Skills or null"}],"gist":["2-3 lines of max 12 words: what the person would actually do day to day; the pay, equity or work format only if the ad states them"]}]} with one entry per job.`;
 }
 
 export interface ScoreBatchResult {
@@ -136,7 +136,7 @@ export async function scoreJobs(
     system: RUBRIC_SYSTEM,
     json: true,
     temperature: 0.1,
-    maxTokens: 400 + 380 * items.length,
+    maxTokens: 400 + 440 * items.length,
     maxWaitMs: 8_000,
   });
   let parsed: unknown = null;
@@ -180,6 +180,10 @@ export async function scoreJobs(
       create: { userId, jobId: job.id, ...data },
       update: data,
     });
+    // The card's short "what is this job": merged into aiMeta so letters, agent notes and checks stay.
+    if (ai.gist.length) {
+      await prisma.$executeRaw`update "JobMatch" set "aiMeta" = coalesce("aiMeta", '{}'::jsonb) || jsonb_build_object('gist', ${JSON.stringify(ai.gist)}::jsonb) where "userId" = ${userId} and "jobId" = ${job.id}`;
+    }
     stored++;
   }
   return stored;
