@@ -1,69 +1,113 @@
 # Jobber
 
-Jobber is a Telegram Mini App for job search. The same Next.js app on Vercel holds the UI, the bot webhook, and the cron routes. It fetches vacancies from public ATS APIs, scores them on the owner's shared Gemini key (`GEMINI_API_KEY`, free tier), drafts cover letters and per-job CV advice, and reminds you to follow up in the chat.
+Jobber is a job-search assistant that lives in a Telegram Mini App (and a normal browser). One Next.js app on Vercel holds the UI, the Telegram bot webhook, the cron jobs and a private API for agents. Data lives in Supabase Postgres.
 
-The owner tests it first. Friends get in with an invite code. Nobody pastes keys: AI runs server-side on one shared Gemini key with per-user daily quotas.
+It collects vacancies from public job APIs, company ATS boards and an outside agent (Grok Bot), filters and scores them against your profile, shows the best ones in **Matches**, and keeps everything you act on in the **Tracker** — with cover letters, form answers, follow-up reminders and employer replies handled for you.
 
-## What works in this version
+The owner tests it first. Friends get in with an invite code. Nobody has to paste keys: AI runs server-side on one shared Gemini key with per-user daily quotas (an own free Gemini key lifts them).
 
-- Sign-in from Telegram WebApp `initData`, checked with HMAC-SHA256 and the bot token. `auth_date` older than 24 hours is rejected. A signed cookie is the session. The owner is the Telegram account in `OWNER_TELEGRAM_ID`, or the first account that opens the app with the seed invite. Email magic link still works in a normal browser.
-- Profile: PDF text extraction, skills, location and salary filters, skill gaps, writing rules, company watchlist.
-- Pluggable sources with real parsers: Greenhouse, Ashby, Lever, Workable, Personio, Recruitee, SmartRecruiters, RSS/Teamtailor, and the public Remotive API. HTML-only and Join.com pages are stored but not fetched.
-- Deduping the same company + title + location across sources.
-- Daily Vercel cron: fetch a few sources per run, then score a few new vacancies per user, then send Telegram follow-ups. Progress for the fetch loop is stored in `CronJob`.
-- Match scores (0–100), reasons, and red flags. Daily digest to Telegram for scores of 70+.
-- CV-first onboarding (`/dashboard/onboarding`): upload a PDF or paste text → Gemini extracts a structured profile (validated with zod) → the user edits a "Here's what I understood" card → Jobber builds a search plan (titles, keywords, and companies picked **only** from `lib/companies/seed.json`, a curated list of boards verified to return jobs by `scripts/verify-seed.mjs`) → the first fetch + score runs immediately in small steps (`/api/search/step`), with a progress card. A Telegram message with the top matches goes out when the first run finishes.
-- Keyword boards without a watchlist: Remotive, Jobicy, Himalayas (search API) and Arbeitnow (keyword-filtered).
-- Rule pre-filter before any AI call (`lib/jobs/prefilter.ts`): title/role family, seniority, German-language requirements, on-site city, region-locked remote.
-- AI (`lib/ai/run.ts` → `gemini.ts`): **flash-lite does everything** (`GEMINI_MODEL_LITE`, default `gemini-3.5-flash-lite`: CV reading, search plan, scoring, advice, letters). Flash (`GEMINI_MODEL`) is only a fallback for “smart” work when `GEMINI_FLASH_FALLBACK=true`. Sliding-window limiter per key+model (`GEMINI_RPM_LITE`=15), RetryInfo backoff on 429, cross-instance backoff row.
-- Shared daily budget (`lib/ai/budget.ts`, table `GlobalAiUsage`, Pacific-time day like Google): `GEMINI_RPD_LITE`=500, `GEMINI_RPD_FLASH`=20, safety margin `GEMINI_RPD_MARGIN`=20, `GEMINI_ONBOARDING_RESERVE`=80 kept for CV reading + plans of new users. Atomic `insert … on conflict … where count < cap`.
-- Optional own Gemini key per user (Settings → illustrated “How to get a free Gemini key” guide). Checked with the free `models.list` call, stored AES-256-GCM encrypted in `ApiKey` (provider `gemini`). When present: user's own quota, no shared budget, bigger limits.
-- Per-user daily limits in AI *requests* (`AiUsage`): shared key `AI_DAILY_SCORE_CALLS`=6 (one request scores up to 5 jobs → 30 jobs/day), `AI_DAILY_WRITES`=4, `AI_DAILY_CV_PARSES`=5; own key `AI_BYO_DAILY_SCORE_CALLS`=80, `AI_BYO_DAILY_WRITES`=60, `AI_BYO_DAILY_CV_PARSES`=20. ~10 requests per active user/day → ~40 active users on the free 500 RPD.
-- Guided profile form (`lib/profile/draft.ts`, `components/profile-form.tsx`): field, job titles, city/country + open to (city / country / remote / relocation), languages with plain levels, level + “stretch roles”, contract type, salary, things/companies to avoid. CVs prefill it; the form is the source of truth and everything stays editable in Profile (plus keywords, skills, scoring rules, min score, max job age, Telegram alert frequency/threshold).
-- Multiple labelled CVs (`Cv` table, `/api/cvs`). Scoring sends all CVs and the AI picks the best one per job (shown as “CV: …” on matches); advice / tailored CV / letter use the chosen CV, switchable on the match page.
-- Location tiers (`lib/jobs/prefilter.ts#locationTier`): city → country → remote → relocation. Sources are fetched in that order, local jobs are scored first, and matches are sorted by tier inside each fit band.
-- Scoring rubric (`lib/search/rubric.ts`): AI gives role fit + skills (calibrated anchors, few-shot), code gives seniority (incl. stretch + “N+ years”), location tier, language, salary → weighted 30/30/15/10/7/8, low role fit caps the total. Breakdown is shown on each match.
-- Filters you can see: “Skipped by filters” lists every job the rules dropped (with reasons) and a “Score anyway” button.
-- Companies to watch: AI-picked from the verified dataset (`lib/companies/seed.json`, 128 companies, tagged with real cities/countries from their open jobs) plus any company by name or careers URL — ATS auto-detected (`lib/companies/detect.ts`).
-- "Tailor CV" on each match: concrete emphasise/add/reword suggestions, missing keywords, and a "don't claim" list; optional tailored CV text. Cached per user+job on `JobMatch`.
-- Database changes: run `supabase/migrations/002_shared_ai_onboarding.sql`, then `supabase/migrations/003_guided_form_multi_cv.sql` in the Supabase SQL editor (both idempotent).
-- Application tracker with statuses and a 7-day follow-up date.
-- Ideas from [AienTech/dossier](https://github.com/AienTech/dossier), rewritten for Jobber (database: run `supabase/migrations/006_profile_facts.sql` once):
-  - "Facts about me" in Profile: true things that aren't in the CV (start date, work permit, salary, links), one per line. Letters, form drafts, follow-ups and reply drafts use them; nothing about the owner is hard-coded.
-  - Fact guard (`lib/ai/fact-guard.ts`, no AI call): names, numbers, links and credentials in a letter, draft, tailored CV or follow-up that the CV, facts and job post don't back are shown as "Check before sending".
-  - Requirement matching (`lib/search/requirements.ts`): the scoring call also lists each job's key requirements and which of your skills each is about; code decides covered / partial / gap from your skills and CVs, blends that into the Skills sub-score and shows it on the match. The model can't add a skill by naming it.
-  - Trust nothing from the model: CV advice keeps only rewordings that quote the real CV, drops "missing" keywords the CV has, and always lists the code-found gaps under "Don't claim". Job and email texts are marked as material, not instructions.
-  - Prompt versions (`lib/ai/meta.ts`): each letter, CV advice, tailored CV and draft remembers which prompt wrote it; older ones say so and can be rewritten.
-  - Cover letter versions: every rewrite keeps the previous letter (last 12), with Restore. Tap a paragraph to rewrite only that one; refine by a note or by chips built from the match ("Lead with React", "Address “German C1” honestly"). Hand edits are saved too.
-  - Employer replies: forward an email to the bot (or paste it on an application): one AI call reads what it is (rejection / interview / question / offer / confirmation), which application, what they ask and a confirmed interview time, then the tracker is updated (status, dated note, next action) with an Undo button, and a draft answer comes back.
-  - Hacker News "Who is hiring?" as a keyword board (`lib/sources/hackernews.ts`, public Algolia API, `HN_SOURCE=off` to disable). Existing users get it the next time they save their profile.
-  - "Write it with Claude" (owner, with the MCP connector): opens a claude.ai chat that reads the match with `get_match` / `get_profile` and saves the letter with `save_cover_letter` (fact-checked, kept in versions). New MCP tools: `get_profile`, `list_matches`, `get_match`, `save_cover_letter`.
-  - Dedupe by link too: the same posting found through two boards (or with tracking parameters) is stored once (`Job.urlKey`).
-  - Sharper scoring: the scorer reads each ad's requirements and tasks sections (`lib/search/digest.ts`) instead of the first 1200 characters (usually the company blurb); German/English levels are compared as CEFR (A1–C2) against what the ad asks and whether it's optional; and your own recent tracker decisions (applied, interview, skipped) calibrate role fit (`lib/search/calibration.ts`).
-  - Agent drafts (`lib/agent/drafts.ts`, cron `/api/cron/agent-drafts` at 09:40 UTC): cover letters for the best new matches (score ≥ 75, at most `AGENT_DRAFTS_PER_DAY`=3), fact-checked and marked "Letter ready", with a Telegram note. Never sent. Owner by default (`AGENT_DRAFTS=off` to stop); users with their own Gemini key when `AGENT_DRAFTS_ALL=true`.
-  - Vacancies from an agent (`POST /api/agent/jobs`, `lib/agent/jobs.ts`): the Grok bot (or Claude) sends what it found; Jobber stores it once in the job pool (deduped by link, then company + title + place), queues it for scoring ahead of the pre-score cut, and shows it in Matches with the agent's note. The tracker only gets what the owner decides. See `mcp/README.md`.
-  - Funnel on the tracker: applied → reply → interview → offer with rates, 30/90 days/all, and applications per week.
-  - SSRF-safe fetching of user links (`lib/net/safe-fetch.ts`): public addresses only (checked after DNS), every redirect re-checked, standard ports, size and time limits.
-  - Interviews to the calendar: when a reply settles a time, the bot and the tracker offer "Add to Google Calendar" and an `.ics` file (`/api/applications/[id]/interview.ics`).
-  - LinkedIn, Indeed & more through JSearch (Google for Jobs, `lib/sources/jsearch.ts`): each user adds their own free OpenWeb Ninja or RapidAPI key in Settings (encrypted in `ApiKey`, provider `jsearch`), or the owner uses `JSEARCH_API_KEY`. Two keywords per user, fetched at most once a day, capped at `JSEARCH_MONTHLY_LIMIT` (180) requests a month; the employer's own apply link is preferred, and the match shows "via LinkedIn".
-- `/start` sends an Open Jobber button and sets the chat menu button to the Mini App. An invite can arrive as `/start CODE` or as `startapp` on the t.me link.
-- Local demo mode when Supabase is not configured, so the screens can be clicked through with sample matches.
+## How it works
 
-## Job sources
+```
+ Sources ─┐
+ (ATS boards, keyword boards,   ┌───────────┐   rules    ┌──────────┐  AI score   ┌─────────┐   you decide   ┌─────────┐
+  JSearch, scrapers, HN)        │ Job pool  │──────────▶│ pre-score │───────────▶│ Matches │──────────────▶│ Tracker │
+ Grok Bot ─ /api/agent/jobs ───▶│ (deduped) │  (free)    └──────────┘  (Gemini)   └─────────┘                └─────────┘
+ "Add job by link" ────────────▶└───────────┘                                         │                         │
+                                                                     Telegram digest ◀┘     follow-ups, replies,┘
+                                                                                             interviews, drafts
+```
 
-All public and used per their terms; no LinkedIn or logged-in scraping. Re-check live with `npx tsx scripts/verify-sources.mts`; rebuild the company list with `node scripts/verify-seed.mjs`.
+1. **Fetch.** `cron/fetch-jobs` (08:00 and 14:00 UTC) pulls every due source in parallel within a time budget. Jobs are stored once in `Job`, deduped by posting link and by company + title + place. On company ATS boards (Greenhouse, Lever, Ashby, Workable, Personio, Recruitee, Teamtailor, BambooHR) a job that disappears from the board is marked inactive: it leaves Matches, digests and drafts, and the tracker says "Listing taken down".
+2. **Filter (free).** `lib/jobs/prefilter.ts` drops clear mismatches before any AI call: role family, seniority, required German level, on-site city, region-locked remote, excluded companies and keywords, job age. A deterministic pre-score ranks the rest; skipped jobs are listed with the reason and a "Score anyway" button.
+3. **Score (AI).** `cron/match-jobs` (09:00 and 15:00 UTC) sends the best candidates to Gemini flash-lite, 12 jobs per request (`lib/search/score.ts`, `rubric.ts`). The model rates role fit and skills and lists the job's key requirements; code rates seniority, location tier, language (CEFR) and salary; weights 30/30/15/10/7/8, and a low role fit caps the total. Your recent tracker decisions — including *why* you skipped something — calibrate the model (`calibration.ts`). Then the newest strong matches (≥ 70) get a second look with Flash (`rescore.ts`, shared Flash budget ≈ 18/day).
+4. **Re-score.** Changing the profile fields the rules or scorer read (roles, level, skills, languages, place, exclusions, scoring rules) or adding/removing a CV re-checks skipped jobs and re-scores the 24 best shown matches. They stay visible, marked "re-scoring soon", until then.
+5. **Alert.** A daily Telegram digest for scores above your threshold; instant alerts if you chose them.
+6. **Act.** In the Tracker: cover letter and application-form drafts, follow-up reminders, forwarded employer replies, interviews to the calendar.
 
-- Keyword boards: JSearch (Google for Jobs: LinkedIn, Indeed…, own key), Remotive, Jobicy, Himalayas, Arbeitnow, RemoteOK (link back required), We Work Remotely (RSS), Working Nomads, The Muse, Bundesagentur für Arbeit Jobsuche API (Germany, local search), Adzuna (`ADZUNA_APP_ID`/`ADZUNA_APP_KEY`, free key, optional), Jooble (`JOOBLE_API_KEY`, free key, optional).
-- Company ATS boards: Greenhouse, Lever, Ashby, Workable, Personio, Recruitee, SmartRecruiters, Teamtailor, BambooHR, Workday (public CXS endpoint).
-- Not included: AMS eJob-Room / karriere.at (no public API or feed; AMS search API needs login), EURES (no public API), LinkedIn, Join.com (public API needs a numeric company id).
+## The Tracker (your main board)
 
-## What is stubbed
+`/dashboard/tracker` is the board where applications live. Each row is one `Application` in Supabase.
 
-- Sources marked `html` or `join` in the watchlist have no adapter. The cron records that on the source row instead of scraping the page.
-- SmartRecruiters stores the list payload (title, location, url). The long description needs a second request and is not fetched yet.
-- There is no separate `/link` step. Opening the Mini App is the account.
-- Profile editing of an uploaded CV is replace-only. There is no rich CV editor.
-- Demo mode keeps data in the server process. It is for clicking through the UI, not a second database.
+**Statuses:** To apply → Check listing → Applied → Interview → On hold → Offer, plus Rejected and Skip. Tabs group them (active / closed); a funnel card shows applied → reply → interview → offer rates and applications per week.
+
+**Who writes to it** (all through the server; the browser never talks to Supabase directly):
+
+| Writer | How |
+| --- | --- |
+| You, in the app | "Add" form, status pill, dates, priority, notes, skip reason (`/api/applications`) |
+| Telegram bot | Status buttons and Undo, forwarded employer replies (`lib/replies`) |
+| Cron | Follow-up reminders (`cron/follow-ups`), agent drafts (`cron/agent-drafts`) |
+| Grok Bot | Status changes on real events via `PATCH /api/agent/applications/<id>` (new vacancies go to `/api/agent/jobs`, not here) |
+| Claude (MCP) | `list_applications`, `get_application`, `upsert_application`, `update_status` (writes only with `AGENT_API_KEY_CLAUDE_WRITE=true`) |
+
+**Linking.** An application is linked to the matching `Job` (same normalized URL, or same company + role; `lib/tracker/link.ts`). The link hides that job from Matches once you applied, shows its fit score and requirement coverage on the tracker card, and tells you when the company takes the listing down.
+
+**Skip reasons.** When a row is Skip, the card offers Level / Stack / Language / Location / Salary / Company / Role type / Contract. The reason is kept as a `Skipped: …` line in the notes and teaches the scoring what to avoid.
+
+**Known gap:** there is no "move to tracker" button on a match yet — matches enter the tracker by hand or through the agent. A swipe deck (right = apply, left = not for me) is planned to close this.
+
+## Data (Supabase)
+
+The app talks to Postgres through Prisma over the Supabase transaction pooler (`DATABASE_URL`) and bypasses RLS; RLS is on so the public Supabase API can't read anyone's rows. `ApiKey`, invite codes and cron rows have no client policy at all.
+
+| Table | What it holds |
+| --- | --- |
+| `User` | Telegram id / email, invites |
+| `Profile` | The guided profile: roles, level, skills, languages, place, salary, exclusions, scoring rules, facts, alert settings, which sources to search |
+| `Cv` | Several labelled CVs; scoring picks the best one per job |
+| `JobSource` | One row per ATS board, keyword search, scraper query or agent ("Found by Grok") |
+| `Job` | The shared, deduped job pool (`isActive` = still listed) |
+| `JobMatch` | One job scored for one user: score, sub-scores, reasons, red flags, requirements, letter + versions (`aiMeta`), CV advice. `filtered` = skipped by rules or queued for AI |
+| `Application` | The tracker |
+| `AiUsage`, `GlobalAiUsage` | Per-user and shared daily AI counters |
+| `SearchRun`, `CronJob` | Onboarding search progress, cron state and backoff |
+
+## Getting vacancies from Grok Bot (agent API)
+
+The owner's agent sends what it finds to the **job pool**, not the tracker; Jobber dedupes, filters and scores it like any other source and shows it in Matches as "found by Grok" with the agent's note. Agent picks skip the pre-score cut and go first in the scoring queue (the hard rules still apply).
+
+- `POST /api/agent/jobs` — one vacancy or `{items:[…]}` (≤ 25). Best with `title + company + description` (no page fetch, no AI extraction); a bare `url` works too.
+- `GET /api/agent/jobs?jobIds=…` — queued / skipped (+ reason) / scored (+ score) for jobs sent earlier.
+- `GET|POST /api/agent/applications`, `GET|PATCH /api/agent/applications/<id>` — read the tracker, change status on real events (`skipReason` supported).
+
+Auth: `Authorization: Bearer $AGENT_API_KEY`. Full request examples: [`mcp/README.md`](mcp/README.md). The same file sets up the Claude MCP connector (stdio server in `mcp/`, or the remote endpoint `/api/mcp`).
+
+## Features at a glance
+
+- Telegram sign-in from Mini App `initData` (HMAC with the bot token, 24 h max age), signed-cookie session; web sign-in through the bot; email magic link still works.
+- CV-first onboarding: PDF or text → structured profile (zod-validated) → editable "Here's what I understood" card → search plan built only from verified boards (`lib/companies/seed.json`) → first fetch + score in small serverless-safe steps with a progress card.
+- Guided profile form (source of truth), several CVs, "Facts about me", writing rules, company watch list with ATS auto-detection.
+- Sources: Greenhouse, Lever, Ashby, Workable, Personio, Recruitee, SmartRecruiters, Teamtailor/RSS, BambooHR, Workday; keyword boards Remotive, Jobicy, Himalayas, Arbeitnow, RemoteOK, We Work Remotely, Working Nomads, The Muse, Bundesagentur, Adzuna, Jooble, HN "Who is hiring?"; JSearch (Google for Jobs: LinkedIn, Indeed…) with each user's own key; owner-only Austrian scrapers (karriere.at, StepStone, derStandard); Grok Bot.
+- Matches: score with breakdown, requirement coverage, red flags, best CV, "via LinkedIn" / "found by Grok", Flash double-check note.
+- Writing: cover letters with versions, paragraph rewrites and refine chips; tailored-CV advice that only quotes the real CV; application-form drafts from real ATS questions; a fact guard flags names, numbers and links nothing backs up. Agent drafts write letters for the best new matches each morning (never sent).
+- Replies: forward an employer email to the bot → status, note, next step and interview time are updated (with Undo) and a draft answer comes back; interviews to Google Calendar / `.ics`.
+- Weekly source-health report to the owner (Mondays): sources that fail, went stale or have no open jobs.
+- SSRF-safe fetching of user links; AES-256-GCM for stored keys; demo mode without Supabase.
+
+## AI budget
+
+Flash-lite does everything by default; Flash is used only for the daily double-check of top matches (and as an optional fallback with `GEMINI_FLASH_FALLBACK=true`).
+
+| | Default |
+| --- | --- |
+| Shared daily budget | `GEMINI_RPD_LITE`=500, `GEMINI_RPD_FLASH`=20, margin `GEMINI_RPD_MARGIN`=20, `GEMINI_ONBOARDING_RESERVE`=80 |
+| Per user, shared key | `AI_DAILY_SCORE_CALLS`=6 (×12 jobs), `AI_DAILY_WRITES`=4, `AI_DAILY_CV_PARSES`=5 |
+| Per user, own key | `AI_BYO_DAILY_SCORE_CALLS`=80, `AI_BYO_DAILY_WRITES`=60, `AI_BYO_DAILY_CV_PARSES`=20 |
+| Scoring | `AI_PRESCORE_MIN`=40, `AI_TOP_CANDIDATES`=24 per run, `AI_RESCORE_TOP`=24, `AI_VERIFY_MIN`=70, `AI_VERIFY_TOP`=5 (0 = off) |
+
+## Cron (vercel.json, UTC)
+
+| Time | Route | What |
+| --- | --- | --- |
+| 08:00 | `/api/cron/fetch-jobs` | Fetch due sources, close taken-down jobs, daily digest, Monday source report |
+| 09:00 | `/api/cron/match-jobs` | Filter + score, Flash double-check |
+| 09:40 | `/api/cron/agent-drafts` | Letters for the best new matches (owner) |
+| 10:00 | `/api/cron/follow-ups` | Telegram follow-up reminders |
+| 14:00 | `/api/cron/fetch-jobs?slot=2` | Second fetch |
+| 15:00 | `/api/cron/match-jobs?slot=2` | Score the second fetch |
+
+Every cron route requires `Authorization: Bearer $CRON_SECRET` (Vercel Cron sends it).
 
 ## Setup
 
@@ -76,12 +120,19 @@ npm install
 ### 2. Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **Authentication → Providers → Email**, keep email enabled. Magic links are the login method.
-3. In **Authentication → URL configuration**, add `https://<your-domain>/auth/callback` and `http://127.0.0.1:43123/auth/callback`.
-4. Copy the project URL, anon key, and service role key.
-5. In **Project Settings → Database**, copy both pooler strings (see the next section). Prisma Client talks to the transaction pooler. The session pooler string still belongs in `DIRECT_URL` because `prisma generate` reads it. The tables themselves are created by pasting `supabase/setup.sql` in the SQL Editor, not by `prisma db push`.
+2. **Authentication → Providers → Email**: keep email enabled (magic links).
+3. **Authentication → URL configuration**: add `https://<your-domain>/auth/callback` and `http://127.0.0.1:43123/auth/callback`.
+4. Copy the project URL, anon key and service role key, and both pooler strings from **Project Settings → Database**.
 
-### 3. Environment
+### 3. Database
+
+In the Supabase **SQL Editor**, paste `supabase/setup.sql` once (full schema + RLS; safe to run again). On an existing database, run the migrations you don't have yet, in order — each is idempotent:
+
+`002_shared_ai_onboarding` → `003_guided_form_multi_cv` → `004_speedup_prescore` → `005_agent_api` → `006_profile_facts` → `007_interview_quiet`
+
+The app never pushes the schema itself. **Run new migrations before deploying code that needs them** — Prisma selects every column, so a missing one breaks pages.
+
+### 4. Environment
 
 ```bash
 cp .env.example .env.local
@@ -89,115 +140,73 @@ cp .env.example .env.local
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Supabase transaction pooler, port 6543, with `?pgbouncer=true`. Prisma Client uses this for every query |
-| `DIRECT_URL` | Supabase session pooler, port 5432. Prisma reads this at `prisma generate`. The schema is applied from `supabase/setup.sql`, not from a database connection |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser auth key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Reserved for server tasks. Not used by the browser |
-| `ENCRYPTION_KEY` | 64 hex chars. `openssl rand -hex 32` |
-| `TELEGRAM_BOT_TOKEN` | From BotFather |
-| `CRON_SECRET` | Random string. Vercel sends it as `Authorization: Bearer …` |
-| `NEXT_PUBLIC_APP_URL` | Public origin, no trailing slash. Locally `http://127.0.0.1:43123` |
-| `DEMO_MODE` | `false` once Supabase is set. `true` forces sample data |
-| `OWNER_TELEGRAM_ID` | Numeric Telegram id of the owner. That account opens the app without an invite and is the only one who can mint invites. Leave empty to use the seed invite instead |
-| `SEED_INVITE_CODE` | Optional. Otherwise the seed script prints a random code. The first Telegram user who opens the app with this code is the owner when `OWNER_TELEGRAM_ID` is empty |
-
-Generate the two secrets:
-
-```bash
-openssl rand -hex 32   # ENCRYPTION_KEY
-openssl rand -hex 32   # CRON_SECRET
-```
-
-### 4. Database
-
-The Supabase database starts empty, and this project does not open a Postgres connection to push the schema. In the Supabase **SQL Editor**, paste `supabase/setup.sql` and run it once.
-
-That file is the full schema from:
-
-```bash
-npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
-```
-
-followed by the row level security statements in `supabase/migrations/001_initial_schema.sql`. Tables and indexes are created only when they are missing, existing foreign keys are left in place, and each policy is dropped and recreated, so pasting it again does not duplicate them. Do not run `001_initial_schema.sql` on its own afterward. It is already included, and by itself it expects the tables to exist.
-
-The script does not insert an invite code. Set `OWNER_TELEGRAM_ID` to your numeric Telegram id. That account is the owner and can open the Mini App without an invite.
-
-`DATABASE_URL` is the transaction pooler (`:6543/postgres?pgbouncer=true`). The Next.js server uses it and bypasses RLS. The policies stop the public Supabase API from reading another user's rows. `ApiKey`, invite codes, and cron rows have RLS on and no client policy, so the browser cannot select them. `DIRECT_URL` stays set because `prisma generate` reads it. Queries do not use it.
+| `DATABASE_URL` | Supabase transaction pooler, port 6543, `?pgbouncer=true` (all queries) |
+| `DIRECT_URL` | Supabase session pooler, port 5432 (read by `prisma generate`) |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser auth (email sign-in) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Reserved for server tasks |
+| `ENCRYPTION_KEY` | 64 hex chars (`openssl rand -hex 32`), encrypts stored keys |
+| `TELEGRAM_BOT_TOKEN` | From BotFather; also the HMAC key for `initData` |
+| `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`, `TELEGRAM_MINI_APP_SHORT_NAME` | Bot username (no @) and Mini App short name |
+| `CRON_SECRET` | Random string; Vercel Cron sends it as a Bearer token |
+| `NEXT_PUBLIC_APP_URL` | Public origin, no trailing slash |
+| `OWNER_TELEGRAM_ID` | Owner's numeric Telegram id: opens without invite, mints invites, owns the agent API. **Required for the agent API.** |
+| `SEED_INVITE_CODE` | Optional; first user with it becomes owner when `OWNER_TELEGRAM_ID` is empty |
+| `DEMO_MODE` | `false` once Supabase is set |
+| `GEMINI_API_KEY` (or `GEMINI_API_KEYS`) | Shared AI key(s), server-side only. `GEMINI_MODEL_LITE`, `GEMINI_MODEL` pick models |
+| `AGENT_API_KEY` | Grok Bot's key for `/api/agent/*` (full access) |
+| `AGENT_API_KEY_CLAUDE`, `AGENT_API_KEY_CLAUDE_WRITE`, `MCP_URL_TOKEN` | Claude connector: read-only key, opt-in writes, secret MCP URL |
+| `AGENT_DRAFTS`, `AGENT_DRAFTS_ALL`, `AGENT_DRAFTS_PER_DAY`, `AGENT_DRAFTS_MIN_SCORE` | Morning letter drafts |
+| `JSEARCH_API_KEY`, `JSEARCH_HOST`, `JSEARCH_MONTHLY_LIMIT`, `JSEARCH_KEYWORDS`, `JSEARCH_SOURCE` | JSearch (owner key; users add their own in Settings) |
+| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `JOOBLE_API_KEY`, `HN_SOURCE` | Optional boards |
+| `OWNER_SCRAPERS`, `SCRAPER_*` | Owner-only Austrian scrapers and their limits |
 
 ### 5. Your profile (kept out of git)
 
-`seed-data/` is gitignored.
-
-```bash
-mkdir -p seed-data
-# copy your profile markdown, writing rules, and optional watchlist:
-# seed-data/alexander_profile.md
-# seed-data/job_search_rules.md
-# seed-data/company_watchlist.json
-```
-
-If the watchlist file is missing, the script uses `examples/company_watchlist.json` (public career URLs only).
+`seed-data/` is gitignored. Put your profile markdown, writing rules and optional watch list there, then:
 
 ```bash
 npm run seed
 ```
 
-The script prints an invite code and seeds job sources. It does not create an email account. Set `OWNER_TELEGRAM_ID` to your numeric Telegram id and the script writes the local profile onto that Telegram user. If the id is empty, open the Mini App with the printed invite first, then run the seed again so the profile lands on that account.
+The script seeds job sources and writes the profile onto the `OWNER_TELEGRAM_ID` user (open the Mini App once first if that user doesn't exist yet). Without a watch list it uses `examples/company_watchlist.json`.
 
-### 6. Telegram Mini App
+### 6. Telegram
 
-`NEXT_PUBLIC_APP_URL` must be HTTPS before Telegram will open it. `http://127.0.0.1` is only for the browser demo.
+`NEXT_PUBLIC_APP_URL` must be HTTPS for Telegram.
 
-1. Talk to [@BotFather](https://t.me/botfather) and send `/newbot`. Put the token in `TELEGRAM_BOT_TOKEN`. The same token validates Mini App `initData`.
-2. Send `/newapp`, pick the bot, and set the Web App URL to `https://YOUR_DOMAIN/dashboard/matches`. Note the short name. Put the bot username in `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` and the short name in `TELEGRAM_MINI_APP_SHORT_NAME`.
-3. Web sign-in uses the bot too (no Login Widget, no `/setdomain`): “Sign in with Telegram” opens `t.me/<bot>?start=login_<token>`, the user taps “Yes, sign me in”, and the web tab signs in by itself (the bot also sends a one-time link for other browsers).
-4. Optional: `/setmenubutton` with the same URL and the text `Open`. `/start` also sets that menu button for the chat.
-4. `/setcommands`:
+1. [@BotFather](https://t.me/botfather) → `/newbot` → token into `TELEGRAM_BOT_TOKEN`.
+2. `/newapp` → Web App URL `https://YOUR_DOMAIN/dashboard/matches`; the short name into `TELEGRAM_MINI_APP_SHORT_NAME`.
+3. `/setcommands`:
+   ```
+   start - Open Jobber
+   help - Show commands
+   matches - Recent scores
+   profile - Profile summary
+   reminders - Follow-ups that are due
+   ```
+4. After deploy, point the webhook at the app:
+   ```bash
+   curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+     -H "Content-Type: application/json" -d '{"url":"https://YOUR_DOMAIN/api/telegram"}'
+   ```
 
-```
-start - Open Jobber
-help - Show commands
-matches - Recent scores
-profile - Profile summary
-reminders - Follow-ups that are due
-```
+Web sign-in uses the bot too: "Sign in with Telegram" opens `t.me/<bot>?start=login_<token>`. Invite links look like `https://t.me/<bot>/<shortname>?startapp=CODE`.
 
-5. After deploy, set the webhook:
+### 7. AI keys
 
-```bash
-curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://YOUR_DOMAIN/api/telegram"}'
-```
-
-Invite links look like `https://t.me/<bot>/<shortname>?startapp=CODE`. `/start CODE` also passes the code into the button URL. The owner is `OWNER_TELEGRAM_ID`, or, when that is empty, the first Telegram user who opens the app with the seed invite. Only the owner can mint further invites. Everyone else needs a code.
-
-### 7. Your model key
-
-Settings → paste a key for OpenAI, Anthropic, Gemini, or xAI.
-
-Pasting a key does not leave the Mini App.
+Nothing to paste for users: the shared `GEMINI_API_KEY` runs everything within the quotas above. In **Settings**, a user can add their own free Gemini key (checked with `models.list`, stored AES-256-GCM encrypted) for bigger limits, and a JSearch key for LinkedIn/Indeed results.
 
 ### 8. Vercel
 
-`vercel.json` schedules:
-
-- `08:00 UTC` `/api/cron/fetch-jobs` — 5 companies per invocation, then continues next run
-- `09:00 UTC` `/api/cron/match-jobs` — up to 5 users, 10 unscored jobs each
-- `10:00 UTC` `/api/cron/follow-ups` — Telegram reminders
-
-Set every variable from `.env.local` in the Vercel project, including `DATABASE_URL`, `DIRECT_URL`, and `CRON_SECRET`. `prisma generate` reads both database URLs from the schema even though queries only use `DATABASE_URL`. Vercel Cron must send `Authorization: Bearer $CRON_SECRET`. If your project does not inject that header, add a rewrite or a cron proxy that does. The routes reject anything else.
+Set every variable in the Vercel project (Production; Preview if you use it). Region `dub1`, next to Supabase eu-west-1. Pushing to `main` deploys production.
 
 ### 9. Run locally
 
 ```bash
-npm run dev
+npm run dev     # http://127.0.0.1:43123
 ```
 
-The dev server listens on [http://127.0.0.1:43123](http://127.0.0.1:43123).
-
-Without Supabase variables the app stays in demo mode: sample matches, a sample letter, and forms that write to memory for this process.
+Without Supabase variables the app runs in demo mode with sample data kept in memory.
 
 ## Tests
 
@@ -207,16 +216,17 @@ npm run typecheck
 npm run build
 ```
 
-Tests cover AES-GCM roundtrip, salary and ATS parsers (Greenhouse, Ashby, Lever, Workable, Personio, Recruitee, Remotive, RSS, SmartRecruiters), dedupe keys, and the match/cover-letter prompt plus JSON parsing. They do not call live job boards or model APIs.
+Unit tests cover the parsers for every source, dedupe, the pre-filter, the rubric and requirement matching, AI-reply salvage, calibration and skip reasons, closing taken-down jobs, re-score triggers, source health, the agent API input, encryption, Telegram auth and the tracker helpers. They don't call live boards or model APIs; `scripts/verify-sources.mts` and `scripts/verify-seed.mjs` check sources live.
 
 ## Project map
 
-- `app/(dashboard)` — Matches, Tracker, Profile, Settings
-- `app/api/telegram` — grammY webhook
-- `app/api/cron` — fetch, match, follow-up
-- `lib/sources` — one parser per ATS
-- `lib/llm` — provider client, scoring, letters
-- `lib/crypto` — AES-256-GCM
-- `prisma/schema.prisma` — tables
-- `scripts/seed-profile.ts` — local profile + watchlist
-- `examples/company_watchlist.json` — public example watchlist
+- `app/(dashboard)/dashboard` — Matches, Tracker, Profile, Settings, Onboarding
+- `app/api/cron` — fetch, match, agent drafts, follow-ups
+- `app/api/agent`, `app/api/mcp` — agent API and remote MCP endpoint; `mcp/` — stdio MCP server
+- `app/api/telegram` — grammY webhook; `lib/telegram` — bot, Mini App auth
+- `lib/sources`, `lib/scrapers` — one adapter per source; `lib/jobs` — ingest, dedupe, pre-filter, add-by-link, source health
+- `lib/search` — scoring pipeline, rubric, requirements, calibration, re-score
+- `lib/ai` — Gemini client, limiter, budgets, quotas, prompt metadata, fact guard
+- `lib/apply` — letters, form drafts; `lib/replies` — employer replies; `lib/tracker` — linking, funnel, follow-ups, skip reasons
+- `lib/agent` — agent API, agent jobs, MCP tools, drafts
+- `prisma/schema.prisma` — tables; `supabase/` — SQL schema and migrations
