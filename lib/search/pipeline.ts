@@ -1,4 +1,4 @@
-import { linkApplications, notTracked } from '@/lib/tracker/link';
+import { dropTracked, linkApplications, notTracked } from '@/lib/tracker/link';
 import type { SearchRun } from '@prisma/client';
 import { getPrisma } from '@/lib/db/prisma';
 import { ingestSource } from '@/lib/jobs/ingest';
@@ -217,12 +217,12 @@ async function notifyRunDone(userId: string, runId: string) {
   const threshold = runs > 1 ? profile?.alertThreshold ?? 70 : 0;
   const run = await prisma.searchRun.findUnique({ where: { id: runId } });
   await linkApplications(userId).catch(() => []);
-  const top = await prisma.jobMatch.findMany({
+  const top = (await dropTracked(userId, await prisma.jobMatch.findMany({
     where: { userId, filtered: false, ...notTracked(userId), score: { gte: threshold }, ...(runs > 1 && run ? { createdAt: { gte: run.createdAt } } : {}) },
     include: { job: { include: { source: true } } },
     orderBy: { score: 'desc' },
-    take: 5,
-  });
+    take: 15,
+  }))).slice(0, 5);
   if (!top.length) return;
   const base = process.env.NEXT_PUBLIC_APP_URL || 'https://jobber-kohl.vercel.app';
   const lines = top.map((m, i) => `${i + 1}. ${m.score} · ${m.job.title} — ${m.job.company || m.job.source.company}\n${m.job.url}`);

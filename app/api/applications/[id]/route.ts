@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser, updateApplication } from '@/lib/data/service';
+import { linkApplications } from '@/lib/tracker/link';
 
 export const instant = false;
 
@@ -25,5 +26,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   });
 
   if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  await linkApplications(user.id, { applicationIds: [id] }).catch(() => []);
   return NextResponse.json({ application: updated });
 }

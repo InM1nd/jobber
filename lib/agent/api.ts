@@ -132,6 +132,10 @@ export async function upsertAgentJob(userId: string, input: AgentJobInput) {
       where: { id: existing.id },
       data: { ...data, dedupeKey: existing.dedupeKey?.startsWith('url:') ? existing.dedupeKey : dedupeKey, ...(followUpAt !== undefined ? { followUpSent: false } : {}) },
     });
+    if (!application.jobId) {
+      const { linkApplications } = await import('@/lib/tracker/link');
+      await linkApplications(userId, { applicationIds: [application.id] }).catch(() => []);
+    }
     return { application, created: false };
   }
   const application = await prisma.application.create({

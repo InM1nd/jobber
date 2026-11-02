@@ -1,4 +1,4 @@
-import { linkApplications, notTracked } from '@/lib/tracker/link';
+import { dropTracked, linkApplications, notTracked } from '@/lib/tracker/link';
 import { Bot, webhookCallback } from 'grammy';
 import { getPrisma } from '@/lib/db/prisma';
 import { miniAppUrl } from '@/lib/telegram/mini-app';
@@ -308,14 +308,15 @@ export async function sendDailyDigest(userId: string) {
         },
         include: { job: { include: { source: true } } },
         orderBy: { score: 'desc' },
-        take: 10,
+        take: 30,
       },
     },
   });
 
-  if (!user?.telegramId || user.matches.length === 0) return;
+  const fresh = user ? (await dropTracked(userId, user.matches)).slice(0, 10) : [];
+  if (!user?.telegramId || fresh.length === 0) return;
 
-  const lines = user.matches.map(
+  const lines = fresh.map(
     (match) => `${match.job.title} at ${match.job.company || match.job.source.company}\nScore ${match.score} · ${match.priority}\n${match.job.url}`,
   );
   await sendTelegramMessage(user.telegramId, `Daily matches\n\n${lines.join('\n\n')}`);

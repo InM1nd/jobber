@@ -5,7 +5,7 @@ import { cache } from 'react';
 import { isDemoMode } from '@/lib/demo/mode';
 import { notesAfterInterview } from '@/lib/tracker/funnel';
 import { latestInterview } from '@/lib/replies/calendar';
-import { linkApplications, notTracked } from '@/lib/tracker/link';
+import { dropTracked, linkApplications, notTracked } from '@/lib/tracker/link';
 import { demoStore, type AppFit, type DemoApplication, type DemoProfile } from '@/lib/demo/store';
 import { getPrisma } from '@/lib/db/prisma';
 import { readSessionUserId } from '@/lib/auth/session';
@@ -199,7 +199,8 @@ async function shapeMatches(userId: string, matches: MatchRowDb[]) {
 export async function getMatches(userId: string, opts: { withDescription?: boolean } = {}) {
   if (isDemoMode()) return demoStore.matches();
   await linkThrottled(userId);
-  return shapeMatches(userId, await loadMatchRows(userId, { filtered: false, ...notTracked(userId) }, 120, Boolean(opts.withDescription)));
+  const rows = await loadMatchRows(userId, { filtered: false, ...notTracked(userId) }, 160, Boolean(opts.withDescription));
+  return shapeMatches(userId, (await dropTracked(userId, rows)).slice(0, 120));
 }
 
 export async function getSkipped(userId: string) {
