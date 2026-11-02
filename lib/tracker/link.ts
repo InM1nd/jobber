@@ -11,7 +11,7 @@ const strip = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[\u0300-
 export function normCompany(s: string) {
   return strip(s).replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').replace(LEGAL, ' ').replace(/\s+/g, ' ').trim();
 }
-const ROLE_NOISE = new Set(['m', 'w', 'd', 'f', 'x', 'mwd', 'fmx', 'all', 'genders', 'gender', 'remote', 'hybrid', 'vienna', 'wien', 'austria', 'onsite', 'in', 'and', 'the', 'of', 'for', 'with', 'a', 'to', 'at']);
+const ROLE_NOISE = new Set(['m', 'w', 'd', 'f', 'x', 'mwd', 'fmx', 'all', 'genders', 'gender', 'remote', 'hybrid', 'vienna', 'wien', 'austria', 'onsite', 'in', 'and', 'the', 'of', 'for', 'with', 'a', 'to', 'at', 'based', 'eu', 'uk', 'eea', 'emea', 'europe', 'germany', 'deutschland', 'worldwide', 'anywhere']);
 const ROLE_ALIAS: Record<string, string> = { developer: 'engineer', dev: 'engineer', entwickler: 'engineer', fullstack: 'full stack', 'front end': 'frontend', 'back end': 'backend', sr: 'senior', jr: 'junior' };
 export function roleTokens(s: string) {
   let t = strip(s).replace(/[()]/g, ' ').replace(/[^a-z0-9+#. ]+/g, ' ');
@@ -91,15 +91,18 @@ export const notTracked = (userId: string) => ({ job: { applications: { none: { 
  */
 export async function dropTracked<T extends { job: { url: string; title: string; company: string | null; source: { company: string } } }>(userId: string, rows: T[]): Promise<T[]> {
   if (!rows.length) return rows;
-  const apps = await getPrisma().application.findMany({
-    where: { userId, status: { in: APPLIED_STATUSES } },
-    select: { id: true, company: true, role: true, url: true, jobId: true },
-  });
+  const all = await getPrisma().application.findMany({ where: { userId }, select: { company: true, role: true, url: true, status: true } });
+  const apps = all.filter((a) => APPLIED_STATUSES.includes(a.status));
   if (!apps.length) return rows;
-  const urls = new Set(apps.map((a) => normalizeUrl(a.url)).filter((u): u is string => Boolean(u) && !isGenericCareersUrl(u)));
+  const keys = (list: typeof all) => new Set(list.map((a) => normalizeUrl(a.url)).filter((u): u is string => Boolean(u) && !isGenericCareersUrl(u)));
+  const urls = keys(apps);
+  // A job whose exact URL is a not-yet-applied tracker entry (to_apply etc.) stays visible, even if it looks like a sibling role.
+  const open = keys(all.filter((a) => !APPLIED_STATUSES.includes(a.status)));
   return rows.filter((r) => {
     const company = r.job.company || r.job.source.company;
-    if (urls.has(normalizeUrl(r.job.url) as string)) return false;
+    const key = normalizeUrl(r.job.url) as string;
+    if (urls.has(key)) return false;
+    if (open.has(key)) return true;
     return !apps.some((a) => sameCompany(a.company, company) && sameRole(a.role, r.job.title));
   });
 }
