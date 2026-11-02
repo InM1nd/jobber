@@ -5,7 +5,7 @@ import { checkUrl, extractJob, fetchJobPage, NeedTextError } from '@/lib/jobs/ad
 import type { ExtractedJob } from '@/lib/jobs/extract';
 import { scrubPersonal } from '@/lib/scrapers/polite';
 import { parseAiMeta, type AgentFind } from '@/lib/ai/meta';
-import { QUEUED_FLAG } from '@/lib/search/score';
+import { QUEUED_FLAG, USER_SKIP_FLAG } from '@/lib/search/score';
 import { companyRoleKey, parseDate } from './api';
 
 /**
@@ -153,7 +153,8 @@ export async function addAgentJob(ownerId: string, f: AgentJobFields): Promise<A
   let matchId: string;
   if (existing) {
     // Skipped by the rules or by a low pre-score earlier: the agent's pick puts it back in the queue.
-    const requeue = existing.filtered && !existing.redFlags.includes(QUEUED_FLAG);
+    // …unless the owner swiped it away themselves.
+    const requeue = existing.filtered && !existing.redFlags.includes(QUEUED_FLAG) && !existing.redFlags.includes(USER_SKIP_FLAG);
     await prisma.jobMatch.update({
       where: { id: existing.id },
       data: { aiMeta: meta as object, ...(requeue ? { redFlags: [QUEUED_FLAG] } : {}) },

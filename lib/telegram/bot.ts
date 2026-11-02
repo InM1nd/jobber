@@ -3,7 +3,7 @@ import { Bot, webhookCallback } from 'grammy';
 import { getPrisma } from '@/lib/db/prisma';
 import { miniAppUrl } from '@/lib/telegram/mini-app';
 import { readLinkCode } from '@/lib/auth/link-code';
-import { linkTelegramToUser, signInWithTelegram } from '@/lib/data/service';
+import { linkTelegramToUser, signInWithTelegram, updateApplication } from '@/lib/data/service';
 import { confirmLogin, loginInvite } from '@/lib/auth/bot-login';
 import { loginStore } from '@/lib/auth/bot-login-store';
 import { handleReply, type ReplyOutcome } from '@/lib/replies/handle';
@@ -245,6 +245,22 @@ function setupBotCommands(bot: Bot) {
     }
   });
 
+  // "✅ Sent" on an apply pack: the application goes to Applied (date + follow-up), with Undo.
+  bot.callbackQuery(/^A:([\w-]{8,64})$/, async (ctx) => {
+    const appId = ctx.match[1];
+    const user = await getPrisma().user.findUnique({ where: { telegramId: String(ctx.from?.id) }, select: { id: true } }).catch(() => null);
+    const app = user ? await getPrisma().application.findFirst({ where: { id: appId, userId: user.id }, select: { id: true, status: true } }) : null;
+    if (!user || !app) {
+      await ctx.answerCallbackQuery({ text: 'Couldn’t find this application.', show_alert: true });
+      return;
+    }
+    if (app.status === 'to_apply' || app.status === 'check_listing') await updateApplication(user.id, app.id, { status: 'applied' });
+    await ctx.answerCallbackQuery({ text: 'Marked as applied. Follow-up reminder set.' });
+    await ctx.editMessageReplyMarkup({
+      reply_markup: { inline_keyboard: [[{ text: '✓ Applied — undo', callback_data: `U:${app.id}:${app.status}` }]] },
+    }).catch(() => {});
+  });
+
   bot.callbackQuery(/^U:([\w-]{8,64}):([a-z_]{2,20})$/, async (ctx) => {
     const [, appId, status] = ctx.match;
     const user = await getPrisma().user.findUnique({ where: { telegramId: String(ctx.from?.id) }, select: { id: true } }).catch(() => null);
@@ -292,6 +308,20 @@ export async function sendTelegramMessage(telegramId: string, message: string) {
   }
 }
 
+type InlineButton = { text: string; url?: string; callback_data?: string; web_app?: { url: string } };
+
+/** A message with inline buttons (links, Mini App pages, callbacks). Errors are logged, never thrown. */
+export async function sendTelegramButtons(telegramId: string, message: string, rows: InlineButton[][]) {
+  try {
+    await getBot().api.sendMessage(telegramId, message.slice(0, 4000), {
+      reply_markup: { inline_keyboard: rows.filter((r) => r.length) as never },
+      link_preview_options: { is_disabled: true },
+    });
+  } catch (error) {
+    console.error('Error sending Telegram message:', error);
+  }
+}
+
 export async function sendDailyDigest(userId: string) {
   const profile = await getPrisma().profile.findUnique({ where: { userId }, select: { alertFrequency: true, alertThreshold: true } });
   if (profile?.alertFrequency === 'off' || profile?.alertFrequency === 'instant') return;
@@ -316,8 +346,11 @@ export async function sendDailyDigest(userId: string) {
   const fresh = user ? (await dropTracked(userId, user.matches)).slice(0, 10) : [];
   if (!user?.telegramId || fresh.length === 0) return;
 
-  const lines = fresh.map(
-    (match) => `${match.job.title} at ${match.job.company || match.job.source.company}\nScore ${match.score} · ${match.priority}\n${match.job.url}`,
+  const lines = fresh.map((match) => `${match.score} · ${match.job.title} — ${match.job.company || match.job.source.company}`);
+  const base = process.env.NEXT_PUBLIC_APP_URL || '';
+  await sendTelegramButtons(
+    user.telegramId,
+    `${fresh.length} new ${fresh.length === 1 ? 'match' : 'matches'} to review (~${Math.max(1, Math.round(fresh.length / 3))} min)\n\n${lines.join('\n')}\n\nSwipe right to apply — the letter and the apply link come back here.`,
+    base ? [[{ text: `Review ${fresh.length}`, web_app: { url: `${base}/dashboard/review` } }]] : [],
   );
-  await sendTelegramMessage(user.telegramId, `Daily matches\n\n${lines.join('\n\n')}`);
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { KanbanSquare, Loader2, Settings, Sparkles, UserRound } from 'lucide-react';
+import { KanbanSquare, Layers, Loader2, Settings, Sparkles, UserRound } from 'lucide-react';
 import { Logo } from '@/components/ui/kit';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { applyThemeMode } from '@/lib/theme';
@@ -167,6 +167,7 @@ export function TelegramBack({ href }: { href: string }) {
 }
 
 const tabs = [
+  { href: '/dashboard/review', label: 'Review', icon: Layers },
   { href: '/dashboard/matches', label: 'Matches', icon: Sparkles },
   { href: '/dashboard/tracker', label: 'Tracker', icon: KanbanSquare },
   { href: '/dashboard/profile', label: 'Profile', icon: UserRound },

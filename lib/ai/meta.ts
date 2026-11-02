@@ -59,6 +59,22 @@ export interface AiMeta {
   agent?: AgentFind;
   /** Second look by the stronger model: when, and the flash-lite score it replaced. */
   verified?: { at: string; before: number };
+  /** The user's decision in Review (lib/tracker/decide.ts). */
+  swipe?: SwipeDecision;
+}
+
+export interface SwipeDecision {
+  d: 'apply' | 'skip' | 'later';
+  at: string;
+  /** Why it was skipped (lib/tracker/skip.ts reasons). */
+  reason?: string;
+  /** Later: back in the deck after this. */
+  until?: string;
+  /** Apply: the tracker row, and whether the swipe created it (Undo only deletes what it made). */
+  appId?: string;
+  created?: boolean;
+  /** Skip: red flags before, restored by Undo. */
+  prevFlags?: string[];
 }
 
 /** Earlier letter versions kept per match. */
@@ -90,6 +106,18 @@ export function parseAiMeta(raw: unknown): AiMeta {
     if (o) meta[k] = o;
   }
   if (history?.length) meta.letterHistory = history;
+  const sw = r.swipe as Partial<SwipeDecision> | null | undefined;
+  if (sw && (sw.d === 'apply' || sw.d === 'skip' || sw.d === 'later') && typeof sw.at === 'string') {
+    meta.swipe = {
+      d: sw.d,
+      at: sw.at,
+      ...(typeof sw.reason === 'string' ? { reason: sw.reason.slice(0, 60) } : {}),
+      ...(typeof sw.until === 'string' ? { until: sw.until } : {}),
+      ...(typeof sw.appId === 'string' ? { appId: sw.appId } : {}),
+      ...(typeof sw.created === 'boolean' ? { created: sw.created } : {}),
+      ...(strings(sw.prevFlags) ? { prevFlags: strings(sw.prevFlags) } : {}),
+    };
+  }
   const ver = r.verified as { at?: unknown; before?: unknown } | null | undefined;
   if (ver && typeof ver.at === 'string' && typeof ver.before === 'number') meta.verified = { at: ver.at, before: ver.before };
   const a = r.agent as Partial<AgentFind> | null | undefined;

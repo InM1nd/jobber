@@ -35,8 +35,8 @@ The owner tests it first. Friends get in with an invite code. Nobody has to past
 
 | Writer | How |
 | --- | --- |
-| You, in the app | "Add" form, status pill, dates, priority, notes, skip reason (`/api/applications`) |
-| Telegram bot | Status buttons and Undo, forwarded employer replies (`lib/replies`) |
+| You, in the app | Review swipes (`/api/matches/<id>/decide`), "Add" form, status pill, dates, priority, notes, skip reason (`/api/applications`) |
+| Telegram bot | "✅ Sent" on apply packs, status buttons and Undo, forwarded employer replies (`lib/replies`) |
 | Cron | Follow-up reminders (`cron/follow-ups`), agent drafts (`cron/agent-drafts`) |
 | Grok Bot | Status changes on real events via `PATCH /api/agent/applications/<id>` (new vacancies go to `/api/agent/jobs`, not here) |
 | Claude (MCP) | `list_applications`, `get_application`, `upsert_application`, `update_status` (writes only with `AGENT_API_KEY_CLAUDE_WRITE=true`) |
@@ -45,7 +45,7 @@ The owner tests it first. Friends get in with an invite code. Nobody has to past
 
 **Skip reasons.** When a row is Skip, the card offers Level / Stack / Language / Location / Salary / Company / Role type / Contract. The reason is kept as a `Skipped: …` line in the notes and teaches the scoring what to avoid.
 
-**Known gap:** there is no "move to tracker" button on a match yet — matches enter the tracker by hand or through the agent. A swipe deck (right = apply, left = not for me) is planned to close this.
+**Review → Tracker.** `/dashboard/review` shows today's best undecided matches one card at a time (score ≥ 50 or your min score, up to 15). Phone: swipe right = apply, left = not for me, up = later (3 days), tap for details. Desktop: the same with the mouse, or keys `→`/`A`, `←`/`S`, `↑`/`L`, `Z` undo, `1`–`8` skip reason, with the full details beside the card. *Apply* creates the tracker row (linked to the job, with Jobber's score, reasons and risks), writes the cover letter and sends a Telegram pack: the employer's link, the letter to copy, and **✅ Sent**, which moves the row to Applied with a follow-up date. *Not for me* (with an optional reason) moves the match to Skipped and calibrates the scoring. Every decision can be undone. The daily digest opens Review directly.
 
 ## Data (Supabase)
 

@@ -6,7 +6,7 @@ import { parseAiMeta } from '@/lib/ai/meta';
 import { QuotaExceededError, quotaAllowance } from '@/lib/ai/quota';
 import { getGeminiKey } from '@/lib/data/keys';
 import type { LocationTier } from '@/lib/jobs/prefilter';
-import { QUEUED_FLAG, RESCORE_FLAG, scoreJobs, userCvs } from './score';
+import { QUEUED_FLAG, RESCORE_FLAG, USER_SKIP_FLAG, scoreJobs, userCvs } from './score';
 
 /** Profile fields the rules or the scorer read. Alerts, letters and salary-only edits don't need a re-score. */
 const SCORED_FIELDS = [
@@ -30,7 +30,7 @@ const RESCORE_TOP = Number(process.env.AI_RESCORE_TOP || 24);
 export async function markForRescore(userId: string) {
   const prisma = getPrisma();
   await prisma.jobMatch.updateMany({
-    where: { userId, filtered: true, NOT: { redFlags: { has: QUEUED_FLAG } }, job: { isActive: true } },
+    where: { userId, filtered: true, NOT: [{ redFlags: { has: QUEUED_FLAG } }, { redFlags: { has: USER_SKIP_FLAG } }], job: { isActive: true } },
     data: { redFlags: [QUEUED_FLAG] },
   });
   const top = await prisma.jobMatch.findMany({

@@ -1,5 +1,7 @@
 import { getPrisma } from '@/lib/db/prisma';
-import { skipReasonOf } from '@/lib/tracker/skip';
+import { skipReasonOf, withSkipReason } from '@/lib/tracker/skip';
+import { parseAiMeta } from '@/lib/ai/meta';
+import { USER_SKIP_FLAG } from './flags';
 
 /**
  * Personal calibration: the candidate's own recent decisions in the tracker — what they
@@ -43,11 +45,25 @@ ${decisions.map((d) => `- ${LABEL[d.kind]}${d.reason ? ` because of ${d.reason.t
 }
 
 export async function loadDecisions(userId: string): Promise<Decision[]> {
-  const rows = await getPrisma().application.findMany({
-    where: { userId, status: { in: Object.keys(KIND) } },
-    orderBy: { updatedAt: 'desc' },
-    take: 40,
-    select: { status: true, role: true, company: true, notes: true },
+  const prisma = getPrisma();
+  const [rows, swiped] = await Promise.all([
+    prisma.application.findMany({
+      where: { userId, status: { in: Object.keys(KIND) } },
+      orderBy: { updatedAt: 'desc' },
+      take: 40,
+      select: { status: true, role: true, company: true, notes: true },
+    }),
+    // "Not for me" swipes in Review count as skips, with their reason.
+    prisma.jobMatch.findMany({
+      where: { userId, filtered: true, redFlags: { has: USER_SKIP_FLAG } },
+      orderBy: { updatedAt: 'desc' },
+      take: 20,
+      select: { aiMeta: true, job: { select: { title: true, company: true, source: { select: { company: true } } } } },
+    }),
+  ]);
+  const skips = swiped.map((m) => {
+    const reason = parseAiMeta(m.aiMeta).swipe?.reason;
+    return { status: 'skip', role: m.job.title, company: m.job.company || m.job.source.company, notes: reason ? withSkipReason(null, reason) : null };
   });
-  return decisionsFrom(rows);
+  return decisionsFrom([...rows, ...skips]);
 }

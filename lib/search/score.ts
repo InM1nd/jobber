@@ -113,10 +113,8 @@ export interface ScoreBatchResult {
   stoppedBy: 'quota' | 'budget' | 'rate' | 'time' | 'no-ai' | null;
 }
 
-/** Skipped-list marker for jobs that passed the rules and wait for an AI score. */
-export const QUEUED_FLAG = 'Queued for AI scoring';
-/** Red flag on a shown match scored before the profile changed; cleared when it's scored again. */
-export const RESCORE_FLAG = 'Your profile changed — re-scoring soon';
+export { QUEUED_FLAG, USER_SKIP_FLAG, RESCORE_FLAG } from './flags';
+import { QUEUED_FLAG, RESCORE_FLAG } from './flags';
 /** Minimum deterministic pre-score to be worth an AI request. */
 export const PRE_MIN = Number(process.env.AI_PRESCORE_MIN || 40);
 /** Max jobs sent to AI per search run (2 requests at SCORE_BATCH=12). */
