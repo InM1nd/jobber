@@ -10,7 +10,7 @@ export async function ingestSource(source: DbSource, maxJobs = 80): Promise<numb
   const prisma = getPrisma();
   // Shared scraper rows: one fetch serves every allowed user; don't refetch inside the window.
   if (source.sourceType.startsWith('scrape:') && source.lastSuccessAt && Date.now() - source.lastSuccessAt.getTime() < SCRAPE_FRESH_MS) return 0;
-  if (source.sourceType === 'manual') return 0;
+  if (source.sourceType === 'manual' || source.sourceType === 'agent') return 0;
   // JSearch costs the user's monthly requests: once a day is plenty.
   if (source.sourceType === 'jsearch' && source.lastFetchedAt && Date.now() - source.lastFetchedAt.getTime() < JSEARCH_FRESH_MS) return 0;
   try {

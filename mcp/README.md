@@ -67,6 +67,33 @@ curl -s -X POST "$BASE/applications" -H "Authorization: Bearer $KEY" -H 'content
   -d '{"company":"Example","role":"Frontend Engineer"}'     # → 403 read_only unless writes are enabled
 ```
 
+## New vacancies from an agent (Grok Bot): `/api/agent/jobs`
+
+Vacancies an agent finds go to the **job pool**, not the tracker. Jobber dedupes them against every other source, runs its own rules and scoring, and shows them in Matches ("found by Grok", plus the agent's note). The tracker stays for decisions: applied, interview, skip. Use `upsert_application` / `PATCH` only when the status of something real changes.
+
+Key: `AGENT_API_KEY` (or the Claude key with writes enabled).
+
+```bash
+KEY=<AGENT_API_KEY>; BASE=https://jobber-check.vercel.app/api/agent
+# Best: send the ad itself (no page fetch, no AI extraction). Up to 25 items per request.
+curl -s -X POST "$BASE/jobs" -H "Authorization: Bearer $KEY" -H 'content-type: application/json' -d '{
+  "source": "grok",
+  "items": [{
+    "url": "https://boards.greenhouse.io/acme/jobs/123",
+    "title": "Frontend Engineer", "company": "Acme", "location": "Vienna, Austria", "remote": false,
+    "description": "<the ad text: tasks, requirements, offer — at least 150 characters>",
+    "postedAt": "2026-11-01",
+    "note": "Why I picked it (shown as the agent'\''s note)", "score": 80
+  }]
+}'
+# Link only: Jobber opens the page (JSON-LD, else AI extraction from the owner's small daily parse quota).
+curl -s -X POST "$BASE/jobs" -H "Authorization: Bearer $KEY" -H 'content-type: application/json' -d '{"url":"https://…"}'
+# Later: what Jobber made of them (queued / skipped + reason / scored + score).
+curl -s "$BASE/jobs?jobIds=<id1>,<id2>" -H "Authorization: Bearer $KEY"
+```
+
+Each result says `created` or `duplicate` (already known from another source; the note is still attached), the `jobId`, and `tracked` (the tracker status, if the owner already has it there). `retry: true` means send that item again. One scoring request runs right away (skip it with `"score": false`); the rest is scored by the daily cron. Agent picks skip the pre-score cut and go first in the queue, but the hard rules (role, language, place, excluded companies) still apply.
+
 ## Getting the key
 
 - The key is stored on the Grok Bot box at `/workspace/.jobber_claude_api_key` (chmod 600) and in Vercel as `AGENT_API_KEY_CLAUDE` (sensitive, so Vercel won't display it). It is never printed in chats or logs.

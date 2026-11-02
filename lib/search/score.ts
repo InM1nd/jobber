@@ -13,6 +13,7 @@ import { priorityFromScore } from '@/lib/llm/matcher';
 import { blendSkills, classifyRequirements } from './requirements';
 import { jobDigest } from './digest';
 import { calibrationBlock, loadDecisions, type Decision } from './calibration';
+import { parseAiMeta } from '@/lib/ai/meta';
 import {
   RUBRIC_SYSTEM, combine, languageScore, locationScore, parseAiScores, salaryScore, seniorityScore, type SubScores,
 } from './rubric';
@@ -239,19 +240,22 @@ export async function scoreUserBatch(
 
   const [unseen, waiting] = await Promise.all([
     prisma.job.findMany({ where: { ...where, matches: { none: { userId } } }, include: { source: true }, orderBy: { createdAt: 'desc' }, take: 800 }),
-    prisma.jobMatch.findMany({ where: { userId, filtered: true, redFlags: { has: QUEUED_FLAG } }, include: { job: { include: { source: true } } }, take: 300 }),
+    prisma.jobMatch.findMany({ where: { userId, filtered: true, redFlags: { has: QUEUED_FLAG } }, include: { job: { include: { source: true } } }, orderBy: { updatedAt: 'desc' }, take: 300 }),
   ]);
 
+  // Jobs an agent picked by hand (Grok bot, Claude): the hard rules still apply, the pre-score cut doesn't, and they go first.
+  const picked = new Set(waiting.filter((w) => parseAiMeta(w.aiMeta).agent).map((w) => w.jobId));
   const filterProfile = profileForFilter(profile);
   const candidates: Candidate[] = [];
   const rejected: Array<{ jobId: string; reason: string; tier: LocationTier; preScore?: number }> = [];
   for (const job of [...unseen, ...waiting.map((w) => w.job)]) {
     const r = prefilterJob(filterProfile, { ...job, company: job.company || job.source.company });
     if (!r.pass) rejected.push({ jobId: job.id, reason: r.reason || 'Filtered', tier: r.tier });
-    else if ((r.preScore ?? 0) < PRE_MIN) rejected.push({ jobId: job.id, reason: `Low pre-score (${r.preScore})`, tier: r.tier, preScore: r.preScore });
-    else candidates.push({ job, tier: r.tier, preScore: r.preScore! });
+    else if ((r.preScore ?? 0) < PRE_MIN && !picked.has(job.id)) rejected.push({ jobId: job.id, reason: `Low pre-score (${r.preScore})`, tier: r.tier, preScore: r.preScore });
+    else candidates.push({ job, tier: r.tier, preScore: r.preScore ?? 0 });
   }
-  candidates.sort((a, b) => b.preScore - a.preScore);
+  const byPriority = (a: Candidate, b: Candidate) => Number(picked.has(b.job.id)) - Number(picked.has(a.job.id)) || b.preScore - a.preScore;
+  candidates.sort(byPriority);
   const rows = (list: typeof rejected) =>
     list.map((r) => ({ userId, jobId: r.jobId, score: 0, reasons: [], redFlags: [r.reason], priority: 'low', filtered: true, locationTier: r.tier, preScore: r.preScore ?? null }));
   if (rejected.length) {
@@ -281,7 +285,7 @@ export async function scoreUserBatch(
   for (const c of enriched) {
     const r = prefilterJob(filterProfile, { ...c.job, company: c.job.company || c.job.source.company });
     const i = candidates.indexOf(c);
-    if (!r.pass || (r.preScore ?? 0) < PRE_MIN) {
+    if (!r.pass || ((r.preScore ?? 0) < PRE_MIN && !picked.has(c.job.id))) {
       candidates.splice(i, 1);
       const reason = r.pass ? `Low pre-score (${r.preScore})` : r.reason || 'Filtered';
       await prisma.jobMatch.upsert({
@@ -290,9 +294,9 @@ export async function scoreUserBatch(
         update: { redFlags: [reason], preScore: r.preScore ?? null },
       });
       newlyRejectedLate++;
-    } else c.preScore = r.preScore!;
+    } else c.preScore = r.preScore ?? 0;
   }
-  candidates.sort((a, b) => b.preScore - a.preScore);
+  candidates.sort(byPriority);
   const take = candidates.slice(0, cap);
   const result = (scored: number, calls: number, stoppedBy: ScoreBatchResult['stoppedBy']): ScoreBatchResult => ({
     filtered: newlyRejected + newlyRejectedLate, scored, calls, queued: Math.max(0, candidates.length - scored), stoppedBy,

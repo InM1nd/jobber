@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const recheck = await recheckCareersOnly({ force: req.nextUrl.searchParams.get('recheck') === '1' }).catch((e) => [{ error: String(e) }]);
     const dueBefore = new Date(Date.now() - (force ? 0 : DUE_AFTER_MS));
     const due = await prisma.jobSource.findMany({
-      where: { isActive: true, sourceType: only ? only : { not: 'manual' }, OR: [{ lastFetchedAt: null }, { lastFetchedAt: { lt: dueBefore } }] },
+      where: { isActive: true, sourceType: only ? only : { notIn: ['manual', 'agent'] }, OR: [{ lastFetchedAt: null }, { lastFetchedAt: { lt: dueBefore } }] },
       orderBy: [{ lastFetchedAt: { sort: 'asc', nulls: 'first' } }],
     });
     const queue = planRun(due);

@@ -20,7 +20,7 @@ export async function watchList(userId: string) {
   const prisma = getPrisma();
   const profile = await prisma.profile.findUnique({ where: { userId } });
   if (!profile?.sourceIds.length) return [];
-  const rows = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, OR: [{ sector: null }, { sector: { notIn: ['board', 'scrape', 'manual'] } }] } });
+  const rows = await prisma.jobSource.findMany({ where: { id: { in: profile.sourceIds }, OR: [{ sector: null }, { sector: { notIn: ['board', 'scrape', 'manual', 'agent'] } }] } });
   return rows.map((r) => ({ id: r.id, name: r.company, ats: r.sourceType, url: r.sourceUrl, lastSuccessAt: r.lastSuccessAt?.toISOString() ?? null }));
 }
 

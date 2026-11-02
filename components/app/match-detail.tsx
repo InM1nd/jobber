@@ -29,6 +29,8 @@ export function MatchDetail({
   const sub = match.subScores;
   const salary = formatSalaryRange(match.job.salaryMin, match.job.salaryMax, match.job.currency || 'EUR');
   const place = [match.job.location, match.job.remote && !/remote/i.test(match.job.location || '') ? 'Remote' : null].filter(Boolean).join(' · ');
+  const agent = match.aiMeta?.agent;
+  const agentName = agent ? agent.by.charAt(0).toUpperCase() + agent.by.slice(1) : '';
   return (
     <>
       <header className="rounded-[var(--radius-card)] bg-[#111111] p-6 text-white dark:border dark:border-line dark:bg-[#121214]">
@@ -43,6 +45,7 @@ export function MatchDetail({
           <span className={`font-semibold ${FIT_TEXT[fitOf(match.score)]}`}>{FIT_LABEL[fitOf(match.score)]}</span>
           {place && <span>· {place}</span>}
           {viaOf(match.job.description) && <span>· via {viaOf(match.job.description)}</span>}
+          {agent && <span>· found by {agentName}</span>}
           {salary && <span>· {salary}</span>}
         </div>
         <a href={match.job.url} target="_blank" rel="noreferrer" className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-white/10 px-4 text-[14px] font-semibold transition-colors hover:bg-white/15">
@@ -70,6 +73,15 @@ export function MatchDetail({
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {agent?.note && (
+        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+          <p className="mb-1.5 text-[14px] font-medium">
+            {agentName}&rsquo;s note{agent.score !== undefined && <span className="font-normal text-muted"> · its guess {agent.score}</span>}
+          </p>
+          <p className="whitespace-pre-line text-[14px] leading-relaxed text-muted">{agent.note}</p>
         </section>
       )}
 

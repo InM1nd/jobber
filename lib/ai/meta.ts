@@ -39,12 +39,24 @@ export interface OutputMeta {
   detail?: string;
 }
 
+/** An outside agent (Grok bot, Claude) sent this job in via /api/agent/jobs. */
+export interface AgentFind {
+  /** "grok", "claude"… */
+  by: string;
+  at: string;
+  /** The agent's own reason, shown as its opinion, never mixed into Jobber's score. */
+  note?: string;
+  /** The agent's own 0-100 guess. */
+  score?: number;
+}
+
 export interface AiMeta {
   letter?: OutputMeta;
   advice?: OutputMeta;
   tailoredCv?: OutputMeta;
   /** Earlier versions of the cover letter, newest first. */
   letterHistory?: LetterVersion[];
+  agent?: AgentFind;
 }
 
 /** Earlier letter versions kept per match. */
@@ -76,6 +88,15 @@ export function parseAiMeta(raw: unknown): AiMeta {
     if (o) meta[k] = o;
   }
   if (history?.length) meta.letterHistory = history;
+  const a = r.agent as Partial<AgentFind> | null | undefined;
+  if (a && typeof a.by === 'string' && typeof a.at === 'string') {
+    meta.agent = {
+      by: a.by.slice(0, 40),
+      at: a.at,
+      ...(typeof a.note === 'string' && a.note ? { note: a.note.slice(0, 2000) } : {}),
+      ...(typeof a.score === 'number' && Number.isFinite(a.score) ? { score: a.score } : {}),
+    };
+  }
   return meta;
 }
 
