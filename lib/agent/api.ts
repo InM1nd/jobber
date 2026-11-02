@@ -28,8 +28,10 @@ export function checkAgentAuth(request: Request): NextResponse | null {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
+/** The owner's user row, or null when OWNER_TELEGRAM_ID isn't set (the routes then answer 404 instead of writing to a guessed account). */
 export async function getOwner() {
-  const tg = process.env.OWNER_TELEGRAM_ID || '336128859';
+  const tg = process.env.OWNER_TELEGRAM_ID?.trim();
+  if (!tg) return null;
   return getPrisma().user.findUnique({ where: { telegramId: tg }, select: { id: true } });
 }
 

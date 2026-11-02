@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { FitPanel, FollowUpPanel, PrepareApplicationPanel, ReplyPanel } from '@/components/tracker-extras';
 import { OPEN_APPLICATION } from '@/lib/tracker/attention';
 import { followUpCell } from '@/lib/tracker/followup-plan';
+import { SKIP_REASONS, skipReasonOf, withSkipReason } from '@/lib/tracker/skip';
 import type { DemoApplication } from '@/lib/demo/store';
 
 type App = DemoApplication;
@@ -133,6 +134,7 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
                 <span className="lg:hidden">{a.location ? ` · ${a.location}` : ''}</span>
               </p>
               {fu && <p className={cn('mt-0.5 truncate text-[11.5px] lg:hidden', fu.due ? 'font-semibold text-fit-weak' : 'text-subtle')}><BellRing className="mr-1 inline size-3 -translate-y-px" />{fu.text}</p>}
+              {a.jobActive === false && <p className="mt-0.5 truncate text-[11.5px] text-subtle">Listing taken down</p>}
             </div>
           </div>
           <p className="hidden truncate text-[13px] text-muted lg:block">{a.location || '—'}</p>
@@ -289,6 +291,36 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
             <a href={app.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-0.5 text-[13px] font-medium text-accent">Listing <ArrowUpRight className="size-3.5" /></a>
           )}
         </div>
+
+        {app.jobActive === false && (
+          <p className="rounded-xl bg-surface-2 px-3.5 py-2.5 text-[13px] text-muted">
+            {app.status === 'applied' || app.status === 'on_hold'
+              ? 'The company took this listing down. If you haven’t heard back, the role may be filled.'
+              : app.status === 'to_apply' || app.status === 'check_listing'
+                ? 'The company took this listing down — it’s probably too late to apply.'
+                : 'The company took this listing down.'}
+          </p>
+        )}
+
+        {app.status === 'skip' && (
+          <Field label="Why skip? (teaches the scoring)">
+            <div className="flex flex-wrap gap-1.5">
+              {SKIP_REASONS.map((r) => {
+                const on = skipReasonOf(notes) === r;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => { const n = withSkipReason(notes, on ? null : r); setNotes(n); void onPatch({ notes: n }); }}
+                    className={cn('h-8 rounded-full border px-3 text-[12.5px] font-medium transition-colors', on ? 'border-accent bg-accent/10 text-fg' : 'border-line text-muted hover:bg-surface-2')}
+                  >
+                    {r}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Applied">

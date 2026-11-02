@@ -4,6 +4,7 @@ import { requireUser, saveProfile } from '@/lib/data/service';
 import { extractCvProfile } from '@/lib/ai/cv-profile';
 import { aiErrorResponse } from '@/lib/ai/errors';
 import { getPrisma } from '@/lib/db/prisma';
+import { markForRescore } from '@/lib/search/rescore';
 import { isDemoMode } from '@/lib/demo/mode';
 
 export const instant = false;
@@ -81,6 +82,8 @@ export async function POST(request: Request) {
     // Keep the legacy single-CV column filled (letters, older code paths).
     const count = await prisma.cv.count({ where: { userId: user.id } });
     if (count === 1) await saveProfile(user.id, { cvText: cv.text, ...(fileName ? { cvFileName: fileName } : {}) });
+    // A new CV can fit some jobs better: re-score the best shown matches (no-op before the first search).
+    if (count > 1) await markForRescore(user.id);
     return NextResponse.json({ cv: { id: cv.id, label: cv.label, fileName, characters: text.length }, parsed });
   } catch (error) {
     return aiErrorResponse(error);

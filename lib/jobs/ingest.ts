@@ -5,6 +5,18 @@ import { fetchJobsFromSource } from '@/lib/sources/factory';
 import { SCRAPE_FRESH_MS } from '@/lib/scrapers';
 import { JSEARCH_FRESH_MS } from '@/lib/sources/jsearch';
 
+/**
+ * Company ATS boards return every open job in one response, so a job missing from it was taken down.
+ * Keyword boards, aggregators and scrapers return search results: a missing job there means nothing.
+ */
+export const FULL_LIST_TYPES = ['greenhouse', 'ashby', 'lever', 'workable', 'personio', 'recruitee', 'teamtailor', 'bamboohr'];
+
+/** Whether a fetch result is complete enough to close the jobs it no longer lists. */
+export function closesMissing(sourceType: string, seen: number, maxJobs: number) {
+  // Zero is more often a hiccup (API change, block) than a company with no openings; a capped list is partial.
+  return FULL_LIST_TYPES.includes(sourceType.toLowerCase()) && seen > 0 && seen < maxJobs;
+}
+
 /** Fetches one source and upserts its jobs. Returns how many jobs it saw. */
 export async function ingestSource(source: DbSource, maxJobs = 80): Promise<number> {
   const prisma = getPrisma();
@@ -14,15 +26,14 @@ export async function ingestSource(source: DbSource, maxJobs = 80): Promise<numb
   // JSearch costs the user's monthly requests: once a day is plenty.
   if (source.sourceType === 'jsearch' && source.lastFetchedAt && Date.now() - source.lastFetchedAt.getTime() < JSEARCH_FRESH_MS) return 0;
   try {
-    const jobs = (
-      await fetchJobsFromSource({
-        company: source.company,
-        sector: source.sector || undefined,
-        sourceType: source.sourceType,
-        sourceUrl: source.sourceUrl,
-        careersUrl: source.careersUrl || undefined,
-      })
-    ).slice(0, maxJobs);
+    const all = await fetchJobsFromSource({
+      company: source.company,
+      sector: source.sector || undefined,
+      sourceType: source.sourceType,
+      sourceUrl: source.sourceUrl,
+      careersUrl: source.careersUrl || undefined,
+    });
+    const jobs = all.slice(0, maxJobs);
 
     // Batched: 2 lookups + 1 createMany + updates in one transaction (was 3 queries per job).
     const rows = jobs.map((job) => {
@@ -77,6 +88,14 @@ export async function ingestSource(source: DbSource, maxJobs = 80): Promise<numb
           prisma.job.update({ where: { sourceId_externalId: { sourceId: source.id, externalId: r.externalId } }, data: { ...r.data, isActive: true } }),
         ),
       );
+    }
+
+    // Taken down on the company's board → inactive: out of Matches, digests and drafts; the tracker says so.
+    if (closesMissing(source.sourceType, all.length, maxJobs)) {
+      await prisma.job.updateMany({
+        where: { sourceId: source.id, isActive: true, externalId: { notIn: rows.map((r) => r.externalId) } },
+        data: { isActive: false },
+      });
     }
 
     await prisma.jobSource.update({

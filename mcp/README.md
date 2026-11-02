@@ -92,6 +92,8 @@ curl -s -X POST "$BASE/jobs" -H "Authorization: Bearer $KEY" -H 'content-type: a
 curl -s "$BASE/jobs?jobIds=<id1>,<id2>" -H "Authorization: Bearer $KEY"
 ```
 
+When a tracker entry is skipped, say why: `PATCH /applications/<id>` with `{"status":"Skip","skipReason":"Level"}` (Level, Stack, Language, Location, Salary, Company, Role type, Contract). Skips with a reason teach the scoring what to avoid.
+
 Each result says `created` or `duplicate` (already known from another source; the note is still attached), the `jobId`, and `tracked` (the tracker status, if the owner already has it there). `retry: true` means send that item again. One scoring request runs right away (skip it with `"score": false`); the rest is scored by the daily cron. Agent picks skip the pre-score cut and go first in the queue, but the hard rules (role, language, place, excluded companies) still apply.
 
 ## Getting the key

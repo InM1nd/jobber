@@ -60,7 +60,12 @@ export function MatchDetail({
 
       {sub && (
         <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
-          <p className="mb-3 text-[14px] font-medium">Why {match.score}</p>
+          <p className="mb-3 text-[14px] font-medium">
+            Why {match.score}
+            {match.aiMeta?.verified && (
+              <span className="font-normal text-muted"> · double-checked by the stronger model{match.aiMeta.verified.before !== match.score ? ` (was ${match.aiMeta.verified.before})` : ''}</span>
+            )}
+          </p>
           <div className="space-y-2.5">
             {(Object.keys(WEIGHTS) as Array<keyof typeof WEIGHTS>).map((k) => (
               <div key={k} className="flex items-center gap-3 text-[13px]">

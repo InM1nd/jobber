@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db/prisma';
 import { checkAgentAuth, getOwner, mapStatus, parseDate, serialize } from '@/lib/agent/api';
+import { withSkipReason } from '@/lib/tracker/skip';
 
 export const instant = false;
 
@@ -46,6 +47,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     data.notes = [existing.notes, body.appendNote.trim()].filter(Boolean).join('\n').slice(0, 8000);
   }
   if (typeof body.nextAction === 'string') data.nextAction = body.nextAction.slice(0, 4000);
+  // Why it was skipped (Level, Stack, Language, Location, Salary, Company, Role type, Contract): calibrates scoring.
+  if (typeof body.skipReason === 'string') {
+    data.notes = withSkipReason((data.notes as string | undefined) ?? existing.notes, body.skipReason.trim().slice(0, 60) || null).slice(0, 8000);
+  }
   const application = await prisma.application.update({ where: { id }, data });
   return NextResponse.json({ application: serialize(application) });
 }

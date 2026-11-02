@@ -258,7 +258,7 @@ export async function getApplications(userId: string): Promise<DemoApplication[]
   const apps = await prisma.application.findMany({
     where: { userId },
     orderBy: { updatedAt: 'desc' },
-    include: { job: { select: { matches: { where: { userId, filtered: false }, select: { score: true, reasons: true, redFlags: true, subScores: true, cvAdvice: true, cvId: true, updatedAt: true } } } } },
+    include: { job: { select: { isActive: true, matches: { where: { userId, filtered: false }, select: { score: true, reasons: true, redFlags: true, subScores: true, cvAdvice: true, cvId: true, updatedAt: true } } } } },
   });
   const cvRows = await prisma.cv.findMany({ where: { userId }, select: { id: true, label: true } });
   const cvLabel = new Map(cvRows.map((c) => [c.id, c.label]));
@@ -286,6 +286,7 @@ export async function getApplications(userId: string): Promise<DemoApplication[]
     interviewAt: app.interviewAt?.toISOString() ?? null,
     updatedAt: app.updatedAt.toISOString(),
     jobId: app.jobId,
+    jobActive: app.job ? app.job.isActive : null,
     fit: (() => {
       const m = app.job?.matches[0];
       if (!m || m.score <= 0) return null;

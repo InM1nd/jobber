@@ -1,7 +1,7 @@
 import type { Cv, Job, JobSource, Profile } from '@prisma/client';
 import { getPrisma } from '@/lib/db/prisma';
 import { prefilterJob, type LocationTier, type PrefilterProfile } from '@/lib/jobs/prefilter';
-import { AiUnavailableError, hasSharedAi, parseJsonLoose } from '@/lib/ai/gemini';
+import { AiUnavailableError, hasSharedAi, parseJsonLoose, type GeminiTier } from '@/lib/ai/gemini';
 import { runAi } from '@/lib/ai/run';
 import { BudgetExhaustedError } from '@/lib/ai/budget';
 import { QuotaExceededError, quotaAllowance } from '@/lib/ai/quota';
@@ -115,6 +115,8 @@ export interface ScoreBatchResult {
 
 /** Skipped-list marker for jobs that passed the rules and wait for an AI score. */
 export const QUEUED_FLAG = 'Queued for AI scoring';
+/** Red flag on a shown match scored before the profile changed; cleared when it's scored again. */
+export const RESCORE_FLAG = 'Your profile changed — re-scoring soon';
 /** Minimum deterministic pre-score to be worth an AI request. */
 export const PRE_MIN = Number(process.env.AI_PRESCORE_MIN || 40);
 /** Max jobs sent to AI per search run (2 requests at SCORE_BATCH=12). */
@@ -126,12 +128,13 @@ export async function scoreJobs(
   profile: Profile,
   cvs: CvLite[],
   items: Array<{ job: PoolJob; tier: LocationTier; preScore?: number | null }>,
+  opts: { model?: GeminiTier } = {},
 ) {
   const prisma = getPrisma();
   const keyed = items.map((it, i) => ({ ...it, key: `j${i + 1}` }));
   const decisions = await loadDecisions(userId).catch(() => []);
   const reply = await runAi(userId, 'score', rubricPrompt(profile, cvs, keyed, decisions), {
-    tier: 'lite',
+    tier: opts.model ?? 'lite',
     system: RUBRIC_SYSTEM,
     json: true,
     temperature: 0.1,
@@ -186,12 +189,28 @@ export async function scoreJobs(
 
 /** Pulls complete {"id":…} objects out of a truncated or malformed JSON reply. */
 export function salvageResults(reply: string) {
+  // Walk the text keeping a stack of open objects (strings aware), so entries with nested
+  // requirement objects survive; the cut-off last entry never closes and is dropped.
   const out: unknown[] = [];
-  for (const m of reply.matchAll(/\{[^{}]*"id"\s*:[^{}]*\}/g)) {
-    try {
-      out.push(JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1')));
-    } catch {
-      /* skip broken entry */
+  const starts: number[] = [];
+  let inString = false;
+  for (let i = 0; i < reply.length; i++) {
+    const ch = reply[i];
+    if (inString) {
+      if (ch === '\\') i++;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{') starts.push(i);
+    else if (ch === '}' && starts.length) {
+      const start = starts.pop()!;
+      try {
+        const obj = JSON.parse(reply.slice(start, i + 1).replace(/,\s*([\]}])/g, '$1')) as Record<string, unknown>;
+        if (obj && typeof obj.id === 'string') out.push(obj);
+      } catch {
+        /* skip broken entry */
+      }
     }
   }
   return { results: out };
@@ -238,13 +257,17 @@ export async function scoreUserBatch(
   const where = poolWhere(profile);
   if (!where.OR.length) return empty;
 
-  const [unseen, waiting] = await Promise.all([
+  const [unseen, queued, stale] = await Promise.all([
     prisma.job.findMany({ where: { ...where, matches: { none: { userId } } }, include: { source: true }, orderBy: { createdAt: 'desc' }, take: 800 }),
-    prisma.jobMatch.findMany({ where: { userId, filtered: true, redFlags: { has: QUEUED_FLAG } }, include: { job: { include: { source: true } } }, orderBy: { updatedAt: 'desc' }, take: 300 }),
+    prisma.jobMatch.findMany({ where: { userId, filtered: true, redFlags: { has: QUEUED_FLAG }, job: { isActive: true } }, include: { job: { include: { source: true } } }, orderBy: { updatedAt: 'desc' }, take: 300 }),
+    // Shown matches scored before the profile changed (lib/search/rescore.ts): they stay visible until re-scored.
+    prisma.jobMatch.findMany({ where: { userId, filtered: false, redFlags: { has: RESCORE_FLAG }, job: { isActive: true } }, include: { job: { include: { source: true } } }, orderBy: { score: 'desc' }, take: 60 }),
   ]);
+  const waiting = [...queued, ...stale];
 
   // Jobs an agent picked by hand (Grok bot, Claude): the hard rules still apply, the pre-score cut doesn't, and they go first.
-  const picked = new Set(waiting.filter((w) => parseAiMeta(w.aiMeta).agent).map((w) => w.jobId));
+  const picked = new Set(queued.filter((w) => parseAiMeta(w.aiMeta).agent).map((w) => w.jobId));
+  const rescoring = new Set(stale.map((w) => w.jobId));
   const filterProfile = profileForFilter(profile);
   const candidates: Candidate[] = [];
   const rejected: Array<{ jobId: string; reason: string; tier: LocationTier; preScore?: number }> = [];
@@ -254,7 +277,9 @@ export async function scoreUserBatch(
     else if ((r.preScore ?? 0) < PRE_MIN && !picked.has(job.id)) rejected.push({ jobId: job.id, reason: `Low pre-score (${r.preScore})`, tier: r.tier, preScore: r.preScore });
     else candidates.push({ job, tier: r.tier, preScore: r.preScore ?? 0 });
   }
-  const byPriority = (a: Candidate, b: Candidate) => Number(picked.has(b.job.id)) - Number(picked.has(a.job.id)) || b.preScore - a.preScore;
+  // Agent picks, then matches being re-scored for a changed profile, then the best pre-scores.
+  const rank = (c: Candidate) => (picked.has(c.job.id) ? 2 : rescoring.has(c.job.id) ? 1 : 0);
+  const byPriority = (a: Candidate, b: Candidate) => rank(b) - rank(a) || b.preScore - a.preScore;
   candidates.sort(byPriority);
   const rows = (list: typeof rejected) =>
     list.map((r) => ({ userId, jobId: r.jobId, score: 0, reasons: [], redFlags: [r.reason], priority: 'low', filtered: true, locationTier: r.tier, preScore: r.preScore ?? null }));
@@ -263,7 +288,7 @@ export async function scoreUserBatch(
     const waitingIds = new Set(waiting.map((w) => w.jobId));
     const changed = rejected.filter((r) => waitingIds.has(r.jobId));
     for (const r of changed) {
-      await prisma.jobMatch.update({ where: { userId_jobId: { userId, jobId: r.jobId } }, data: { redFlags: [r.reason], preScore: r.preScore ?? null } });
+      await prisma.jobMatch.update({ where: { userId_jobId: { userId, jobId: r.jobId } }, data: { redFlags: [r.reason], preScore: r.preScore ?? null, filtered: true, score: 0, locationTier: r.tier } });
     }
   }
   let newlyRejectedLate = 0;
@@ -291,7 +316,7 @@ export async function scoreUserBatch(
       await prisma.jobMatch.upsert({
         where: { userId_jobId: { userId, jobId: c.job.id } },
         create: { userId, jobId: c.job.id, score: 0, reasons: [], redFlags: [reason], priority: 'low', filtered: true, locationTier: r.tier, preScore: r.preScore ?? null },
-        update: { redFlags: [reason], preScore: r.preScore ?? null },
+        update: { redFlags: [reason], preScore: r.preScore ?? null, filtered: true, score: 0 },
       });
       newlyRejectedLate++;
     } else c.preScore = r.preScore ?? 0;

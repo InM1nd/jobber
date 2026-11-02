@@ -97,6 +97,8 @@ export interface DemoApplication {
   interviewAt?: string | null;
   updatedAt?: string | null;
   jobId?: string | null;
+  /** false = the linked posting was taken down on the company's board; null = not linked. */
+  jobActive?: boolean | null;
   fit?: AppFit | null;
 }
 

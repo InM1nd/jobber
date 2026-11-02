@@ -67,12 +67,32 @@ export async function linkApplications(userId: string, opts: { applicationIds?: 
     .map((m) => ({ id: m.job.id, url: m.job.url, title: m.job.title, company: m.job.company || m.job.source.company }))
     .filter((j) => !taken.has(j.id));
   const links: { applicationId: string; jobId: string; app: string; job: string }[] = [];
-  for (const app of apps) {
-    const job = findJobFor(app, jobs.filter((j) => !taken.has(j.id)));
-    if (!job) continue;
+  const link = async (app: AppLite, job: JobLite) => {
     taken.add(job.id);
     await prisma.application.update({ where: { id: app.id }, data: { jobId: job.id } });
     links.push({ applicationId: app.id, jobId: job.id, app: `${app.company} — ${app.role}`, job: `${job.company} — ${job.title}` });
+  };
+  const left: AppLite[] = [];
+  for (const app of apps) {
+    const job = findJobFor(app, jobs.filter((j) => !taken.has(j.id)));
+    if (job) await link(app, job);
+    else left.push(app);
+  }
+  // Not among the user's matches: the exact posting link may still be in the shared pool (one indexed lookup).
+  // Linked, the tracker learns when the company takes the listing down.
+  const byKey = new Map(left.map((a) => [normalizeUrl(a.url), a] as const).filter(([k]) => k && !isGenericCareersUrl(k)) as Array<[string, AppLite]>);
+  if (byKey.size) {
+    const pool = await prisma.job.findMany({
+      where: { urlKey: { in: [...byKey.keys()] } },
+      select: { id: true, url: true, title: true, company: true, urlKey: true, source: { select: { company: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+    for (const j of pool) {
+      const app = byKey.get(j.urlKey!);
+      if (!app || taken.has(j.id)) continue;
+      byKey.delete(j.urlKey!);
+      await link(app, { id: j.id, url: j.url, title: j.title, company: j.company || j.source.company });
+    }
   }
   return links;
 }
@@ -80,8 +100,8 @@ export async function linkApplications(userId: string, opts: { applicationIds?: 
 /** Statuses meaning the user already applied (or got further). Only these hide a match; to_apply / check_listing / skip still show. */
 export const APPLIED_STATUSES = ['applied', 'interview', 'on_hold', 'offer', 'rejected'];
 
-/** Prisma filter: matches whose job is not linked to an application the user already sent. */
-export const notTracked = (userId: string) => ({ job: { applications: { none: { userId, status: { in: APPLIED_STATUSES } } } } });
+/** Prisma filter: matches whose job is still open and not linked to an application the user already sent. */
+export const notTracked = (userId: string) => ({ job: { isActive: true, applications: { none: { userId, status: { in: APPLIED_STATUSES } } } } });
 
 /**
  * One application can only carry one jobId, but the same posting often arrives from several boards

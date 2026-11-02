@@ -7,7 +7,8 @@ import { SlidingWindowLimiter, backoffDelay, parseRetryDelay } from './limiter';
  * - Falls back to the next model when one is overloaded (503) or retired (404).
  */
 
-export type GeminiTier = 'smart' | 'lite';
+/** 'verify' = Flash only, for the second look at the day's best matches (lib/search/rescore.ts). */
+export type GeminiTier = 'smart' | 'lite' | 'verify';
 
 export class AiUnavailableError extends Error {
   constructor(message: string, public retryAfterMs?: number, public fromServer = false) {
@@ -26,6 +27,7 @@ export const FLASH_MODEL = () => process.env.GEMINI_MODEL || 'gemini-3.5-flash';
  */
 export function modelsFor(tier: GeminiTier): string[] {
   const lite = LITE_MODEL();
+  if (tier === 'verify') return [FLASH_MODEL()];
   if (tier === 'smart' && process.env.GEMINI_FLASH_FALLBACK === 'true') return [...new Set([lite, FLASH_MODEL()])];
   return [lite];
 }

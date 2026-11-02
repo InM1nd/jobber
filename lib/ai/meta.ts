@@ -57,6 +57,8 @@ export interface AiMeta {
   /** Earlier versions of the cover letter, newest first. */
   letterHistory?: LetterVersion[];
   agent?: AgentFind;
+  /** Second look by the stronger model: when, and the flash-lite score it replaced. */
+  verified?: { at: string; before: number };
 }
 
 /** Earlier letter versions kept per match. */
@@ -88,6 +90,8 @@ export function parseAiMeta(raw: unknown): AiMeta {
     if (o) meta[k] = o;
   }
   if (history?.length) meta.letterHistory = history;
+  const ver = r.verified as { at?: unknown; before?: unknown } | null | undefined;
+  if (ver && typeof ver.at === 'string' && typeof ver.before === 'number') meta.verified = { at: ver.at, before: ver.before };
   const a = r.agent as Partial<AgentFind> | null | undefined;
   if (a && typeof a.by === 'string' && typeof a.at === 'string') {
     meta.agent = {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser, saveProfile } from '@/lib/data/service';
 import { getPrisma } from '@/lib/db/prisma';
+import { markForRescore } from '@/lib/search/rescore';
 
 export const instant = false;
 
@@ -24,5 +25,6 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
   await prisma.jobMatch.updateMany({ where: { userId: user.id, cvId: id }, data: { cvId: null } });
   const first = await prisma.cv.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' } });
   await saveProfile(user.id, { cvText: first?.text ?? null, cvFileName: first?.fileName ?? null });
+  await markForRescore(user.id);
   return NextResponse.json({ ok: true });
 }

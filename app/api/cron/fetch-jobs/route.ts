@@ -4,6 +4,7 @@ import { getPrisma } from '@/lib/db/prisma';
 import { ingestSource } from '@/lib/jobs/ingest';
 import { sendDailyDigest } from '@/lib/telegram/bot';
 import { recheckCareersOnly } from '@/lib/companies/recheck';
+import { sendSourceHealth } from '@/lib/jobs/health';
 import { planRun, timeoutFor, withTimeout } from '@/lib/jobs/schedule';
 
 export const maxDuration = 60;
@@ -84,6 +85,8 @@ export async function GET(req: NextRequest) {
           await sendDailyDigest(user.id).catch((e) => console.error('digest', e));
           digests++;
         }
+        // Mondays: tell the owner which sources stopped bringing jobs.
+        if (new Date().getUTCDay() === 1) await sendSourceHealth().catch((e) => console.error('source health', e));
       }
     }
 

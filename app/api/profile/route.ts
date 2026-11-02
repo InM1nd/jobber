@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getProfile, requireUser, saveProfile } from '@/lib/data/service';
 import { DraftSchema, profilePatchFromDraft } from '@/lib/profile/draft';
 import { rebuildSources } from '@/lib/search/watch';
+import { markForRescore, scoringChanged } from '@/lib/search/rescore';
 import { isDemoMode } from '@/lib/demo/mode';
 import { MAX_FACTS_CHARS } from '@/lib/profile/facts';
 
@@ -28,5 +29,7 @@ export async function POST(request: Request) {
     JSON.stringify(before.searchKeywords) !== JSON.stringify(patch.searchKeywords) ||
     JSON.stringify(before.openTo) !== JSON.stringify(patch.openTo);
   if (changed && !isDemoMode() && before.onboardedAt) await rebuildSources(user.id);
-  return NextResponse.json({ profile });
+  // Rules or scoring inputs changed → re-check skipped jobs and re-score the best shown matches.
+  const rescoring = !isDemoMode() && before.onboardedAt && scoringChanged(before as unknown as Record<string, unknown>, patch) ? await markForRescore(user.id) : 0;
+  return NextResponse.json({ profile, rescoring });
 }
