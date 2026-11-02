@@ -77,22 +77,22 @@ export async function linkApplications(userId: string, opts: { applicationIds?: 
   return links;
 }
 
-/** Prisma filter: matches whose job is not in the user's tracker. */
-export const notTracked = (userId: string) => ({ job: { applications: { none: { userId } } } });
+/** Statuses meaning the user already applied (or got further). Only these hide a match; to_apply / check_listing / skip still show. */
+export const APPLIED_STATUSES = ['applied', 'interview', 'on_hold', 'offer', 'rejected'];
 
-/** Tracker statuses that do NOT hide a match by URL/company+role (still to be looked at). Linked-by-jobId always hides. */
-const NOT_ACTED = ['check_listing', 'skip'];
+/** Prisma filter: matches whose job is not linked to an application the user already sent. */
+export const notTracked = (userId: string) => ({ job: { applications: { none: { userId, status: { in: APPLIED_STATUSES } } } } });
 
 /**
  * One application can only carry one jobId, but the same posting often arrives from several boards
  * (ATS + karriere.at + derStandard + aggregators). This drops every match that is the same job as an
- * application the user acted on (any status but check_listing/skip): same normalized URL, or same
+ * application the user already applied to (APPLIED_STATUSES): same normalized URL, or same
  * company + role. One small indexed query for the user's tracker, then in-memory matching.
  */
 export async function dropTracked<T extends { job: { url: string; title: string; company: string | null; source: { company: string } } }>(userId: string, rows: T[]): Promise<T[]> {
   if (!rows.length) return rows;
   const apps = await getPrisma().application.findMany({
-    where: { userId, status: { notIn: NOT_ACTED } },
+    where: { userId, status: { in: APPLIED_STATUSES } },
     select: { id: true, company: true, role: true, url: true, jobId: true },
   });
   if (!apps.length) return rows;
