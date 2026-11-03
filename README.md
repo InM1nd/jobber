@@ -1,10 +1,108 @@
 # Jobber
 
-Jobber is a Telegram Mini App for job search. The same Next.js app on Vercel holds the UI, the bot webhook, and the cron routes. It fetches vacancies from public ATS APIs, scores them on the owner's shared Gemini key (`GEMINI_API_KEY`, free tier), drafts cover letters and per-job CV advice, and reminds you to follow up in the chat.
+Jobber is a personal job-search assistant that runs as a Telegram Mini App and as a web dashboard. It pulls vacancies from public job boards and company ATS APIs, filters them with rules (no AI cost), scores the rest against your CV with AI, and keeps your applications in a tracker with follow-up reminders. Outside agents (Grok Bot, Claude) can send in jobs they find and read the tracker through a private API and MCP server.
 
-The owner tests it first. Friends get in with an invite code. Nobody pastes keys: AI runs server-side on one shared Gemini key with per-user daily quotas.
+## Why
 
-## What works in this version
+Job hunting means checking dozens of boards, reading ads that don't fit, and losing track of follow-ups. Jobber does the boring part: one pool of jobs with duplicates removed, a score with reasons for each one, and a tracker that reminds you. Your decisions about what to apply for stay with you. Nothing is sent for you.
+
+## Features
+
+- **Matches**: scored vacancies (0–100), grouped by fit (strong / good / ok / weak), with reasons, red flags, a sub-score breakdown and requirement coverage. Local jobs rank ahead of remote ones in each band.
+- **Skipped by filters**: every job the rules dropped, with the reason, plus a "Score anyway" button.
+- **Job pool**: 20+ public sources (Greenhouse, Lever, Ashby, Workable, Personio, Recruitee, SmartRecruiters, Teamtailor, Workday, Remotive, Arbeitnow, HN "Who is hiring", JSearch…), deduped by normalized link and by company + title + location.
+- **Tracker**: statuses (to apply → applied → interview → offer / rejected / skip), follow-up dates, a funnel with rates, employer reply parsing, interview `.ics`.
+- **AI writing**: tailored CV advice, cover letters with versions, form drafts. A fact guard flags claims your CV and facts don't back.
+- **Agent channel**: `POST /api/agent/jobs` puts an agent's finds into the pool (never the tracker), marks duplicates and queues them for scoring ahead of the pre-score cut.
+- **Telegram**: sign in with Telegram, digest of strong matches, follow-up reminders, forwarding employer emails to the bot.
+- **Cost control**: one shared Gemini free-tier key with per-user daily quotas and a global daily budget, or the user's own key.
+
+## Stack
+
+Next.js 16 (App Router, server components) · TypeScript · Prisma 5 on Supabase Postgres · Supabase Auth (email) + Telegram `initData` HMAC sign-in · Google Gemini (flash-lite) · grammY (Telegram bot) · Vercel (hosting + cron) · Tailwind + Radix UI · Vitest · MCP SDK.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Sources
+    ATS[Company ATS APIs<br/>Greenhouse, Lever, Ashby…]
+    Boards[Keyword boards<br/>Remotive, Arbeitnow, HN, JSearch…]
+  end
+  Agent[Grok Bot / Claude] -- "POST /api/agent/jobs<br/>/api/agent/applications" --> API
+  Claude[Claude Desktop/Code] -- MCP --> MCP[mcp/ server] --> API
+  Cron[Vercel cron<br/>fetch 08:00/14:00 · match 09:00<br/>drafts 09:40 · follow-ups 10:00 UTC] --> API
+  ATS & Boards --> Fetch[lib/sources + dedupe]
+  subgraph App[Next.js app on Vercel]
+    API[API routes]
+    Fetch --> Pool[(Job pool)]
+    API --> Pool
+    Pool --> Pre[Rule pre-filter + pre-score<br/>lib/jobs/prefilter.ts]
+    Pre --> Score[AI scoring<br/>lib/search/score.ts]
+    Score --> Matches[(JobMatch)]
+    Matches --> UI[Dashboard / Mini App<br/>Matches · Skipped · Tracker]
+    UI --> Tracker[(Application)]
+  end
+  Score <--> Gemini[Gemini API]
+  Pool & Matches & Tracker --- DB[(Supabase Postgres)]
+  App <--> TG[Telegram bot + Mini App]
+```
+
+## Agent API
+
+Private API for the owner's agents. Auth: `Authorization: Bearer <AGENT_API_KEY>` (full access) or `AGENT_API_KEY_CLAUDE` (read-only unless `AGENT_API_KEY_CLAUDE_WRITE=true`). Keys must be at least 24 characters; with no key set the API answers 503. Everything acts on the owner account (`OWNER_TELEGRAM_ID`).
+
+| Method | Path | What it does |
+| --- | --- | --- |
+| `POST` | `/api/agent/jobs` | One job (`{...}`) or up to 25 (`{items:[...]}`): `url`, or `text`, or `title` + `company` + `description` (≥150 chars), plus optional `location`, `remote`, `postedAt`, `source`, `note`, `score`. Stored in the pool, queued for scoring; one scoring request runs right away unless `score:false`. Each result has `status` (`created`/`duplicate`), `tracked` (tracker status or null) and `duplicate: {pool, tracker}`. |
+| `GET` | `/api/agent/jobs?jobIds=a,b` | State of jobs sent earlier: `queued`, `skipped` (with reason) or `scored` (score, reasons, red flags, link). |
+| `GET` | `/api/agent/applications` | Tracker list. Filters: `status`, `url`, `company`+`role`, `q`, `updatedSince`, `limit`. |
+| `POST` | `/api/agent/applications` | Upsert one or up to 200 tracker rows, deduped by normalized URL, then company + role. |
+| `GET`/`PATCH` | `/api/agent/applications/:id` | Read one; update `status`, `appliedAt`, `followUpAt`, `notes`, `appendNote`, `nextAction`. |
+| `GET`/`POST` | `/api/agent/applications/:id/prepare` | Read / generate application-form drafts. Never submits. |
+
+```bash
+curl -s -X POST "$BASE/api/agent/jobs" -H "Authorization: Bearer $AGENT_API_KEY" -H 'content-type: application/json' \
+  -d '{"url":"https://jobs.example.com/123","source":"grok","note":"React + Vienna"}'
+```
+
+MCP server for Claude: see [`mcp/README.md`](mcp/README.md).
+
+## Screenshots
+
+> Placeholders. Put images in `docs/screenshots/`.
+
+![Matches](docs/screenshots/matches.png)
+![Match detail](docs/screenshots/match-detail.png)
+![Tracker](docs/screenshots/tracker.png)
+
+Screens to capture:
+
+1. Matches (desktop): fit groups + side panel with the selected match.
+2. Match detail: score breakdown, requirements, red flags, agent note ("Found by Grok").
+3. Skipped by filters: reasons + "Score anyway".
+4. Tracker: list by status + funnel.
+5. Application detail: follow-up date, reply parsing, cover letter versions.
+6. Onboarding: CV upload → "Here's what I understood" card → search progress.
+7. Telegram: Mini App in chat, digest message, follow-up reminder.
+8. Agent API: a `curl` to `/api/agent/jobs` with its JSON response (duplicate flag).
+
+## Environment variables
+
+Required: `DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ENCRYPTION_KEY`, `TELEGRAM_BOT_TOKEN`, `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `GEMINI_API_KEY`.
+
+Owner / demo: `OWNER_TELEGRAM_ID`, `SEED_INVITE_CODE`, `DEMO_MODE`, `TELEGRAM_MINI_APP_SHORT_NAME`.
+
+Agent API / MCP: `AGENT_API_KEY`, `AGENT_API_KEY_CLAUDE`, `AGENT_API_KEY_CLAUDE_WRITE`, `MCP_URL_TOKEN`, `AGENT_DRAFTS`, `AGENT_DRAFTS_ALL`, `AGENT_DRAFTS_MIN_SCORE`, `AGENT_DRAFTS_PER_DAY`.
+
+AI tuning (optional): `GEMINI_API_KEYS`, `GEMINI_MODEL`, `GEMINI_MODEL_LITE`, `GEMINI_FLASH_FALLBACK`, `GEMINI_RPM_LITE`, `GEMINI_RPM_SMART`, `GEMINI_RPD_LITE`, `AI_DAILY_SCORE_CALLS`, `AI_DAILY_SCORES`, `AI_PRESCORE_MIN`, `AI_TOP_CANDIDATES`, `FIRST_STEP_MS`, `MAX_RUN_SOURCES`.
+
+Sources (optional): `JSEARCH_API_KEY`, `JSEARCH_HOST`, `JSEARCH_KEYWORDS`, `JSEARCH_MONTHLY_LIMIT`, `JSEARCH_SOURCE`, `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `JOOBLE_API_KEY`, `HN_SOURCE`, `OWNER_SCRAPERS`, `SCRAPER_*` (owner-only scrapers).
+
+Setup details for each are below.
+
+## Feature details
+
 
 - Sign-in from Telegram WebApp `initData`, checked with HMAC-SHA256 and the bot token. `auth_date` older than 24 hours is rejected. A signed cookie is the session. The owner is the Telegram account in `OWNER_TELEGRAM_ID`, or the first account that opens the app with the seed invite. Email magic link still works in a normal browser.
 - Profile: PDF text extraction, skills, location and salary filters, skill gaps, writing rules, company watchlist.
@@ -56,6 +154,7 @@ All public and used per their terms; no LinkedIn or logged-in scraping. Re-check
 - Keyword boards: JSearch (Google for Jobs: LinkedIn, Indeed…, own key), Remotive, Jobicy, Himalayas, Arbeitnow, RemoteOK (link back required), We Work Remotely (RSS), Working Nomads, The Muse, Bundesagentur für Arbeit Jobsuche API (Germany, local search), Adzuna (`ADZUNA_APP_ID`/`ADZUNA_APP_KEY`, free key, optional), Jooble (`JOOBLE_API_KEY`, free key, optional).
 - Company ATS boards: Greenhouse, Lever, Ashby, Workable, Personio, Recruitee, SmartRecruiters, Teamtailor, BambooHR, Workday (public CXS endpoint).
 - Not included: AMS eJob-Room / karriere.at (no public API or feed; AMS search API needs login), EURES (no public API), LinkedIn, Join.com (public API needs a numeric company id).
+
 
 ## What is stubbed
 

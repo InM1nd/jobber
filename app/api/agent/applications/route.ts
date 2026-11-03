@@ -25,7 +25,8 @@ export async function POST(request: Request) {
   if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
 
   if (Array.isArray(body.items)) {
-    const items = body.items.slice(0, 200) as Record<string, unknown>[];
+    if (body.items.length > 200) return NextResponse.json({ error: 'At most 200 items per request' }, { status: 400 });
+    const items = body.items as Record<string, unknown>[];
     const results = [];
     for (const [i, item] of items.entries()) {
       const r = await upsertAgentJob(owner.id, item);
