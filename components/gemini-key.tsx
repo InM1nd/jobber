@@ -15,7 +15,7 @@ function Mock({ children }: { children: React.ReactNode }) {
     <div className="mt-3 overflow-hidden rounded-[10px] border border-line bg-surface-2">
       <div className="flex items-center gap-1 border-b border-line px-2.5 py-1.5">
         {[0, 1, 2].map((i) => <span key={i} className="size-1.5 rounded-full bg-line-strong" />)}
-        <span className="ml-2 truncate text-[10px] text-subtle">aistudio.google.com</span>
+        <span className="ml-2 truncate text-[13px] text-muted">aistudio.google.com</span>
       </div>
       <div className="p-3">{children}</div>
     </div>
@@ -28,19 +28,19 @@ const STEPS: Array<{ title: string; text: string; mock: React.ReactNode }> = [
     text: 'Tap the button below and sign in with any Google (Gmail) account. It’s free — no card needed.',
     mock: (
       <div className="flex items-center gap-2">
-        <span className="flex size-6 items-center justify-center rounded-full bg-bg text-[12px] font-bold">G</span>
-        <span className="h-2 w-24 rounded bg-line-strong" />
-        <span className="ml-auto rounded-full bg-[#1a73e8] px-2.5 py-1 text-[10px] font-medium text-white">Sign in</span>
+        <span className="flex size-6 items-center justify-center rounded-full bg-bg text-[13px] font-bold">G</span>
+        <span className="h-2 min-w-4 flex-1 rounded bg-line-strong" />
+        <span className="ml-auto rounded-full bg-fg px-2.5 py-1 text-[13px] font-medium text-bg">Sign in</span>
       </div>
     ),
   },
   {
     title: 'Press “Create API key”',
-    text: 'On the “API keys” page, press the blue button. If it asks for a project, pick the suggested one.',
+    text: 'On the “API keys” page, press the Create API key button. If it asks for a project, pick the suggested one.',
     mock: (
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-semibold">API keys</span>
-        <span className="relative inline-flex items-center gap-1 rounded-full bg-[#1a73e8] px-2.5 py-1 text-[10px] font-medium text-white">
+        <span className="text-[13px] font-semibold">API keys</span>
+        <span className="relative inline-flex items-center gap-1 rounded-full bg-fg px-2.5 py-1 text-[13px] font-medium text-bg">
           <Plus className="size-3" /> Create API key
           <MousePointerClick className="absolute -bottom-3 -right-3 size-4 text-fg" />
         </span>
@@ -52,8 +52,8 @@ const STEPS: Array<{ title: string; text: string; mock: React.ReactNode }> = [
     text: 'A long code appears, starting with “AIza…”. Press the copy icon next to it.',
     mock: (
       <div className="flex items-center gap-2 rounded-md border border-line bg-bg px-2 py-1.5">
-        <span className="font-mono text-[10.5px] text-muted">AIzaSy••••••••••••••••Q4</span>
-        <span className="ml-auto rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-medium text-accent">Copy</span>
+        <span className="min-w-0 truncate font-mono text-[13px] text-muted">AIzaSy••••••••••••••••Q4</span>
+        <span className="ml-auto rounded bg-accent-soft px-1.5 py-0.5 text-[13px] font-medium text-accent">Copy</span>
       </div>
     ),
   },
@@ -63,8 +63,8 @@ const STEPS: Array<{ title: string; text: string; mock: React.ReactNode }> = [
     mock: (
       <div className="flex items-center gap-2 rounded-md border border-accent bg-bg px-2 py-1.5">
         <ClipboardPaste className="size-3.5 text-accent" />
-        <span className="font-mono text-[10.5px] text-muted">AIzaSy…</span>
-        <span className="ml-auto rounded bg-fg px-1.5 py-0.5 text-[10px] font-medium text-bg">Save</span>
+        <span className="min-w-0 truncate font-mono text-[13px] text-muted">AIzaSy…</span>
+        <span className="ml-auto rounded bg-fg px-1.5 py-0.5 text-[13px] font-medium text-bg">Save</span>
       </div>
     ),
   },
@@ -114,7 +114,7 @@ export function GeminiKeyCard({ initial }: { initial: { addedAt: string } | null
             </p>
           </div>
           {info && (
-            <button type="button" onClick={remove} aria-label="Remove key" className="flex size-9 items-center justify-center rounded-full text-subtle hover:bg-surface-2 hover:text-danger">
+            <button type="button" onClick={remove} aria-label="Remove key" className="flex size-9 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-danger">
               <Trash2 className="size-4" />
             </button>
           )}
@@ -156,7 +156,7 @@ export function GeminiKeyCard({ initial }: { initial: { addedAt: string } | null
                 {busy ? <Loader2 className="animate-spin" /> : null} Check & save key
               </Button>
             </form>
-            <p className="text-[13px] leading-relaxed text-subtle">Google’s free tier is enough for Jobber. The key is encrypted and only used for your own searches. You can remove it any time.</p>
+            <p className="text-[13px] leading-relaxed text-muted">Google’s free tier is enough for Jobber. The key is encrypted and only used for your own searches. You can remove it any time.</p>
           </div>
         )}
       </div>

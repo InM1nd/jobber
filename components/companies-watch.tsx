@@ -69,10 +69,10 @@ export function CompaniesWatch({
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Add
           </button>
         </div>
-        <p className="px-1 text-[13px] leading-relaxed text-subtle">Jobber finds their public job board (Greenhouse, Lever, Workday, Personio, Teamtailor and more) and checks it daily.</p>
+        <p className="px-1 text-[13px] leading-relaxed text-muted">Jobber finds their public job board (Greenhouse, Lever, Workday, Personio, Teamtailor and more) and checks it daily.</p>
       </form>
       {error && <Notice tone="danger">{error}</Notice>}
-      <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">
+      <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
         {options.map((c) => {
           const on = selected.has(keyOf(c));
           return (

@@ -31,7 +31,7 @@ export default async function SettingsPage() {
   const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME?.replace(/^@/, '') || 'JobberCheck_bot';
 
   return (
-    <div>
+    <div data-wide className="lg:max-w-[1040px]">
       <PageHeader title="Settings" />
       <SettingsPanel
         usage={usage}

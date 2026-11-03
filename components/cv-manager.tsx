@@ -79,12 +79,12 @@ export function CvManager({ cvs, onChange, onParsed, compact }: { cvs: CvItem[];
                 ) : (
                   <button type="button" onClick={() => setEditing(cv.id)} className="flex max-w-full items-center gap-1.5 text-left">
                     <span className="truncate text-[15.5px] font-semibold tracking-[-0.01em]">{cv.label}</span>
-                    <Pencil className="size-3 shrink-0 text-subtle" />
+                    <Pencil className="size-3 shrink-0 text-muted" />
                   </button>
                 )}
                 <p className="truncate text-[13.5px] text-muted">{cv.fileName || 'Pasted text'}{cv.parsed?.targetRoles?.length ? ` · ${cv.parsed.targetRoles.slice(0, 2).join(', ')}` : ''}</p>
               </div>
-              <button type="button" aria-label="Remove CV" onClick={() => remove(cv)} className="flex size-9 items-center justify-center rounded-full text-subtle hover:bg-surface-2 hover:text-danger">
+              <button type="button" aria-label="Remove CV" onClick={() => remove(cv)} className="flex size-9 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-danger">
                 <Trash2 className="size-4" />
               </button>
             </div>

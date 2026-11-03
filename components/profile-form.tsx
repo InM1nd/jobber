@@ -71,7 +71,7 @@ export function Label({ children, hint }: { children: React.ReactNode; hint?: st
   return (
     <div className="mb-2.5 px-1">
       <p className="text-[13px] font-medium text-muted">{children}</p>
-      {hint && <p className="text-[13px] text-subtle">{hint}</p>}
+      {hint && <p className="text-[13px] text-muted">{hint}</p>}
     </div>
   );
 }

@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Copy, Gauge, Mail, PenLine, Send, Sparkles, Ticket } from 'lucide-react';
+import { Copy, Gauge, Mail, PenLine, Send, Ticket } from 'lucide-react';
 import { EmailLinkForm } from '@/components/email-link-form';
 import { InstallApp } from '@/components/pwa';
 import { ThemeSegmented } from '@/components/theme-toggle';
+import { SectionNav } from '@/components/ui/section-nav';
 import { Button } from '@/components/ui/button';
-import { Group, Notice, Row, fieldClass } from '@/components/ui/kit';
+import { Group, Notice, Row, sectionHeadingClass } from '@/components/ui/kit';
 import { GeminiKeyCard } from '@/components/gemini-key';
 import { JSearchKeyCard, type JSearchState } from '@/components/jsearch-key';
-import { haptic, insideTelegram } from '@/components/telegram-ui';
+import { insideTelegram } from '@/components/telegram-ui';
 import type { LinkedAccounts } from '@/lib/data/service';
+
+const SETTINGS_SECTIONS = [{ id: 'ai', label: 'AI & keys' }, { id: 'appearance', label: 'Appearance' }, { id: 'account', label: 'Account' }, { id: 'invites', label: 'Invites' }];
+const MEMBER_SECTIONS = SETTINGS_SECTIONS.slice(0, 3);
 
 export function SettingsPanel({
   usage,
@@ -109,10 +113,13 @@ export function SettingsPanel({
   const canUnlinkEmail = Boolean(accounts.email && accounts.telegram);
 
   return (
-    <div className="space-y-6">
+    <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
+      <SectionNav sections={isOwner ? SETTINGS_SECTIONS : MEMBER_SECTIONS} label="Settings sections" />
+      <div className="min-w-0 space-y-6">
       {message && <Notice tone="success">{message}</Notice>}
       {error && <Notice tone="danger">{error}</Notice>}
 
+      <SettingsSection id="ai" title="AI & keys">
       <GeminiKeyCard initial={geminiKey} />
       {jsearch && <JSearchKeyCard initial={jsearch} />}
 
@@ -126,11 +133,17 @@ export function SettingsPanel({
         <Row icon={PenLine} label="Letters & CV advice" trailing={<span className="text-[13px] tabular-nums text-muted">{usage.used.write} / {usage.limits.write < 0 ? '∞' : usage.limits.write}</span>} />
       </Group>
 
-      <Group title="Appearance" footer="System follows your device on the web and your Telegram theme in the app.">
+      </SettingsSection>
+
+      <SettingsSection id="appearance" title="Appearance">
+      <Group footer="System follows your device on the web and your Telegram theme in the app.">
         <div className="p-3"><ThemeSegmented /></div>
       </Group>
 
       <InstallGroup />
+      </SettingsSection>
+
+      <SettingsSection id="account" title="Account">
 
       <Group title="Linked accounts" footer="Both sign-ins open the same account, so the Telegram app and the website share matches, tracker and settings.">
         <Row
@@ -188,8 +201,11 @@ export function SettingsPanel({
         )}
       </Group>
 
+      </SettingsSection>
+
       {isOwner && (
-        <Group title="Invites" footer="Share a code with a friend. Each code works once and expires in 90 days.">
+        <SettingsSection id="invites" title="Invites">
+        <Group footer="Share a code with a friend. Each code works once and expires in 90 days.">
           <Row
             icon={Ticket}
             iconTone="warning"
@@ -206,8 +222,10 @@ export function SettingsPanel({
             }
           />
         </Group>
+        </SettingsSection>
       )}
 
+      </div>
     </div>
   );
 }
@@ -226,5 +244,14 @@ function InstallGroup() {
     <Group title="App">
       <InstallApp force={force} />
     </Group>
+  );
+}
+
+function SettingsSection({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-24 space-y-4 rounded-[var(--radius-card)] border border-line bg-surface p-5 md:p-6 lg:scroll-mt-8">
+      <h2 className={sectionHeadingClass}>{title}</h2>
+      {children}
+    </section>
   );
 }

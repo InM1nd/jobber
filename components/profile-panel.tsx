@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { SectionNav } from '@/components/ui/section-nav';
 import { Button } from '@/components/ui/button';
-import { Notice, capsClass, fieldClass } from '@/components/ui/kit';
+import { Notice, fieldClass, sectionHeadingClass } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { CvManager, type CvItem } from '@/components/cv-manager';
 import { CompaniesWatch, keyOf, type CompanyOption } from '@/components/companies-watch';
@@ -88,7 +89,7 @@ export function ProfilePanel({ initial, writingRules: initialRules, facts: initi
 
   return (
     <div className="pb-4 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
-      <ProfileNav />
+      <SectionNav sections={GROUPS} label="Profile sections" />
       <div className="min-w-0 space-y-6">
       <Group id="you" title="You" hint="What Jobber knows about you. Letters and answers use only this and your CVs.">
       <Block title={`Your CVs · ${cvs.length}`} hint="For each job Jobber picks the CV that fits best and tells you which one to send.">
@@ -167,55 +168,14 @@ const GROUPS = [
 /** One part of the profile, as a card with its own heading (the nav jumps here). */
 function Group({ id, title, hint, children }: { id: string; title: string; hint: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-20 rounded-[var(--radius-card)] border border-line px-5 py-5 md:px-7 md:py-6 lg:scroll-mt-8">
-      <h2 className="text-[20px] font-semibold tracking-[-0.02em]">{title}</h2>
+    <section id={id} className="scroll-mt-20 rounded-[var(--radius-card)] border border-line bg-surface px-5 py-5 md:px-7 md:py-6 lg:scroll-mt-8">
+      <h2 className={sectionHeadingClass}>{title}</h2>
       <p className="mt-1 text-[14px] leading-relaxed text-muted">{hint}</p>
       <div className="mt-6 space-y-8 divide-line [&>section+section]:border-t [&>section+section]:pt-7">{children}</div>
     </section>
   );
 }
 
-/** Jump links: a sticky row of chips on the phone, a sticky side list on desktop; the visible group is highlighted. */
-function ProfileNav() {
-  const [active, setActive] = useState('you');
-  useEffect(() => {
-    const els = GROUPS.map((g) => document.getElementById(g.id)).filter((e): e is HTMLElement => Boolean(e));
-    const io = new IntersectionObserver(
-      (entries) => {
-        const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (top) setActive(top.target.id);
-      },
-      { rootMargin: '-15% 0px -70% 0px' },
-    );
-    els.forEach((e) => io.observe(e));
-    return () => io.disconnect();
-  }, []);
-  const go = (id: string) => {
-    setActive(id);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-  return (
-    <nav aria-label="Profile sections" className="sticky top-[calc(8px+var(--safe-top))] z-20 -mx-5 mb-5 bg-bg/90 px-5 py-2 backdrop-blur lg:top-8 lg:mx-0 lg:mb-0 lg:self-start lg:bg-transparent lg:p-0 lg:backdrop-blur-0">
-      <ul className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:gap-0.5">
-        {GROUPS.map((g) => (
-          <li key={g.id} className="shrink-0">
-            <button
-              type="button"
-              onClick={() => go(g.id)}
-              aria-current={active === g.id ? 'true' : undefined}
-              className={cn(
-                'h-9 rounded-full px-3.5 text-[14px] font-medium transition-colors lg:w-full lg:text-left',
-                active === g.id ? 'bg-fg text-bg' : 'bg-surface-2 text-muted hover:text-fg lg:bg-transparent',
-              )}
-            >
-              {g.label}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
 
 function slugFromUrl(ats: string, url: string) {
   const u = new URL(url);
