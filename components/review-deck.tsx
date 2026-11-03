@@ -163,7 +163,7 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
       <div className="min-w-0">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[13px] font-medium uppercase tracking-[0.12em] text-subtle">Review</p>
+            <p className="text-[13px] font-medium tracking-[-0.01em] text-muted">Review</p>
             <h1 className="text-[26px] font-semibold tracking-[-0.03em]">{done ? 'All caught up' : `${i + 1} of ${cards.length}`}</h1>
           </div>
           <button
@@ -191,8 +191,8 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
               : 'New roles are scored every morning and afternoon. Matches has everything, including lower scores.'}
             action={
               <div className="flex gap-2">
-                <Link href="/dashboard/tracker" className="inline-flex h-10 items-center rounded-full bg-accent px-4 text-[14px] font-semibold text-accent-fg">Open tracker</Link>
-                <Link href="/dashboard/matches" className="inline-flex h-10 items-center rounded-full border border-line px-4 text-[14px] font-medium">All matches</Link>
+                <Link href="/dashboard/tracker" className="inline-flex h-11 items-center rounded-full bg-accent px-4 text-[14px] font-semibold text-accent-fg">Open tracker</Link>
+                <Link href="/dashboard/matches" className="inline-flex h-11 items-center rounded-full border border-line px-4 text-[14px] font-medium">All matches</Link>
               </div>
             }
           />
@@ -200,7 +200,7 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
           <>
             <div className="relative h-[min(470px,calc(100dvh-330px))] min-h-[360px] select-none">
               {next && (
-                <div className="absolute inset-0 scale-[0.96] rounded-[var(--radius-card)] border border-line bg-bg opacity-70" aria-hidden>
+                <div className="absolute inset-0 scale-[0.96] rounded-[var(--radius-card)] border border-line bg-surface opacity-70" aria-hidden>
                   <CardBody card={next} />
                 </div>
               )}
@@ -213,14 +213,14 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
                 onPointerUp={onUp}
                 onPointerCancel={onUp}
                 className={cn(
-                  'absolute inset-0 cursor-grab touch-none overflow-hidden rounded-[var(--radius-card)] border bg-bg shadow-[0_10px_30px_-12px_rgb(0_0_0/0.25)] active:cursor-grabbing',
+                  'absolute inset-0 cursor-grab touch-none overflow-hidden rounded-[var(--radius-card)] border bg-surface shadow-lift active:cursor-grabbing',
                   hint === 'apply' ? 'border-fit-strong' : hint === 'skip' ? 'border-fit-weak' : hint === 'later' ? 'border-accent' : 'border-line',
                 )}
                 style={{ transform, transition: drag.active && !exit ? 'none' : `transform ${EXIT_MS}ms ease-out, opacity ${EXIT_MS}ms`, opacity: exit ? 0 : 1 }}
               >
                 {hint && (
                   <span className={cn(
-                    'absolute right-5 top-5 z-10 rounded-full px-3 py-1 text-[13px] font-bold uppercase tracking-wide',
+                    'absolute right-5 top-5 z-10 rounded-full px-3 py-1 text-[13px] font-bold tracking-normal',
                     hint === 'apply' ? 'bg-fit-strong/15 text-fit-strong' : hint === 'skip' ? 'bg-fit-weak/15 text-fit-weak' : 'bg-accent/15 text-fg',
                   )}>
                     {hint === 'apply' ? 'Apply' : hint === 'skip' ? 'Not for me' : 'Later'}
@@ -239,7 +239,7 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
             <button type="button" onClick={() => setDetails((d) => !d)} className="mx-auto mt-3 flex items-center gap-1 text-[13px] font-medium text-muted lg:hidden">
               {details ? 'Hide details' : 'Details'} <ChevronDown className={cn('size-4 transition-transform', details && 'rotate-180')} />
             </button>
-            <p className="mt-4 hidden text-center text-[13px] text-subtle lg:block">
+            <p className="mt-4 hidden text-center text-[13px] text-muted lg:block">
               <Kbd>→</Kbd> apply · <Kbd>←</Kbd> not for me · <Kbd>↑</Kbd> later · <Kbd>Z</Kbd> undo
             </p>
           </>
@@ -247,7 +247,7 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
 
         {askWhy && (
           <div className="fixed inset-x-4 bottom-[calc(96px+var(--safe-bottom))] z-40 mx-auto max-w-md animate-in rounded-2xl border border-line bg-bg p-3 shadow-[0_10px_30px_-10px_rgb(0_0_0/0.3)] md:bottom-8">
-            <p className="mb-2 px-1 text-[13.5px] text-muted">Why not? <span className="text-subtle">(optional — teaches the scoring)</span></p>
+            <p className="mb-2 px-1 text-[13.5px] text-muted">Why not? <span className="text-muted">(optional — teaches the scoring)</span></p>
             <div className="flex flex-wrap gap-1.5">
               {SKIP_REASONS.map((r, n) => (
                 <button
@@ -256,7 +256,7 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
                   onClick={() => void reason(r)}
                   className={cn('h-8 rounded-full border px-3 text-[13.5px] font-medium', askWhy.reason === r ? 'border-accent bg-accent/10' : 'border-line text-muted hover:bg-surface-2')}
                 >
-                  <span className="mr-1 hidden text-subtle lg:inline">{n + 1}</span>{r}
+                  <span className="mr-1 hidden text-muted lg:inline">{n + 1}</span>{r}
                 </button>
               ))}
             </div>
@@ -303,7 +303,7 @@ function CardBody({ card }: { card: DeckCard }) {
         {facts.map((f) => <span key={f}> · {f}</span>)}
       </p>
       {(card.agent || card.verified) && (
-        <p className="mt-1 text-[13px] text-subtle">
+        <p className="mt-1 text-[13px] text-muted">
           {card.agent ? `Found by ${card.agent.by.charAt(0).toUpperCase() + card.agent.by.slice(1)}` : ''}
           {card.agent && card.verified ? ' · ' : ''}
           {card.verified ? 'Double-checked' : ''}
@@ -347,19 +347,19 @@ function Details({ card }: { card: DeckCard }) {
   const name = card.agent ? card.agent.by.charAt(0).toUpperCase() + card.agent.by.slice(1) : '';
   return (
     <>
-      <div className="flex items-start justify-between gap-4 rounded-[var(--radius-card)] border border-line px-5 py-4">
+      <div className="flex items-start justify-between gap-4 rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
         <div className="min-w-0">
           <p className="text-[13px] text-muted">{card.job.company}</p>
           <p className="text-[17px] font-semibold leading-snug tracking-[-0.02em]">{card.job.title}</p>
         </div>
         {card.job.url && (
-          <a href={card.job.url} target="_blank" rel="noreferrer" className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface-2 px-3.5 text-[13px] font-semibold">
+          <a href={card.job.url} target="_blank" rel="noreferrer" className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-surface-2 px-3.5 text-[13px] font-semibold">
             Listing <ArrowUpRight className="size-4 text-accent" />
           </a>
         )}
       </div>
       {(card.reasons.length > 0 || card.redFlags.length > 0) && (
-        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
           <p className="mb-2.5 text-[14px] font-medium">Why {card.score}</p>
           <ul className="space-y-2">
             {card.reasons.map((r) => (
@@ -372,7 +372,7 @@ function Details({ card }: { card: DeckCard }) {
         </section>
       )}
       {card.agent?.note && (
-        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
           <p className="mb-1.5 text-[14px] font-medium">{name}&rsquo;s note{card.agent.score !== undefined && <span className="font-normal text-muted"> · its guess {card.agent.score}</span>}</p>
           <p className="whitespace-pre-line text-[14px] leading-relaxed text-muted">{card.agent.note}</p>
         </section>
@@ -403,5 +403,5 @@ function RoundButton({ label, kbd, onClick, className, small, children }: { labe
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {
-  return <kbd className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-sans text-[12px] text-muted">{children}</kbd>;
+  return <kbd className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-sans text-[13px] text-muted">{children}</kbd>;
 }
