@@ -36,7 +36,7 @@ function Stat({ value, label, tone }: { value: React.ReactNode; label: string; t
   return (
     <div className="min-w-0">
       <p className={cn('text-[19px] font-semibold leading-none tracking-[-0.03em] tabular-nums md:text-[22px]', tone === 'accent' && 'text-accent')}>{value}</p>
-      <p className="mt-1 text-[12.5px] leading-tight text-muted md:truncate md:text-[13px]">{label}</p>
+      <p className="mt-1 text-[13px] leading-tight text-muted md:truncate md:text-[13px]">{label}</p>
     </div>
   );
 }
@@ -84,7 +84,7 @@ export function FunnelCard({ applications, quietDays = 14 }: { applications: Loo
 
   return (
     <section className="mb-5 space-y-3">
-      <div className="rounded-[var(--radius-card)] border border-line">
+      <div className="rounded-[var(--radius-card)] border border-line bg-surface">
         <div className="grid grid-cols-4 gap-x-3 gap-y-3 px-4 py-3.5 md:gap-x-4 md:px-5 md:py-4 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] lg:items-center">
           <Stat value={f.applied} label={`applied · ${PERIODS.find((p) => p.key === period)!.label.toLowerCase()}`} />
           <Stat value={f.replyRate != null ? `${f.replyRate}%` : '—'} label={`replied (${f.replied})`} />
@@ -134,12 +134,12 @@ export function FunnelCard({ applications, quietDays = 14 }: { applications: Loo
               <div className="flex flex-1 items-end gap-1.5" style={{ minHeight: 96 }}>
                 {f.weeks.map((w, i) => (
                   <div key={w.start} className="flex flex-1 flex-col items-center gap-1" title={`Week of ${w.start}: ${w.count}`}>
-                    <span className="text-[12px] tabular-nums text-muted">{w.count || ''}</span>
+                    <span className="text-[13px] tabular-nums text-muted">{w.count || ''}</span>
                     <div className={cn('w-full rounded-t-[4px]', i === f.weeks.length - 1 ? 'bg-accent' : 'bg-accent/45')} style={{ height: `${Math.round((w.count / peak) * 72) + 2}px` }} />
                   </div>
                 ))}
               </div>
-              <div className="mt-1.5 flex justify-between text-[12px] text-muted">
+              <div className="mt-1.5 flex justify-between text-[13px] text-muted">
                 <span>{f.weeks[0]?.start.slice(5).replace('-', '.')}</span>
                 <span>this week</span>
               </div>
@@ -149,7 +149,7 @@ export function FunnelCard({ applications, quietDays = 14 }: { applications: Loo
       </div>
 
       {look.rows.length > 0 && (
-        <div className="rounded-[var(--radius-card)] border border-line px-5 py-3.5">
+        <div className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-3.5">
           <p className="mb-1.5 text-[14px] font-semibold">Needs you</p>
           <ul className="grid gap-x-6 md:grid-cols-2">
             {[...urgent, ...quiet].slice(0, showAll ? undefined : NEEDS_SHOWN).map((item, i) => (
@@ -164,7 +164,7 @@ export function FunnelCard({ applications, quietDays = 14 }: { applications: Loo
                     <span className="block truncate text-[14px] font-medium leading-tight group-hover:underline">{item.role} <span className="font-normal text-muted">· {item.company}</span></span>
                     <span className="block truncate text-[13.5px] text-muted">{item.text}</span>
                   </span>
-                  <ChevronRight className="size-4 shrink-0 text-subtle" />
+                  <ChevronRight className="size-4 shrink-0 text-muted" />
                 </button>
               </li>
             ))}

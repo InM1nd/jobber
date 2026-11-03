@@ -15,7 +15,7 @@ import { parseDrafts, type ApplicationDrafts } from '@/lib/apply/format';
 const SUB_LABEL: Record<string, string> = { role: 'Role fit', skills: 'Skills', seniority: 'Level', location: 'Location', language: 'Language', salary: 'Salary' };
 const bar = (v: number) => (v >= 75 ? 'bg-fit-strong' : v >= 55 ? 'bg-fit-good' : v >= 35 ? 'bg-fit-ok' : 'bg-fit-weak');
 const day = (v: string) => new Date(v).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-const caps = 'text-[12.5px] font-medium uppercase tracking-[0.12em] text-subtle';
+const caps = 'text-[14px] font-semibold text-fg';
 
 export function FitPanel({ app }: { app: DemoApplication }) {
   const router = useRouter();
@@ -44,16 +44,16 @@ export function FitPanel({ app }: { app: DemoApplication }) {
   }
 
   return (
-    <section className="space-y-3 rounded-[18px] border border-line p-4">
-      <div className="flex items-center gap-3">
-        {fit ? <ScoreRing score={fit.score} size={48} /> : <span className="flex size-12 items-center justify-center rounded-full border border-dashed border-line-strong text-[13px] text-subtle">—</span>}
-        <div className="min-w-0 flex-1">
+    <section className="space-y-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        {fit ? <ScoreRing score={fit.score} size={48} /> : <span className="flex size-12 items-center justify-center rounded-full border border-dashed border-line-strong text-[13px] text-muted">—</span>}
+        <div className="min-w-[160px] flex-1">
           <p className="text-[14.5px] font-semibold">{fit ? <span className={FIT_TEXT[fitOf(fit.score)]}>{FIT_LABEL[fitOf(fit.score)]}</span> : 'Not scored yet'}</p>
-          <p className="truncate text-[13.5px] text-muted">
+          <p className="text-[13.5px] leading-relaxed text-muted">
             {fit ? `${fit.cvLabel ? `Best CV: ${fit.cvLabel}` : 'Scored against your profile'}${fit.scoredAt ? ` · ${day(fit.scoredAt)}` : ''}` : 'Check this role against your profile and CVs'}
           </p>
         </div>
-        <button type="button" disabled={busy} onClick={() => run()} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-3.5 text-[13px] font-semibold text-accent-fg transition-opacity disabled:opacity-60">
+        <button type="button" disabled={busy} onClick={() => run()} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] font-semibold text-fg hover:bg-surface-2 transition-opacity disabled:opacity-60">
           {busy ? <Loader2 className="size-4 animate-spin" /> : fit ? <RefreshCw className="size-3.5" /> : <Sparkles className="size-3.5" />}
           {busy ? 'Scoring…' : fit ? 'Re-score' : 'Score fit'}
         </button>
@@ -84,11 +84,11 @@ export function FitPanel({ app }: { app: DemoApplication }) {
           {fit.cvAdvice.verdict && <p className="leading-relaxed">{fit.cvAdvice.verdict}</p>}
           {fit.cvAdvice.emphasize.map((t) => <p key={t} className="text-muted">↑ {t}</p>)}
           {fit.cvAdvice.add.map((t) => <p key={t} className="text-muted">+ {t}</p>)}
-          {fit.cvAdvice.doNotClaim.length > 0 && <p className="text-subtle">Don’t claim: {fit.cvAdvice.doNotClaim.join(', ')}</p>}
+          {fit.cvAdvice.doNotClaim.length > 0 && <p className="text-muted">Don’t claim: {fit.cvAdvice.doNotClaim.join(', ')}</p>}
         </div>
       )}
       {fit && app.url && (
-        <button type="button" disabled={busy} onClick={() => run({ refetch: true })} className="text-[13px] text-subtle hover:text-fg">Fetch the listing again</button>
+        <button type="button" disabled={busy} onClick={() => run({ refetch: true })} className="text-[13px] text-muted hover:text-fg">Fetch the listing again</button>
       )}
       {error && <p className="text-[13px] text-danger">{error}</p>}
       {(paste || (!app.url && !fit)) && (
@@ -137,7 +137,7 @@ export function FollowUpPanel({ app }: { app: DemoApplication }) {
   }
 
   return (
-    <section className="space-y-3 rounded-[18px] border border-line p-4">
+    <section className="space-y-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[14.5px] font-semibold">Follow-up</p>
@@ -150,7 +150,7 @@ export function FollowUpPanel({ app }: { app: DemoApplication }) {
         )}
       </div>
       {plan.timeline.length > 0 && (
-        <ol className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-subtle">
+        <ol className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-muted">
           {plan.timeline.map((t, i) => <li key={t} className={cn(i === Math.min(plan.count + 1, 3) && 'font-semibold text-fg')}>{t}</li>)}
         </ol>
       )}
@@ -172,7 +172,7 @@ export function FollowUpPanel({ app }: { app: DemoApplication }) {
               <RefreshCw className="size-3.5" /> Rewrite
             </button>
           </div>
-          <p className="text-[12.5px] text-subtle">Nothing is sent automatically. Copy it and send it yourself.</p>
+          <p className="text-[13px] text-muted">Nothing is sent automatically. Copy it and send it yourself.</p>
         </div>
       ) : (
         <button type="button" disabled={!!busy} onClick={() => call('draft')} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line px-3.5 text-[13px] font-semibold transition-colors hover:bg-surface-2 disabled:opacity-60">
@@ -238,11 +238,11 @@ export function PrepareApplicationPanel({ app }: { app: DemoApplication }) {
   };
 
   return (
-    <section className="space-y-3 rounded-[18px] border border-line p-4">
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
+    <section className="space-y-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-[160px] flex-1">
           <p className="text-[14.5px] font-semibold">Application drafts</p>
-          <p className="truncate text-[13.5px] text-muted">
+          <p className="text-[13.5px] leading-relaxed text-muted">
             {drafts ? `${drafts.items.length} answers · ${SOURCE_LABEL[drafts.source] || ''}` : 'Cover letter and form answers, drafted from your CV'}
           </p>
         </div>
@@ -259,10 +259,10 @@ export function PrepareApplicationPanel({ app }: { app: DemoApplication }) {
           {drafts.items.map((it) => (
             <div key={it.id} className="space-y-1.5">
               <div className="flex items-start justify-between gap-2">
-                <p className="pt-1 text-[13px] font-medium leading-snug">{it.label}{it.required && <span className="text-subtle"> *</span>}</p>
+                <p className="pt-1 text-[13px] font-medium leading-snug">{it.label}{it.required && <span className="text-muted"> *</span>}</p>
                 <CopyButton text={it.answer} />
               </div>
-              {it.options && <p className="text-[12.5px] text-subtle">Options: {it.options.join(' · ')}</p>}
+              {it.options && <p className="text-[13px] text-muted">Options: {it.options.join(' · ')}</p>}
               <textarea
                 className={cn(fieldClass, 'text-[13.5px] leading-relaxed')}
                 rows={it.id === 'cover_letter' || it.label === 'Cover letter' ? 10 : Math.min(6, Math.max(2, Math.ceil(it.answer.length / 70)))}
@@ -279,7 +279,7 @@ export function PrepareApplicationPanel({ app }: { app: DemoApplication }) {
             <button type="button" onClick={() => setOpen(false)} className="h-9 rounded-full px-3 text-[13px] text-muted hover:text-fg">Hide</button>
           </div>
           {drafts.promptVersion !== PROMPT_VERSIONS.drafts && <Note tone="warning">Drafted with an older prompt. Redo for the current one.</Note>}
-          <p className="text-[12.5px] text-subtle">Drafts only. Nothing is submitted; check every “[fill in]” / “[check]” before you paste.</p>
+          <p className="text-[13px] text-muted">Drafts only. Nothing is submitted; check every “[fill in]” / “[check]” before you paste.</p>
         </div>
       )}
       {error && <p className="text-[13px] text-danger">{error}</p>}
@@ -298,8 +298,8 @@ function CalendarButtons({ app, start }: { app: DemoApplication; start: Date }) 
   return (
     <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
       <span className="text-muted">Interview <span className="font-medium text-fg">{when}</span></span>
-      <a href={google} target="_blank" rel="noreferrer" className="rounded-full border border-line px-2.5 py-1 font-medium hover:bg-surface-2">Google Calendar</a>
-      <a href={`/api/applications/${app.id}/interview.ics`} className="rounded-full border border-line px-2.5 py-1 font-medium hover:bg-surface-2">.ics</a>
+      <a href={google} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line px-3.5 py-1 font-medium hover:bg-surface-2">Google Calendar</a>
+      <a href={`/api/applications/${app.id}/interview.ics`} className="inline-flex min-h-11 items-center rounded-full border border-line px-3.5 py-1 font-medium hover:bg-surface-2">.ics</a>
     </div>
   );
 }
@@ -330,11 +330,11 @@ export function ReplyPanel({ app }: { app: DemoApplication }) {
   }
 
   return (
-    <section className="space-y-3 rounded-[18px] border border-line p-4">
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
+    <section className="space-y-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-[160px] flex-1">
           <p className="text-[14.5px] font-semibold">Got a reply?</p>
-          <p className="truncate text-[13.5px] text-muted">Paste their email: status, notes and a draft answer. You can also forward it to the bot.</p>
+          <p className="text-[13.5px] leading-relaxed text-muted">Paste their email: status, notes and a draft answer. You can also forward it to the bot.</p>
         </div>
         {!open && (
           <button type="button" onClick={() => setOpen(true)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 text-[13px] font-semibold hover:bg-surface-2">

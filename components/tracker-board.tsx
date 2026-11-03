@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { ArrowUpRight, BellRing, ChevronDown, KanbanSquare, Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { EmptyState, fieldClass, fitOf, FIT_TEXT } from '@/components/ui/kit';
+import { EmptyState, capsClass, fieldClass, fitOf, FIT_TEXT } from '@/components/ui/kit';
 import { haptic } from '@/components/telegram-ui';
 import { cn } from '@/lib/utils';
 import { FitPanel, FollowUpPanel, PrepareApplicationPanel, ReplyPanel } from '@/components/tracker-extras';
@@ -60,7 +60,7 @@ function StatusPill({ status, onChange, className }: { status: string; onChange:
     >
       <span className={cn('size-1.5 rounded-full', DOT[status] || DOT.to_apply)} />
       <span className="whitespace-nowrap">{LABELS[status] || 'To apply'}</span>
-      <ChevronDown className="size-3.5 text-subtle" />
+      <ChevronDown className="size-3.5 text-muted" />
       <select aria-label="Status" className="absolute inset-0 cursor-pointer opacity-0" value={status} onChange={(e) => onChange(e.target.value)}>
         {STATUSES.map((s) => <option key={s} value={s}>{LABELS[s]}</option>)}
       </select>
@@ -133,12 +133,12 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
                 {a.company}
                 <span className="lg:hidden">{a.location ? ` · ${a.location}` : ''}</span>
               </p>
-              {fu && <p className={cn('mt-0.5 truncate text-[12.5px] lg:hidden', fu.due ? 'font-semibold text-fit-weak' : 'text-subtle')}><BellRing className="mr-1 inline size-3 -translate-y-px" />{fu.text}</p>}
-              {a.jobActive === false && <p className="mt-0.5 truncate text-[12.5px] text-subtle">Listing taken down</p>}
+              {fu && <p className={cn('mt-0.5 truncate text-[13px] lg:hidden', fu.due ? 'font-semibold text-fit-weak' : 'text-muted')}><BellRing className="mr-1 inline size-3 -translate-y-px" />{fu.text}</p>}
+              {a.jobActive === false && <p className="mt-0.5 truncate text-[13px] text-muted">Listing taken down</p>}
             </div>
           </div>
           <p className="hidden truncate text-[13.5px] text-muted lg:order-5 lg:block">{a.location || '—'}</p>
-          <p className={cn('hidden text-[13.5px] font-semibold tabular-nums lg:order-4 lg:block', a.score != null ? FIT_TEXT[fitOf(a.score)] : 'text-subtle')}>{a.score ?? '—'}</p>
+          <p className={cn('hidden text-[13.5px] font-semibold tabular-nums lg:order-4 lg:block', a.score != null ? FIT_TEXT[fitOf(a.score)] : 'text-muted')}>{a.score ?? '—'}</p>
           <div className="hidden lg:order-2 lg:block"><StatusPill status={a.status} onChange={(s) => setStatus(a.id, s)} /></div>
           <div className="flex min-w-0 shrink-0 flex-col items-end gap-1 lg:order-3 lg:w-full lg:items-start lg:overflow-hidden">
             <div className="lg:hidden"><StatusPill status={a.status} onChange={(s) => setStatus(a.id, s)} /></div>
@@ -150,7 +150,7 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
               <span className="hidden max-w-full truncate text-[13.5px] text-fg/80 lg:inline">{a.nextAction}</span>
             ) : date ? (
               <span className="text-[13px] tabular-nums text-muted">Applied {day(date)}</span>
-            ) : <span className="hidden text-[13px] text-subtle lg:inline">—</span>}
+            ) : <span className="hidden text-[13px] text-muted lg:inline">—</span>}
           </div>
         </button>
       </li>
@@ -162,22 +162,22 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <label className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }}
             placeholder="Search company or role"
-            className="h-10 w-full rounded-full bg-surface-2 pl-9 pr-3 text-[14px] outline-none placeholder:text-subtle focus:ring-2 focus:ring-accent/40"
+            className="h-10 w-full rounded-full bg-surface-2 pl-9 pr-3 text-[14px] outline-none placeholder:text-muted focus:ring-2 focus:ring-accent/40"
           />
         </label>
         <label className="relative inline-flex h-10 items-center gap-1 rounded-full bg-surface-2 pl-3.5 pr-2.5 text-[13px] font-medium">
           <span className="hidden sm:inline text-muted">Sort:</span> {SORTS[sort]}
-          <ChevronDown className="size-3.5 text-subtle" />
+          <ChevronDown className="size-3.5 text-muted" />
           <select aria-label="Sort" className="absolute inset-0 cursor-pointer opacity-0" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
             {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </label>
-        <button type="button" onClick={() => setAdding(true)} aria-label="Add application" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg transition-transform active:scale-95 sm:w-auto sm:gap-1.5 sm:px-4 sm:text-[13.5px] sm:font-semibold">
+        <button type="button" onClick={() => setAdding(true)} aria-label="Add application" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg transition-transform active:scale-95 sm:w-auto sm:gap-1.5 sm:px-4 sm:text-[13.5px] sm:font-semibold">
           <Plus className="size-4" /><span className="hidden sm:inline">Add</span>
         </button>
       </div>
@@ -194,7 +194,7 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
             )}
           >
             {t.label}
-            <span className={cn('tabular-nums text-[13px]', tab === t.key ? 'opacity-70' : 'text-subtle')}>{counts[t.key]}</span>
+            <span className={cn('tabular-nums text-[13px]', tab === t.key ? 'opacity-70' : 'text-muted')}>{counts[t.key]}</span>
           </button>
         ))}
       </div>
@@ -204,7 +204,7 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
       ) : due.length + rest.length === 0 ? (
         <p className="py-10 text-center text-[13px] text-muted">Nothing here{query ? ` for “${query}”` : ''}.</p>
       ) : (
-        <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-bg">
+        <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
           <div className="hidden grid-cols-[minmax(0,2.2fr)_136px_minmax(0,1.6fr)_44px_minmax(0,1fr)] gap-4 border-b border-line px-4 py-2.5 text-[13px] font-medium text-muted lg:grid">
             <span className="pl-5">Role</span><span>Status</span><span>Next step</span><span>Score</span><span>Location</span>
           </div>
@@ -231,7 +231,7 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
   );
 }
 
-function Sheet({ title, onClose, children }: { title: React.ReactNode; onClose: () => void; children: React.ReactNode }) {
+function Sheet({ title, onClose, children, toolbar }: { title: React.ReactNode; onClose: () => void; children: React.ReactNode; toolbar?: React.ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -241,14 +241,15 @@ function Sheet({ title, onClose, children }: { title: React.ReactNode; onClose: 
   }, [onClose]);
   return createPortal(
     <div className="fixed inset-0 z-[60]">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/35 backdrop-blur-[2px] animate-in" />
-      <aside className="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-[26px] bg-bg shadow-lift animate-in md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[520px] md:rounded-none md:rounded-l-[26px]">
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-overlay backdrop-blur-[2px] animate-in" />
+      <aside className="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-[var(--radius-card)] bg-surface shadow-lift animate-in md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[520px] md:rounded-none md:rounded-l-[var(--radius-card)]">
         <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-line-strong md:hidden" />
-        <header className="flex items-start justify-between gap-3 px-5 pb-3 pt-3 md:pt-6">
+        <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-3 md:pt-6">
           <div className="min-w-0">{title}</div>
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 text-muted hover:bg-surface-2" aria-label="Close"><X className="size-4" /></button>
+          <button type="button" onClick={onClose} className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2" aria-label="Close"><X className="size-4" /></button>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 pb-[calc(20px+var(--safe-bottom,0px))]">{children}</div>
+        {toolbar && <div className="shrink-0 border-y border-line px-5 py-3">{toolbar}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(20px+var(--safe-bottom,0px))]">{children}</div>
       </aside>
     </div>,
     document.body,
@@ -257,8 +258,8 @@ function Sheet({ title, onClose, children }: { title: React.ReactNode; onClose: 
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1">
-      <p className="text-[12.5px] font-medium uppercase tracking-[0.12em] text-subtle">{label}</p>
+    <div className="space-y-2">
+      <p className="text-[14px] font-semibold text-fg">{label}</p>
       {children}
     </div>
   );
@@ -270,17 +271,10 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
   return (
     <Sheet
       onClose={onClose}
-      title={
-        <>
-          <p className="text-[18px] font-semibold leading-snug tracking-[-0.02em]">{app.role}</p>
-          <p className="text-[13.5px] text-muted">{app.company}{app.location ? ` · ${app.location}` : ''}</p>
-        </>
-      }
-    >
-      <div className="space-y-5">
+      toolbar={
         <div className="flex flex-wrap items-center gap-2">
-          <StatusPill status={app.status} onChange={(s) => { haptic('light'); void onPatch({ status: s }); }} className="h-8" />
-          <div className="inline-flex h-8 rounded-full bg-surface-2 p-0.5 text-[13px] font-medium">
+          <StatusPill status={app.status} onChange={(s) => { haptic('light'); void onPatch({ status: s }); }} className="h-11" />
+          <div className="inline-flex min-h-11 rounded-full bg-surface-2 p-0.5 text-[13px] font-medium">
             {(['high', 'medium', 'low'] as const).map((p) => (
               <button key={p} type="button" onClick={() => void onPatch({ priority: p })} className={cn('inline-flex items-center gap-1 rounded-full px-2.5 capitalize', app.priority === p ? 'bg-bg text-fg shadow-soft' : 'text-muted')}>
                 <span className={cn('size-1.5 rounded-full', PRIO_DOT[p])} />{p}
@@ -289,10 +283,18 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
           </div>
           {app.score != null && <span className={cn('text-[13px] font-semibold tabular-nums', FIT_TEXT[fitOf(app.score)])}>{app.score}/100</span>}
           {app.url && (
-            <a href={app.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-0.5 text-[13px] font-medium text-accent">Listing <ArrowUpRight className="size-3.5" /></a>
+            <a href={app.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-full bg-fg px-4 text-[13px] font-semibold text-bg">Listing <ArrowUpRight className="size-3.5" /></a>
           )}
         </div>
-
+      }
+      title={
+        <>
+          <h2 className="text-[18px] font-semibold leading-snug tracking-[-0.02em]">{app.role}</h2>
+          <p className="text-[13.5px] text-muted">{app.company}{app.location ? ` · ${app.location}` : ''}</p>
+        </>
+      }
+    >
+      <div className="space-y-6 py-5">
         {app.jobActive === false && (
           <p className="rounded-xl bg-surface-2 px-3.5 py-2.5 text-[13px] text-muted">
             {app.status === 'applied' || app.status === 'on_hold'
@@ -341,7 +343,9 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <section className="space-y-3 border-t border-line pt-5">
+          <h2 className={capsClass}>Dates & reminders</h2>
+          <div className="grid grid-cols-2 gap-3">
           <Field label="Applied">
             <input type="date" className={cn(fieldClass, 'h-10')} value={toInput(app.appliedAt)} onChange={(e) => void onPatch({ appliedAt: e.target.value || null })} />
           </Field>
@@ -354,6 +358,8 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
             </Field>
           </div>
         </div>
+
+        </section>
 
         {app.status === 'to_apply' || app.status === 'check_listing' ? (
           <>
@@ -373,7 +379,7 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
           <textarea className={fieldClass} rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Contacts, what you sent, salary you named…" />
         </Field>
         {notes !== (app.notes ?? '') && <Button className="w-full" onClick={() => void onPatch({ notes, nextAction: next })}>Save notes</Button>}
-        <p className="text-[13px] text-subtle">
+        <p className="text-[13px] text-muted">
           {app.source ? `Source: ${app.source}` : ''}{app.source && app.updatedAt ? ' · ' : ''}{app.updatedAt ? `Updated ${day(app.updatedAt)}` : ''}
         </p>
       </div>
