@@ -56,7 +56,7 @@ function StatusPill({ status, onChange, className }: { status: string; onChange:
   return (
     <label
       onClick={(e) => e.stopPropagation()}
-      className={cn('relative inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-line pl-2.5 pr-1.5 text-[12px] font-medium text-fg transition-colors hover:bg-surface-2', className)}
+      className={cn('relative inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-line pl-2.5 pr-1.5 text-[13px] font-medium text-fg transition-colors hover:bg-surface-2', className)}
     >
       <span className={cn('size-1.5 rounded-full', DOT[status] || DOT.to_apply)} />
       <span className="whitespace-nowrap">{LABELS[status] || 'To apply'}</span>
@@ -123,32 +123,34 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
         <button
           type="button"
           onClick={() => setOpenId(a.id)}
-          className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-2/70 active:bg-surface-2 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_56px_132px_minmax(0,1.3fr)] lg:gap-4"
+          className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-2/70 active:bg-surface-2 lg:grid lg:grid-cols-[minmax(0,2.2fr)_136px_minmax(0,1.6fr)_44px_minmax(0,1fr)] lg:gap-4"
         >
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <span title={a.priority ? `${a.priority} priority` : undefined} className={cn('size-2 shrink-0 rounded-full', PRIO_DOT[a.priority ?? ''] || 'bg-transparent ring-1 ring-line-strong ring-inset')} />
             <div className="min-w-0">
               <p className="truncate text-[14.5px] font-semibold leading-tight tracking-[-0.01em]">{a.role}</p>
-              <p className="truncate text-[12.5px] text-muted">
+              <p className="truncate text-[13.5px] text-muted">
                 {a.company}
                 <span className="lg:hidden">{a.location ? ` · ${a.location}` : ''}</span>
               </p>
-              {fu && <p className={cn('mt-0.5 truncate text-[11.5px] lg:hidden', fu.due ? 'font-semibold text-fit-weak' : 'text-subtle')}><BellRing className="mr-1 inline size-3 -translate-y-px" />{fu.text}</p>}
-              {a.jobActive === false && <p className="mt-0.5 truncate text-[11.5px] text-subtle">Listing taken down</p>}
+              {fu && <p className={cn('mt-0.5 truncate text-[12.5px] lg:hidden', fu.due ? 'font-semibold text-fit-weak' : 'text-subtle')}><BellRing className="mr-1 inline size-3 -translate-y-px" />{fu.text}</p>}
+              {a.jobActive === false && <p className="mt-0.5 truncate text-[12.5px] text-subtle">Listing taken down</p>}
             </div>
           </div>
-          <p className="hidden truncate text-[13px] text-muted lg:block">{a.location || '—'}</p>
-          <p className={cn('hidden text-[13px] font-semibold tabular-nums lg:block', a.score != null ? FIT_TEXT[fitOf(a.score)] : 'text-subtle')}>{a.score ?? '—'}</p>
-          <div className="hidden lg:block"><StatusPill status={a.status} onChange={(s) => setStatus(a.id, s)} /></div>
-          <div className="flex min-w-0 shrink-0 flex-col items-end gap-1 lg:items-start">
+          <p className="hidden truncate text-[13.5px] text-muted lg:order-5 lg:block">{a.location || '—'}</p>
+          <p className={cn('hidden text-[13.5px] font-semibold tabular-nums lg:order-4 lg:block', a.score != null ? FIT_TEXT[fitOf(a.score)] : 'text-subtle')}>{a.score ?? '—'}</p>
+          <div className="hidden lg:order-2 lg:block"><StatusPill status={a.status} onChange={(s) => setStatus(a.id, s)} /></div>
+          <div className="flex min-w-0 shrink-0 flex-col items-end gap-1 lg:order-3 lg:w-full lg:items-start lg:overflow-hidden">
             <div className="lg:hidden"><StatusPill status={a.status} onChange={(s) => setStatus(a.id, s)} /></div>
             {fu ? (
-              <span className={cn('hidden truncate text-[12.5px] lg:inline-flex lg:items-center lg:gap-1', fu.due ? 'font-semibold text-fit-weak' : 'text-muted')}>
-                <BellRing className="size-3 shrink-0" />{fu.text}
+              <span className={cn('hidden min-w-0 max-w-full text-[13.5px] lg:flex lg:items-center lg:gap-1', fu.due ? 'font-semibold text-fit-weak' : 'text-muted')} title={fu.text}>
+                <BellRing className="size-3 shrink-0" /><span className="truncate">{fu.text}</span>
               </span>
+            ) : a.nextAction && (a.status === 'to_apply' || a.status === 'check_listing') ? (
+              <span className="hidden max-w-full truncate text-[13.5px] text-fg/80 lg:inline">{a.nextAction}</span>
             ) : date ? (
-              <span className="text-[11.5px] tabular-nums text-subtle">Applied {day(date)}</span>
-            ) : <span className="hidden text-[12px] text-subtle lg:inline">—</span>}
+              <span className="text-[13px] tabular-nums text-muted">Applied {day(date)}</span>
+            ) : <span className="hidden text-[13px] text-subtle lg:inline">—</span>}
           </div>
         </button>
       </li>
@@ -192,7 +194,7 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
             )}
           >
             {t.label}
-            <span className={cn('tabular-nums text-[12px]', tab === t.key ? 'opacity-70' : 'text-subtle')}>{counts[t.key]}</span>
+            <span className={cn('tabular-nums text-[13px]', tab === t.key ? 'opacity-70' : 'text-subtle')}>{counts[t.key]}</span>
           </button>
         ))}
       </div>
@@ -203,12 +205,12 @@ export function TrackerBoard({ applications }: { applications: App[] }) {
         <p className="py-10 text-center text-[13px] text-muted">Nothing here{query ? ` for “${query}”` : ''}.</p>
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-bg">
-          <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_56px_132px_minmax(0,1.3fr)] gap-4 border-b border-line px-4 py-2 text-[11.5px] font-medium uppercase tracking-[0.12em] text-subtle lg:grid">
-            <span className="pl-5">Role</span><span>Location</span><span>Score</span><span>Status</span><span>Follow-up</span>
+          <div className="hidden grid-cols-[minmax(0,2.2fr)_136px_minmax(0,1.6fr)_44px_minmax(0,1fr)] gap-4 border-b border-line px-4 py-2.5 text-[13px] font-medium text-muted lg:grid">
+            <span className="pl-5">Role</span><span>Status</span><span>Next step</span><span>Score</span><span>Location</span>
           </div>
           {due.length > 0 && (
             <>
-              <p className="flex items-center gap-1.5 bg-fit-weak/8 px-4 py-2 text-[12px] font-semibold text-fit-weak">
+              <p className="flex items-center gap-1.5 bg-fit-weak/8 px-4 py-2 text-[13px] font-semibold text-fit-weak">
                 <BellRing className="size-3.5" /> Follow-up due · {due.length}
               </p>
               <ul className="divide-y divide-line border-b border-line">{due.map(row)}</ul>
@@ -240,7 +242,7 @@ function Sheet({ title, onClose, children }: { title: React.ReactNode; onClose: 
   return createPortal(
     <div className="fixed inset-0 z-[60]">
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/35 backdrop-blur-[2px] animate-in" />
-      <aside className="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-[26px] bg-bg shadow-lift animate-in md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[440px] md:rounded-none md:rounded-l-[26px]">
+      <aside className="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-[26px] bg-bg shadow-lift animate-in md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[520px] md:rounded-none md:rounded-l-[26px]">
         <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-line-strong md:hidden" />
         <header className="flex items-start justify-between gap-3 px-5 pb-3 pt-3 md:pt-6">
           <div className="min-w-0">{title}</div>
@@ -256,7 +258,7 @@ function Sheet({ title, onClose, children }: { title: React.ReactNode; onClose: 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-subtle">{label}</p>
+      <p className="text-[12.5px] font-medium uppercase tracking-[0.12em] text-subtle">{label}</p>
       {children}
     </div>
   );
@@ -265,7 +267,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void; onPatch: (d: Partial<App>) => Promise<void> }) {
   const [notes, setNotes] = useState(app.notes ?? '');
   const [next, setNext] = useState(app.nextAction ?? '');
-  const dirty = notes !== (app.notes ?? '') || next !== (app.nextAction ?? '');
   return (
     <Sheet
       onClose={onClose}
@@ -279,7 +280,7 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
       <div className="space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill status={app.status} onChange={(s) => { haptic('light'); void onPatch({ status: s }); }} className="h-8" />
-          <div className="inline-flex h-8 rounded-full bg-surface-2 p-0.5 text-[12px] font-medium">
+          <div className="inline-flex h-8 rounded-full bg-surface-2 p-0.5 text-[13px] font-medium">
             {(['high', 'medium', 'low'] as const).map((p) => (
               <button key={p} type="button" onClick={() => void onPatch({ priority: p })} className={cn('inline-flex items-center gap-1 rounded-full px-2.5 capitalize', app.priority === p ? 'bg-bg text-fg shadow-soft' : 'text-muted')}>
                 <span className={cn('size-1.5 rounded-full', PRIO_DOT[p])} />{p}
@@ -312,7 +313,7 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
                     key={r}
                     type="button"
                     onClick={() => { const n = withSkipReason(notes, on ? null : r); setNotes(n); void onPatch({ notes: n }); }}
-                    className={cn('h-8 rounded-full border px-3 text-[12.5px] font-medium transition-colors', on ? 'border-accent bg-accent/10 text-fg' : 'border-line text-muted hover:bg-surface-2')}
+                    className={cn('h-8 rounded-full border px-3 text-[13.5px] font-medium transition-colors', on ? 'border-accent bg-accent/10 text-fg' : 'border-line text-muted hover:bg-surface-2')}
                   >
                     {r}
                   </button>
@@ -320,6 +321,24 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
               })}
             </div>
           </Field>
+        )}
+
+        <Field label="Next step">
+          <textarea className={fieldClass} rows={2} value={next} onChange={(e) => setNext(e.target.value)} placeholder="What’s the next step?" />
+        </Field>
+        {next !== (app.nextAction ?? '') && <Button className="w-full" onClick={() => void onPatch({ notes, nextAction: next })}>Save next step</Button>}
+
+        {/* Still deciding or about to apply: the letter and form answers come first. Already sent: follow-ups and replies. */}
+        {app.status === 'to_apply' || app.status === 'check_listing' ? (
+          <>
+            <PrepareApplicationPanel key={app.id} app={app} />
+            <FitPanel app={app} />
+          </>
+        ) : (
+          <>
+            <FollowUpPanel app={app} />
+            <ReplyPanel key={`reply-${app.id}`} app={app} />
+          </>
         )}
 
         <div className="grid grid-cols-2 gap-3">
@@ -336,21 +355,25 @@ function DetailSheet({ app, onClose, onPatch }: { app: App; onClose: () => void;
           </div>
         </div>
 
-        <FollowUpPanel app={app} />
-        <ReplyPanel key={`reply-${app.id}`} app={app} />
-        <FitPanel app={app} />
-        <PrepareApplicationPanel key={app.id} app={app} />
+        {app.status === 'to_apply' || app.status === 'check_listing' ? (
+          <>
+            <FollowUpPanel app={app} />
+            <ReplyPanel key={`reply-${app.id}`} app={app} />
+          </>
+        ) : (
+          <>
+            <FitPanel app={app} />
+            <PrepareApplicationPanel key={app.id} app={app} />
+          </>
+        )}
 
-        {app.whyFit && <Field label="Why it fits"><p className="text-[14px] leading-relaxed">{app.whyFit}</p></Field>}
+        {app.whyFit && <Field label="Why it fits"><p className="whitespace-pre-line text-[14px] leading-relaxed">{app.whyFit}</p></Field>}
         {app.risks && <Field label="Risks"><p className="whitespace-pre-line text-[14px] leading-relaxed text-muted">{app.risks}</p></Field>}
-        <Field label="Next action">
-          <textarea className={fieldClass} rows={2} value={next} onChange={(e) => setNext(e.target.value)} placeholder="What’s the next step?" />
-        </Field>
         <Field label="Notes">
           <textarea className={fieldClass} rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Contacts, what you sent, salary you named…" />
         </Field>
-        {dirty && <Button className="w-full" onClick={() => void onPatch({ notes, nextAction: next })}>Save notes</Button>}
-        <p className="text-[12px] text-subtle">
+        {notes !== (app.notes ?? '') && <Button className="w-full" onClick={() => void onPatch({ notes, nextAction: next })}>Save notes</Button>}
+        <p className="text-[13px] text-subtle">
           {app.source ? `Source: ${app.source}` : ''}{app.source && app.updatedAt ? ' · ' : ''}{app.updatedAt ? `Updated ${day(app.updatedAt)}` : ''}
         </p>
       </div>

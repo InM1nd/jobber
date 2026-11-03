@@ -57,7 +57,7 @@ export function JSearchKeyCard({ initial }: { initial: JSearchState }) {
       ) : null}
       {!state.key && (
         <div className="space-y-2">
-          <div className="flex gap-1.5 text-[12.5px]">
+          <div className="flex gap-1.5 text-[13.5px]">
             {(['openwebninja', 'rapidapi'] as const).map((h) => (
               <button key={h} type="button" onClick={() => setHost(h)} className={cn('rounded-full border px-3 py-1', host === h ? 'border-fg font-medium' : 'border-line text-muted')}>
                 {h === 'openwebninja' ? 'OpenWeb Ninja' : 'RapidAPI'}
@@ -69,7 +69,7 @@ export function JSearchKeyCard({ initial }: { initial: JSearchState }) {
             <input className={cn(fieldClass, 'h-10 flex-1 font-mono text-[13px]')} value={key} placeholder="Paste your JSearch API key" onChange={(e) => setKey(e.target.value)} autoComplete="off" />
             <Button onClick={() => call('POST')} disabled={busy || key.trim().length < 20}>{busy ? <Loader2 className="animate-spin" /> : null}Save</Button>
           </div>
-          <p className="text-[11.5px] text-subtle">Stored encrypted. Only used for your own searches.</p>
+          <p className="text-[12.5px] text-subtle">Stored encrypted. Only used for your own searches.</p>
         </div>
       )}
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}

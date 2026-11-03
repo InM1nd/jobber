@@ -10,7 +10,7 @@ import { SKIP_REASONS } from '@/lib/tracker/skip';
 import { formatSalaryRange } from '@/lib/text';
 import { cn } from '@/lib/utils';
 import type { DeckCard } from '@/lib/tracker/deck';
-import type { ReadableSection } from '@/lib/jobs/readable';
+import { AdSection } from '@/components/app/ad-sections';
 
 type Decision = 'apply' | 'skip' | 'later';
 const THRESHOLD = 110;
@@ -163,7 +163,7 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
       <div className="min-w-0">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[12px] font-medium uppercase tracking-[0.12em] text-subtle">Review</p>
+            <p className="text-[13px] font-medium uppercase tracking-[0.12em] text-subtle">Review</p>
             <h1 className="text-[26px] font-semibold tracking-[-0.03em]">{done ? 'All caught up' : `${i + 1} of ${cards.length}`}</h1>
           </div>
           <button
@@ -239,7 +239,7 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
             <button type="button" onClick={() => setDetails((d) => !d)} className="mx-auto mt-3 flex items-center gap-1 text-[13px] font-medium text-muted lg:hidden">
               {details ? 'Hide details' : 'Details'} <ChevronDown className={cn('size-4 transition-transform', details && 'rotate-180')} />
             </button>
-            <p className="mt-4 hidden text-center text-[12px] text-subtle lg:block">
+            <p className="mt-4 hidden text-center text-[13px] text-subtle lg:block">
               <Kbd>→</Kbd> apply · <Kbd>←</Kbd> not for me · <Kbd>↑</Kbd> later · <Kbd>Z</Kbd> undo
             </p>
           </>
@@ -247,14 +247,14 @@ export function ReviewDeck({ cards: initial }: { cards: DeckCard[] }) {
 
         {askWhy && (
           <div className="fixed inset-x-4 bottom-[calc(96px+var(--safe-bottom))] z-40 mx-auto max-w-md animate-in rounded-2xl border border-line bg-bg p-3 shadow-[0_10px_30px_-10px_rgb(0_0_0/0.3)] md:bottom-8">
-            <p className="mb-2 px-1 text-[12.5px] text-muted">Why not? <span className="text-subtle">(optional — teaches the scoring)</span></p>
+            <p className="mb-2 px-1 text-[13.5px] text-muted">Why not? <span className="text-subtle">(optional — teaches the scoring)</span></p>
             <div className="flex flex-wrap gap-1.5">
               {SKIP_REASONS.map((r, n) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => void reason(r)}
-                  className={cn('h-8 rounded-full border px-3 text-[12.5px] font-medium', askWhy.reason === r ? 'border-accent bg-accent/10' : 'border-line text-muted hover:bg-surface-2')}
+                  className={cn('h-8 rounded-full border px-3 text-[13.5px] font-medium', askWhy.reason === r ? 'border-accent bg-accent/10' : 'border-line text-muted hover:bg-surface-2')}
                 >
                   <span className="mr-1 hidden text-subtle lg:inline">{n + 1}</span>{r}
                 </button>
@@ -303,7 +303,7 @@ function CardBody({ card }: { card: DeckCard }) {
         {facts.map((f) => <span key={f}> · {f}</span>)}
       </p>
       {(card.agent || card.verified) && (
-        <p className="mt-1 text-[12px] text-subtle">
+        <p className="mt-1 text-[13px] text-subtle">
           {card.agent ? `Found by ${card.agent.by.charAt(0).toUpperCase() + card.agent.by.slice(1)}` : ''}
           {card.agent && card.verified ? ' · ' : ''}
           {card.verified ? 'Double-checked' : ''}
@@ -325,7 +325,7 @@ function CardBody({ card }: { card: DeckCard }) {
         <ul className="mt-4 flex flex-wrap gap-1.5">
           {card.requirements.slice(0, 5).map((r) => (
             <li key={r.text} className={cn(
-              'rounded-full px-2.5 py-1 text-[12.5px]',
+              'rounded-full px-2.5 py-1 text-[13.5px]',
               r.result === 'covered' ? 'bg-fit-strong/10 text-fg' : r.result === 'partial' ? 'bg-fit-ok/15 text-fg' : 'bg-fit-weak/10 text-fg',
             )}>
               {r.result === 'covered' ? '✓' : r.result === 'partial' ? '~' : '✗'} {r.text}
@@ -383,36 +383,6 @@ function Details({ card }: { card: DeckCard }) {
   );
 }
 
-/** One part of the ad as a short list; long ones fold, the company blurb starts folded. */
-function AdSection({ section }: { section: ReadableSection }) {
-  const fold = section.kind === 'about';
-  const [open, setOpen] = useState(!fold);
-  const [all, setAll] = useState(false);
-  const shown = all ? section.items : section.items.slice(0, 5);
-  return (
-    <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
-      <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 text-left" aria-expanded={open}>
-        <span className="text-[14px] font-medium">{section.title}</span>
-        <ChevronDown className={cn('size-4 text-subtle transition-transform', open && 'rotate-180')} />
-      </button>
-      {open && (
-        <>
-          <ul className="mt-2.5 max-w-[68ch] space-y-1.5">
-            {shown.map((it) => (
-              <li key={it} className="flex gap-2.5 text-[14px] leading-relaxed text-fg/80">
-                <span className="mt-[9px] size-1 shrink-0 rounded-full bg-subtle" />
-                <span>{it}</span>
-              </li>
-            ))}
-          </ul>
-          {section.items.length > shown.length && (
-            <button type="button" onClick={() => setAll(true)} className="mt-2 text-[13px] font-medium text-accent">Show {section.items.length - shown.length} more</button>
-          )}
-        </>
-      )}
-    </section>
-  );
-}
 
 function RoundButton({ label, kbd, onClick, className, small, children }: { label: string; kbd: string; onClick: () => void; className?: string; small?: boolean; children: React.ReactNode }) {
   return (
@@ -433,5 +403,5 @@ function RoundButton({ label, kbd, onClick, className, small, children }: { labe
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {
-  return <kbd className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-sans text-[11px] text-muted">{children}</kbd>;
+  return <kbd className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-sans text-[12px] text-muted">{children}</kbd>;
 }

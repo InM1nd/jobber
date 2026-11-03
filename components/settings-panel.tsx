@@ -143,7 +143,7 @@ export function SettingsPanel({
               canUnlinkTelegram ? (
                 <Button size="sm" variant="ghost" onClick={() => unlink('telegram')}>Unlink</Button>
               ) : (
-                <span className="text-[12px] text-muted">Linked</span>
+                <span className="text-[13px] text-muted">Linked</span>
               )
             ) : (
               <Button size="sm" variant="soft" onClick={() => setShowTelegramOptions((v) => !v)}>Link</Button>
@@ -166,7 +166,7 @@ export function SettingsPanel({
               canUnlinkEmail ? (
                 <Button size="sm" variant="ghost" onClick={() => unlink('email')}>Unlink</Button>
               ) : (
-                <span className="text-[12px] text-muted">Linked</span>
+                <span className="text-[13px] text-muted">Linked</span>
               )
             ) : (
               <Button size="sm" variant="soft" onClick={openEmailForm}>Link</Button>

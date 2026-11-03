@@ -186,15 +186,26 @@ function useOptimisticPath() {
   return { path: pending ?? pathname, go: setPending };
 }
 
-export function BottomNav() {
+/** Count badge on a nav item (Review: cards waiting). */
+function Badge({ n, className }: { n?: number; className?: string }) {
+  if (!n) return null;
+  return (
+    <span className={cn('inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold tabular-nums text-accent-fg', className)}>
+      {n > 99 ? '99+' : n}
+    </span>
+  );
+}
+
+export function BottomNav({ reviewCount }: { reviewCount?: number }) {
   const { path: pathname, go } = useOptimisticPath();
   if (pathname.startsWith('/dashboard/onboarding')) return null;
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(12px+var(--safe-bottom))] md:hidden">
-      <div className="pointer-events-auto mx-auto flex h-16 max-w-md items-center gap-1 rounded-full bg-[#111111] px-2 shadow-[0_8px_28px_-6px_rgb(0_0_0/0.35)] dark:bg-[#1c1c1f]">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(10px+var(--safe-bottom))] md:hidden">
+      <div className="pointer-events-auto mx-auto flex h-[64px] max-w-md items-stretch rounded-[26px] bg-[#111111] px-1.5 shadow-[0_8px_28px_-6px_rgb(0_0_0/0.35)] dark:bg-[#1c1c1f]">
         {tabs.map((tab) => {
           const active = isActive(pathname, tab.href);
           const Icon = tab.icon;
+          const count = tab.href === '/dashboard/review' ? reviewCount : undefined;
           return (
             <Link
               key={tab.href}
@@ -205,14 +216,17 @@ export function BottomNav() {
                 go(tab.href);
               }}
               aria-current={active ? 'page' : undefined}
-              aria-label={tab.label}
+              aria-label={count ? `${tab.label}, ${count} waiting` : tab.label}
               className={cn(
-                'flex h-12 items-center justify-center gap-2 rounded-full transition-[flex,background-color] duration-300 ease-out active:scale-[0.94]',
-                active ? 'flex-[1.9] bg-accent text-accent-fg' : 'flex-1 text-[#8e8e93] hover:text-white',
+                'relative my-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] transition-colors active:scale-[0.95]',
+                active ? 'bg-white/10 text-accent' : 'text-[#a3a3a8] hover:text-white',
               )}
             >
-              <Icon className="size-[21px]" strokeWidth={active ? 2.2 : 1.6} />
-              {active && <span className="animate-in text-[14px] font-semibold tracking-[-0.01em]">{tab.label}</span>}
+              <span className="relative">
+                <Icon className="size-[21px]" strokeWidth={active ? 2.2 : 1.7} />
+                <Badge n={count} className="absolute -right-3 -top-1.5 ring-2 ring-[#111111] dark:ring-[#1c1c1f]" />
+              </span>
+              <span className={cn('text-[11px] leading-none tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{tab.label}</span>
             </Link>
           );
         })}
@@ -221,7 +235,7 @@ export function BottomNav() {
   );
 }
 
-export function Sidebar({ account }: { account: string }) {
+export function Sidebar({ account, reviewCount }: { account: string; reviewCount?: number }) {
   const { path: pathname, go } = useOptimisticPath();
   if (pathname.startsWith('/dashboard/onboarding')) return null;
   return (
@@ -244,12 +258,13 @@ export function Sidebar({ account }: { account: string }) {
             >
               <Icon className="size-4" strokeWidth={active ? 2 : 1.6} />
               {tab.label}
+              {tab.href === '/dashboard/review' && <Badge n={reviewCount} className="ml-auto" />}
             </Link>
           );
         })}
       </nav>
       <div className="mt-auto flex items-center justify-between gap-2 px-3">
-        <span className="min-w-0 truncate text-[12.5px] text-muted">{account}</span>
+        <span className="min-w-0 truncate text-[13.5px] text-muted">{account}</span>
         <ThemeToggle />
       </div>
     </aside>

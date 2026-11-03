@@ -82,7 +82,7 @@ export function CvManager({ cvs, onChange, onParsed, compact }: { cvs: CvItem[];
                     <Pencil className="size-3 shrink-0 text-subtle" />
                   </button>
                 )}
-                <p className="truncate text-[12.5px] text-muted">{cv.fileName || 'Pasted text'}{cv.parsed?.targetRoles?.length ? ` · ${cv.parsed.targetRoles.slice(0, 2).join(', ')}` : ''}</p>
+                <p className="truncate text-[13.5px] text-muted">{cv.fileName || 'Pasted text'}{cv.parsed?.targetRoles?.length ? ` · ${cv.parsed.targetRoles.slice(0, 2).join(', ')}` : ''}</p>
               </div>
               <button type="button" aria-label="Remove CV" onClick={() => remove(cv)} className="flex size-9 items-center justify-center rounded-full text-subtle hover:bg-surface-2 hover:text-danger">
                 <Trash2 className="size-4" />
@@ -97,7 +97,7 @@ export function CvManager({ cvs, onChange, onParsed, compact }: { cvs: CvItem[];
           <Loader2 className="size-5 animate-spin text-accent" />
           <div>
             <p className="text-[15px] font-semibold">Reading your CV…</p>
-            <p className="text-[12.5px] text-muted">About 10 seconds.</p>
+            <p className="text-[13.5px] text-muted">About 10 seconds.</p>
           </div>
         </div>
       ) : paste ? (

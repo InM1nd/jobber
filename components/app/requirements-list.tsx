@@ -15,7 +15,7 @@ export function RequirementsList({ items }: { items?: RequirementItem[] | null }
     <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <p className="text-[14px] font-medium">Requirements</p>
-        <p className="text-[12px] text-subtle">{covered} of {items.length} covered</p>
+        <p className="text-[13px] text-subtle">{covered} of {items.length} covered</p>
       </div>
       <ul className="space-y-2.5">
         {items.map((it) => (
@@ -24,9 +24,9 @@ export function RequirementsList({ items }: { items?: RequirementItem[] | null }
             <span className="min-w-0">
               <span className="text-[13.5px] leading-snug">
                 {it.text}
-                {it.must && <span className="ml-1.5 text-[11px] font-medium uppercase tracking-wide text-subtle">must</span>}
+                {it.must && <span className="ml-1.5 text-[12px] font-medium uppercase tracking-wide text-subtle">must</span>}
               </span>
-              <span className="block text-[12px] text-muted">{it.note}</span>
+              <span className="block text-[13px] text-muted">{it.note}</span>
             </span>
           </li>
         ))}

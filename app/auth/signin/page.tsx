@@ -39,7 +39,7 @@ export default function SignInPage() {
           <div className="mt-8 rounded-[var(--radius-card)] border border-line p-6">
             <TelegramLoginButton onDone={() => router.push('/dashboard/matches')} onError={setError} />
             {error && <div className="mt-3"><Notice tone="danger">{error}</Notice></div>}
-            <div className="my-5 flex items-center gap-3 text-[12px] text-subtle">
+            <div className="my-5 flex items-center gap-3 text-[13px] text-subtle">
               <span className="h-px flex-1 bg-line" /> or with email <span className="h-px flex-1 bg-line" />
             </div>
             <EmailLinkForm

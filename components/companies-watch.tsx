@@ -69,7 +69,7 @@ export function CompaniesWatch({
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Add
           </button>
         </div>
-        <p className="px-1 text-[12px] leading-relaxed text-subtle">Jobber finds their public job board (Greenhouse, Lever, Workday, Personio, Teamtailor and more) and checks it daily.</p>
+        <p className="px-1 text-[13px] leading-relaxed text-subtle">Jobber finds their public job board (Greenhouse, Lever, Workday, Personio, Teamtailor and more) and checks it daily.</p>
       </form>
       {error && <Notice tone="danger">{error}</Notice>}
       <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">
@@ -90,7 +90,7 @@ export function CompaniesWatch({
                   <span className="truncate text-[15px] font-medium tracking-[-0.01em]">{c.name}</span>
                   {c.suggested && <Sparkles className="size-3.5 shrink-0 text-accent" aria-label="Suggested for you" />}
                 </span>
-                <span className="block truncate text-[12.5px] text-muted">
+                <span className="block truncate text-[13.5px] text-muted">
                   {[c.place, c.industry, c.custom ? 'added by you' : null].filter(Boolean).join(' · ')}
                 </span>
               </span>

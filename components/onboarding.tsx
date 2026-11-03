@@ -145,7 +145,7 @@ export function Onboarding({ firstName, initialStep }: { firstName?: string | nu
             {firstName ? `Hi ${firstName}.` : 'Hi.'} Let’s start<br />with your CV.
           </Title>
           <CvManager cvs={cvs} onChange={onCvs} />
-          <p className="mt-6 text-center text-[12px] leading-relaxed text-subtle">Your CVs stay in your account and are read by Google Gemini.</p>
+          <p className="mt-6 text-center text-[13px] leading-relaxed text-subtle">Your CVs stay in your account and are read by Google Gemini.</p>
           <Footer>
             {cvs.length ? (
               <NextButton onClick={next}>Continue</NextButton>
@@ -186,7 +186,7 @@ export function Onboarding({ firstName, initialStep }: { firstName?: string | nu
             onToggle={(c) => setPicked((s) => { const n = new Set(s); n.has(keyOf(c)) ? n.delete(keyOf(c)) : n.add(keyOf(c)); return n; })}
             onAdd={(c) => { setExtra((e) => [c, ...e.filter((x) => keyOf(x) !== keyOf(c))]); setPicked((s) => new Set(s).add(keyOf(c))); }}
           />
-          <p className="mt-4 px-1 text-[12.5px] leading-relaxed text-muted">
+          <p className="mt-4 px-1 text-[13.5px] leading-relaxed text-muted">
             Also searched by keyword: {(draft.keywords.length ? draft.keywords : plan.keywords).join(', ')} — on public job boards near you and remote boards.
           </p>
           <Footer>

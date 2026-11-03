@@ -28,7 +28,7 @@ const STEPS: Array<{ title: string; text: string; mock: React.ReactNode }> = [
     text: 'Tap the button below and sign in with any Google (Gmail) account. It’s free — no card needed.',
     mock: (
       <div className="flex items-center gap-2">
-        <span className="flex size-6 items-center justify-center rounded-full bg-bg text-[11px] font-bold">G</span>
+        <span className="flex size-6 items-center justify-center rounded-full bg-bg text-[12px] font-bold">G</span>
         <span className="h-2 w-24 rounded bg-line-strong" />
         <span className="ml-auto rounded-full bg-[#1a73e8] px-2.5 py-1 text-[10px] font-medium text-white">Sign in</span>
       </div>
@@ -39,7 +39,7 @@ const STEPS: Array<{ title: string; text: string; mock: React.ReactNode }> = [
     text: 'On the “API keys” page, press the blue button. If it asks for a project, pick the suggested one.',
     mock: (
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold">API keys</span>
+        <span className="text-[12px] font-semibold">API keys</span>
         <span className="relative inline-flex items-center gap-1 rounded-full bg-[#1a73e8] px-2.5 py-1 text-[10px] font-medium text-white">
           <Plus className="size-3" /> Create API key
           <MousePointerClick className="absolute -bottom-3 -right-3 size-4 text-fg" />
@@ -109,7 +109,7 @@ export function GeminiKeyCard({ initial }: { initial: { addedAt: string } | null
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-[15.5px] font-semibold tracking-[-0.01em]">{info ? 'Your own Gemini key is on' : 'Use your own free Gemini key'}</p>
-            <p className="text-[12.5px] leading-snug text-muted">
+            <p className="text-[13.5px] leading-snug text-muted">
               {info ? `Added ${new Date(info.addedAt).toLocaleDateString()}. Stored encrypted. Your limits are much higher.` : 'Optional. Takes 2 minutes and gives you far more AI scoring per day.'}
             </p>
           </div>
@@ -156,7 +156,7 @@ export function GeminiKeyCard({ initial }: { initial: { addedAt: string } | null
                 {busy ? <Loader2 className="animate-spin" /> : null} Check & save key
               </Button>
             </form>
-            <p className="text-[12px] leading-relaxed text-subtle">Google’s free tier is enough for Jobber. The key is encrypted and only used for your own searches. You can remove it any time.</p>
+            <p className="text-[13px] leading-relaxed text-subtle">Google’s free tier is enough for Jobber. The key is encrypted and only used for your own searches. You can remove it any time.</p>
           </div>
         )}
       </div>

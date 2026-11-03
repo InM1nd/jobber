@@ -126,9 +126,9 @@ export function TailorCv({
             <div>
               <p className={cn(capsClass, 'mb-2')}>Keywords they use</p>
               <div className="flex flex-wrap gap-1.5">
-                {advice.missingKeywords.map((k) => <span key={k} className="rounded-full border border-line px-2.5 py-0.5 text-[12.5px]">{k}</span>)}
+                {advice.missingKeywords.map((k) => <span key={k} className="rounded-full border border-line px-2.5 py-0.5 text-[13.5px]">{k}</span>)}
               </div>
-              <p className="mt-1.5 text-[12px] text-subtle">Only add the ones you actually have.</p>
+              <p className="mt-1.5 text-[13px] text-subtle">Only add the ones you actually have.</p>
             </div>
           )}
           <List title="Don’t claim" items={advice.doNotClaim} tone="warning" />

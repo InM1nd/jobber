@@ -56,6 +56,19 @@ function adFields(job: { description: string; salaryMin: number | null; salaryMa
   };
 }
 
+/** How many cards Review has right now (the nav badge). Same rules as getDeck, without loading the ads. */
+export async function countDeck(userId: string, minScore = 0): Promise<number> {
+  if (isDemoMode()) return demoStore.matches().filter((m) => m.score >= Math.max(DECK_MIN, minScore) && undecided(m.aiMeta || {})).length;
+  const rows = await getPrisma().jobMatch.findMany({
+    where: { userId, filtered: false, score: { gte: Math.max(DECK_MIN, minScore) }, ...notTracked(userId) },
+    select: { aiMeta: true, job: { select: { url: true, title: true, company: true, source: { select: { company: true } } } } },
+    orderBy: { score: 'desc' },
+    take: 60,
+  });
+  const now = Date.now();
+  return Math.min(DECK_SIZE, (await dropTracked(userId, rows)).filter((m) => undecided(parseAiMeta(m.aiMeta), now)).length);
+}
+
 export async function getDeck(userId: string, minScore = 0): Promise<DeckCard[]> {
   if (isDemoMode()) {
     return demoStore.matches().filter((m) => m.score >= Math.max(DECK_MIN, minScore) && undecided(m.aiMeta || {})).slice(0, DECK_SIZE).map((m) => ({

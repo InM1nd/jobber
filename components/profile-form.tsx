@@ -71,7 +71,7 @@ export function Label({ children, hint }: { children: React.ReactNode; hint?: st
   return (
     <div className="mb-2.5 px-1">
       <p className="text-[13px] font-medium text-muted">{children}</p>
-      {hint && <p className="text-[12px] text-subtle">{hint}</p>}
+      {hint && <p className="text-[13px] text-subtle">{hint}</p>}
     </div>
   );
 }
@@ -197,13 +197,16 @@ export function AvoidSection({ draft, set }: Props) {
   );
 }
 
-export function TuningSection({ draft, set, writingRules, setWritingRules }: Props & { writingRules?: string; setWritingRules?: (v: string) => void }) {
+/** Fine-tuning fields. `part` picks a group (the profile page spreads them over its sections); none = all. */
+export function TuningSection({ draft, set, writingRules, setWritingRules, part }: Props & { writingRules?: string; setWritingRules?: (v: string) => void; part?: 'keywords' | 'scoring' | 'writing' }) {
+  const show = (p: 'keywords' | 'scoring' | 'writing') => !part || part === p;
   return (
     <div className="space-y-7">
-      <div>
+      {show('keywords') && <div>
         <Label hint="Used to search job boards">Search keywords</Label>
         <ChipList value={draft.keywords} onChange={(keywords) => set({ keywords })} suggestions={draft.targetRoles} placeholder="e.g. react developer" max={12} />
-      </div>
+      </div>}
+      {show('scoring') && <>
       <div>
         <Label hint="The AI compares these with each job">Skills</Label>
         <ChipList value={draft.skills} onChange={(skills) => set({ skills })} placeholder="Add a skill" max={40} />
@@ -223,7 +226,8 @@ export function TuningSection({ draft, set, writingRules, setWritingRules }: Pro
           </div>
         )}
       </div>
-      {setWritingRules && (
+      </>}
+      {show('writing') && setWritingRules && (
         <label className="block">
           <Label hint="How cover letters should sound">Writing rules</Label>
           <textarea className={cn(fieldClass, 'min-h-[96px] resize-y')} value={writingRules || ''} onChange={(e) => setWritingRules(e.target.value)} />
@@ -238,7 +242,7 @@ function NumberRow({ label, suffix, value, min, max, step, onChange }: { label: 
     <div className="rounded-[var(--radius-card)] border border-line px-5 py-4">
       <div className="mb-3 flex items-baseline justify-between">
         <span className="text-[15px] font-medium">{label}</span>
-        <span className="text-[15px] font-semibold tabular-nums">{value} <span className="text-[12.5px] font-normal text-muted">{suffix}</span></span>
+        <span className="text-[15px] font-semibold tabular-nums">{value} <span className="text-[13.5px] font-normal text-muted">{suffix}</span></span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-[var(--accent)]" />
     </div>

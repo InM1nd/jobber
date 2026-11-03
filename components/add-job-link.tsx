@@ -42,7 +42,7 @@ export function AddJobLink() {
         <Plus className="size-4 text-accent" />
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-medium">Add a job by link</span>
-          <span className="block text-[12.5px] text-muted">Found something on willhaben, LinkedIn or anywhere? Paste the link — we’ll score it.</span>
+          <span className="block text-[13.5px] text-muted">Found something on willhaben, LinkedIn or anywhere? Paste the link — we’ll score it.</span>
         </span>
       </button>
     );

@@ -131,7 +131,7 @@ export function LetterPanel({
                       {busy === `p${i}` ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                       {instruction.trim() ? 'Rewrite with your note' : 'Rewrite this paragraph'}
                     </Button>
-                    <span className="text-[11.5px] text-subtle">The others stay as they are.</span>
+                    <span className="text-[12.5px] text-subtle">The others stay as they are.</span>
                   </div>
                 )}
               </div>
@@ -144,7 +144,7 @@ export function LetterPanel({
             {chips.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {chips.map((c) => (
-                  <button key={c} type="button" disabled={!!busy} onClick={() => (picked != null ? setInstruction(c) : refine(c))} className="rounded-full border border-line px-2.5 py-1 text-[12.5px] transition-colors hover:bg-surface-2 disabled:opacity-50">
+                  <button key={c} type="button" disabled={!!busy} onClick={() => (picked != null ? setInstruction(c) : refine(c))} className="rounded-full border border-line px-2.5 py-1 text-[13.5px] transition-colors hover:bg-surface-2 disabled:opacity-50">
                     {c}
                   </button>
                 ))}
@@ -162,12 +162,12 @@ export function LetterPanel({
                 {busy === 'refine' ? <Loader2 className="animate-spin" /> : <Send />}
               </Button>
             </form>
-            <p className="text-[11.5px] text-subtle">Tap a paragraph to rewrite only that one. Notes change wording and emphasis, never facts.</p>
+            <p className="text-[12.5px] text-subtle">Tap a paragraph to rewrite only that one. Notes change wording and emphasis, never facts.</p>
           </div>
 
           {history.length > 0 && (
             <div className="border-t border-line pt-3">
-              <button type="button" onClick={() => setShowHistory((v) => !v)} className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-muted hover:text-fg">
+              <button type="button" onClick={() => setShowHistory((v) => !v)} className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-muted hover:text-fg">
                 <History className="size-3.5" /> Earlier versions · {history.length}
               </button>
               {showHistory && (
@@ -175,14 +175,14 @@ export function LetterPanel({
                   {history.map((h, i) => (
                     <li key={`${h.at}-${i}`} className="rounded-[10px] bg-surface-2 px-3 py-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="min-w-0 truncate text-[12.5px] text-muted">
+                        <p className="min-w-0 truncate text-[13.5px] text-muted">
                           <span className="font-medium text-fg">{CAUSE[h.cause] || 'Version'}</span>{h.detail ? ` · ${h.detail}` : ''} · {when(h.at)}
                         </p>
                         <Button size="sm" variant="ghost" onClick={() => restore(i)} disabled={!!busy}>
                           {busy === `r${i}` ? <Loader2 className="animate-spin" /> : null}Restore
                         </Button>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-subtle">{h.text}</p>
+                      <p className="mt-1 line-clamp-2 text-[13.5px] leading-snug text-subtle">{h.text}</p>
                     </li>
                   ))}
                 </ul>

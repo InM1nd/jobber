@@ -55,7 +55,7 @@ export function TelegramLoginButton({ invite, onDone, onError }: { invite?: stri
         {state === 'waiting' ? 'Waiting for Telegram…' : 'Sign in with Telegram'}
       </button>
       {state === 'waiting' && (
-        <p className="text-center text-[12.5px] leading-snug text-muted">
+        <p className="text-center text-[13.5px] leading-snug text-muted">
           In Telegram, tap <b>Start</b>, then <b>Yes, sign me in</b>. This page continues by itself.{' '}
           {url && <a href={url} target="_blank" rel="noreferrer" className="text-accent">Open Telegram again</a>}
         </p>

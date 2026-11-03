@@ -18,8 +18,8 @@ function Block({ title, hint, children }: { title: string; hint?: string; childr
   return (
     <section className="space-y-4">
       <div className="px-1">
-        <h2 className={capsClass}>{title}</h2>
-        {hint && <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{hint}</p>}
+        <h3 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h3>
+        {hint && <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{hint}</p>}
       </div>
       {children}
     </section>
@@ -87,11 +87,30 @@ export function ProfilePanel({ initial, writingRules: initialRules, facts: initi
   }
 
   return (
-    <div className="space-y-10 pb-4">
+    <div className="pb-4 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
+      <ProfileNav />
+      <div className="min-w-0 space-y-6">
+      <Group id="you" title="You" hint="What Jobber knows about you. Letters and answers use only this and your CVs.">
       <Block title={`Your CVs · ${cvs.length}`} hint="For each job Jobber picks the CV that fits best and tells you which one to send.">
         <CvManager cvs={cvs} onChange={setCvs} compact />
       </Block>
 
+      <Block title="Facts about me" hint="True things that aren’t in your CV, one per line: when you can start, work permit, salary, links. Letters never claim anything that isn’t here or in your CV.">
+        <textarea
+          className={cn(fieldClass, 'min-h-[132px] resize-y text-[14px] leading-relaxed')}
+          value={facts}
+          placeholder={FACTS_PLACEHOLDER}
+          maxLength={4000}
+          onChange={(e) => { setFacts(e.target.value); setDirty(true); setMsg(null); }}
+        />
+      </Block>
+
+      <Block title="How your letters sound">
+        <TuningSection part="writing" draft={draft} set={set} writingRules={rules} setWritingRules={(v) => { setRules(v); setDirty(true); }} />
+      </Block>
+      </Group>
+
+      <Group id="looking" title="What you’re looking for" hint="Search and the filters follow this. Change it any time — the best matches are re-scored.">
       {ORDER.map((s) => {
         const Body = SECTIONS[s];
         return (
@@ -100,8 +119,10 @@ export function ProfilePanel({ initial, writingRules: initialRules, facts: initi
           </Block>
         );
       })}
+      </Group>
 
-      <Block title="Companies to watch" hint="Checked every day. Tick to add, untick to stop.">
+      <Group id="sources" title="Where Jobber looks" hint="Company career pages checked every day, and the keywords used on job boards.">
+      <Block title="Companies to watch" hint="Tick to add, untick to stop.">
         {companies ? (
           <CompaniesWatch
             options={companies}
@@ -114,19 +135,14 @@ export function ProfilePanel({ initial, writingRules: initialRules, facts: initi
         )}
       </Block>
 
-      <Block title="Facts about me" hint="True things that aren’t in your CV, one per line: when you can start, work permit, salary, links, how to spell your company. Letters and form answers use them, and never claim anything that isn’t here or in your CV.">
-        <textarea
-          className={cn(fieldClass, 'min-h-[132px] resize-y text-[14px] leading-relaxed')}
-          value={facts}
-          placeholder={FACTS_PLACEHOLDER}
-          maxLength={4000}
-          onChange={(e) => { setFacts(e.target.value); setDirty(true); setMsg(null); }}
-        />
+      <Block title="Search keywords">
+        <TuningSection part="keywords" draft={draft} set={set} />
       </Block>
+      </Group>
 
-      <Block title={SECTION_COPY.tuning.title} hint={SECTION_COPY.tuning.hint}>
-        <TuningSection draft={draft} set={set} writingRules={rules} setWritingRules={(v) => { setRules(v); setDirty(true); }} />
-      </Block>
+      <Group id="scoring" title="Scoring & alerts" hint="How matches are judged, which ones you see, and when Telegram tells you.">
+        <TuningSection part="scoring" draft={draft} set={set} />
+      </Group>
 
       <div className={cn('sticky bottom-[calc(var(--tabbar-h,64px)+8px)] z-10 space-y-2 transition-opacity md:bottom-4', dirty || watchDirty || msg ? 'opacity-100' : 'pointer-events-none opacity-0')}>
         {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
@@ -136,7 +152,68 @@ export function ProfilePanel({ initial, writingRules: initialRules, facts: initi
           </Button>
         )}
       </div>
+      </div>
     </div>
+  );
+}
+
+const GROUPS = [
+  { id: 'you', label: 'You' },
+  { id: 'looking', label: 'Looking for' },
+  { id: 'sources', label: 'Where to look' },
+  { id: 'scoring', label: 'Scoring & alerts' },
+];
+
+/** One part of the profile, as a card with its own heading (the nav jumps here). */
+function Group({ id, title, hint, children }: { id: string; title: string; hint: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-20 rounded-[var(--radius-card)] border border-line px-5 py-5 md:px-7 md:py-6 lg:scroll-mt-8">
+      <h2 className="text-[20px] font-semibold tracking-[-0.02em]">{title}</h2>
+      <p className="mt-1 text-[14px] leading-relaxed text-muted">{hint}</p>
+      <div className="mt-6 space-y-8 divide-line [&>section+section]:border-t [&>section+section]:pt-7">{children}</div>
+    </section>
+  );
+}
+
+/** Jump links: a sticky row of chips on the phone, a sticky side list on desktop; the visible group is highlighted. */
+function ProfileNav() {
+  const [active, setActive] = useState('you');
+  useEffect(() => {
+    const els = GROUPS.map((g) => document.getElementById(g.id)).filter((e): e is HTMLElement => Boolean(e));
+    const io = new IntersectionObserver(
+      (entries) => {
+        const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top) setActive(top.target.id);
+      },
+      { rootMargin: '-15% 0px -70% 0px' },
+    );
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, []);
+  const go = (id: string) => {
+    setActive(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  return (
+    <nav aria-label="Profile sections" className="sticky top-[calc(8px+var(--safe-top))] z-20 -mx-5 mb-5 bg-bg/90 px-5 py-2 backdrop-blur lg:top-8 lg:mx-0 lg:mb-0 lg:self-start lg:bg-transparent lg:p-0 lg:backdrop-blur-0">
+      <ul className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:gap-0.5">
+        {GROUPS.map((g) => (
+          <li key={g.id} className="shrink-0">
+            <button
+              type="button"
+              onClick={() => go(g.id)}
+              aria-current={active === g.id ? 'true' : undefined}
+              className={cn(
+                'h-9 rounded-full px-3.5 text-[14px] font-medium transition-colors lg:w-full lg:text-left',
+                active === g.id ? 'bg-fg text-bg' : 'bg-surface-2 text-muted hover:text-fg lg:bg-transparent',
+              )}
+            >
+              {g.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 

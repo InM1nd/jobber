@@ -16,6 +16,7 @@ import { claudeConnectorOn, claudeLetterUrl } from '@/lib/agent/handoff';
 import { isDemoMode } from '@/lib/demo/mode';
 import { MatchDetail } from '@/components/app/match-detail';
 import { getPrisma } from '@/lib/db/prisma';
+import { countDeck } from '@/lib/tracker/deck';
 
 export const instant = false;
 
@@ -60,14 +61,6 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const groups = fits.map((fit) => ({ fit, items: matches.filter((m) => fitOf(m.score) === fit) }));
   const newCount = matches.filter((m) => isNew(m, now)).length;
   const strongCount = groups[0].items.length;
-  const summary = matches.length
-    ? [newCount ? `${newCount} new today` : null, strongCount ? `${strongCount} strong` : null, `${matches.length} total`].filter(Boolean).join(' · ')
-    : 'New roles are scored every morning';
-
-  const today = new Date(now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-  const hour = new Date(now).getHours();
-  const greeting = hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
-  const headline = newCount || matches.length;
 
   const ordered = groups.flatMap((g) => g.items);
   const selected = ordered.find((m) => m.id === query.m) || ordered[0] || null;
@@ -80,57 +73,30 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       ])
     : [[], selected];
   const sendable = matches.filter((m) => fitOf(m.score) === 'strong' || fitOf(m.score) === 'good').length;
+  const summaryLine = [
+    newCount ? `${newCount} new today` : null,
+    strongCount ? `${strongCount} strong` : null,
+    sendable ? `${sendable} worth applying` : null,
+    `${matches.length} total`,
+  ].filter(Boolean).join(' · ');
+  const reviewCount = await countDeck(user.id, minScore);
 
   return (
-    <div data-wide className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(440px,1.08fr)] lg:items-start lg:gap-8">
+    <div data-wide className="xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(460px,1.1fr)] xl:items-start xl:gap-8">
     <div className="min-w-0">
       <PageHeader
-        eyebrow={today}
-        eyebrowRight={matches.length ? <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-accent" />{strongCount} strong</span> : undefined}
-        title={matches.length ? greeting : 'Matches'}
-        subtitle={matches.length ? undefined : 'New roles are scored every morning'}
+        title="Matches"
+        subtitle={matches.length ? summaryLine : 'New roles are scored every morning and afternoon.'}
+        action={reviewCount > 0 ? (
+          <Link href="/dashboard/review" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-accent px-4 text-[14px] font-semibold text-accent-fg transition-transform active:scale-[0.98]">
+            Review {reviewCount} <ChevronRight className="size-4" />
+          </Link>
+        ) : undefined}
       />
 
       {activeRun && <SearchProgress initial={activeRun} className="mb-8" />}
 
       {!isDemoMode() && <AddJobLink />}
-
-      {matches.length > 0 && (
-        <div className="mb-6 hidden items-center gap-5 rounded-[var(--radius-card)] border border-line px-5 py-3.5 lg:flex">
-          <span className="text-[30px] font-semibold leading-none tracking-[-0.05em] tabular-nums">{headline}</span>
-          <span className="text-[13px] leading-tight text-muted">{newCount ? 'new' : 'roles'}<br />{newCount ? 'today' : 'scored'}</span>
-          <span className="h-8 w-px bg-line" aria-hidden />
-          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px]">
-            <span className="inline-flex items-center gap-1.5"><FitDot fit="strong" />{strongCount} strong</span>
-            <span className="text-muted">{sendable} worth applying</span>
-            <span className="text-muted">{matches.length} total</span>
-            {skippedCount > 0 && <Link href="/dashboard/matches?view=skipped" className="text-muted underline-offset-2 hover:text-fg hover:underline">{skippedCount} skipped</Link>}
-          </span>
-          {groups[0].items[0] && (
-            <span className="ml-auto truncate text-[13px] text-muted">Top <span className="font-semibold text-accent">{groups[0].items[0].score}</span> {groups[0].items[0].job.company}</span>
-          )}
-        </div>
-      )}
-
-      {matches.length > 0 && (
-        <div className="relative mb-9 pt-3 lg:hidden">
-          <div className="absolute inset-x-5 top-0 h-10 rounded-[var(--radius-card)] border border-line bg-bg" aria-hidden />
-          <div className="relative rounded-[var(--radius-card)] border border-line bg-bg px-6 py-6">
-            <div className="flex items-end gap-4">
-              <span className="text-[88px] font-semibold leading-[0.85] tracking-[-0.06em] tabular-nums">{headline}</span>
-              <span className="pb-1 text-[16px] leading-tight text-muted">
-                {newCount ? 'new roles' : 'roles'}<br />{newCount ? 'today' : 'scored'}
-              </span>
-            </div>
-            <p className="mt-5 text-[16px] font-medium tracking-[-0.01em]">{summary}</p>
-            {groups[0].items[0] && (
-              <p className="mt-1 truncate text-[14px] text-muted">
-                Top: <span className="text-accent">{groups[0].items[0].score}</span> {groups[0].items[0].job.title}, {groups[0].items[0].job.company}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
 
       {matches.length === 0 &&
         (!hasProfile ? (
@@ -157,10 +123,10 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                 <span className="inline-flex items-center gap-2"><FitDot fit={fit} />{FIT_LABEL[fit]}</span>
                 <span className="tabular-nums">{items.length}</span>
               </h2>
-              <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line lg:hidden">
+              <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line xl:hidden">
                 {items.map((match) => <MatchRow key={match.id} match={match} now={now} place={place} />)}
               </div>
-              <div className="hidden divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line lg:block">
+              <div className="hidden divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line xl:block">
                 {items.map((match) => (
                   <MatchRow key={match.id} match={match} now={now} place={place} compact href={`/dashboard/matches?m=${match.id}`} selected={match.id === selected?.id} />
                 ))}
@@ -175,14 +141,14 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
           <Filter className="size-4 text-muted" />
           <span className="min-w-0 flex-1">
             <span className="block text-[15px] font-medium">Skipped by filters · {skippedCount}</span>
-            <span className="block text-[12.5px] text-muted">{hiddenLow ? `${hiddenLow} more hidden below your minimum score ${minScore}. ` : ''}See why, or score one anyway.</span>
+            <span className="block text-[13.5px] text-muted">{hiddenLow ? `${hiddenLow} more hidden below your minimum score ${minScore}. ` : ''}See why, or score one anyway.</span>
           </span>
           <ChevronRight className="size-4 text-subtle" />
         </Link>
       )}
     </div>
     {selected && (
-      <aside className="sticky top-6 hidden max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto rounded-[var(--radius-card)] border border-line p-5 lg:block" aria-label="Selected match">
+      <aside className="sticky top-6 hidden max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto rounded-[var(--radius-card)] border border-line p-5 xl:block" aria-label="Selected match">
         <MatchDetail match={selectedFull || selected} profile={profile} cvs={cvs} claudeUrl={claudeOk ? claudeLetterUrl(selected.id, `${selected.job.title} at ${selected.job.company}`) : null} />
       </aside>
     )}

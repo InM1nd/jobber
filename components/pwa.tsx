@@ -94,7 +94,7 @@ export function InstallApp({ variant = 'row', force }: { variant?: 'row' | 'inli
         <Smartphone className="size-[17px] shrink-0 text-muted" strokeWidth={1.6} />
         <div className="min-w-0 flex-1">
           <p className="text-[15.5px] font-medium tracking-[-0.01em]">Install Jobber</p>
-          <p className="text-[12.5px] text-muted">
+          <p className="text-[13.5px] text-muted">
             {state === 'installed' ? 'Installed on this device' : 'Opens like an app, full screen'}
           </p>
         </div>
@@ -104,7 +104,7 @@ export function InstallApp({ variant = 'row', force }: { variant?: 'row' | 'inli
         {(state === 'ios' || state === 'unsupported') && (
           <Button size="sm" variant="outline" onClick={() => setShowHint((v) => !v)}>How to</Button>
         )}
-        {state === 'installed' && <span className="text-[12px] text-muted">Installed</span>}
+        {state === 'installed' && <span className="text-[13px] text-muted">Installed</span>}
       </div>
       {(showHint || force === 'ios') && state !== 'installed' && state !== 'prompt' && (
         <div className="mt-3"><IosHint ios={state === 'ios'} /></div>

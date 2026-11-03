@@ -4,7 +4,10 @@ import { TailorCv } from '@/components/tailor-cv';
 import { RequirementsList } from '@/components/app/requirements-list';
 import { refineChips } from '@/lib/apply/letter';
 import { viaOf } from '@/lib/sources/via';
-import { FIT_LABEL, FIT_TEXT, Note, ScoreRing, fitOf } from '@/components/ui/kit';
+import { FIT_LABEL, FIT_TEXT, ScoreRing, fitOf } from '@/components/ui/kit';
+import { AdSections } from '@/components/app/ad-sections';
+import { MatchActions } from '@/components/app/match-actions';
+import { readableJob, salaryFromText } from '@/lib/jobs/readable';
 import { MatchMeta } from '@/components/app/match-card';
 import { WEIGHTS } from '@/lib/search/rubric';
 import { formatSalaryRange } from '@/lib/text';
@@ -27,13 +30,16 @@ export function MatchDetail({
 }) {
   const where = { city: profile.location?.split(',')[0]?.trim() || null, country: profile.country || profile.location?.split(',')[1]?.trim() || null };
   const sub = match.subScores;
-  const salary = formatSalaryRange(match.job.salaryMin, match.job.salaryMax, match.job.currency || 'EUR');
+  // Salary from the source, else the first range written in the ad.
+  const pay = match.job.salaryMin || match.job.salaryMax ? null : salaryFromText(match.job.description);
+  const salary = formatSalaryRange(match.job.salaryMin ?? pay?.min ?? null, match.job.salaryMax ?? pay?.max ?? null, match.job.currency || pay?.currency || 'EUR');
+  const sections = readableJob(match.job.description);
   const place = [match.job.location, match.job.remote && !/remote/i.test(match.job.location || '') ? 'Remote' : null].filter(Boolean).join(' · ');
   const agent = match.aiMeta?.agent;
   const agentName = agent ? agent.by.charAt(0).toUpperCase() + agent.by.slice(1) : '';
   return (
     <>
-      <header className="rounded-[var(--radius-card)] bg-[#111111] p-6 text-white dark:border dark:border-line dark:bg-[#121214]">
+      <header data-theme="dark" className="rounded-[var(--radius-card)] border border-line bg-[#121214] p-6 text-white">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[14px] text-white/55">{match.job.company}</p>
@@ -53,12 +59,14 @@ export function MatchDetail({
         </a>
       </header>
 
+      <MatchActions matchId={match.id} initial={match.aiMeta?.swipe?.d ?? null} />
+
       <MatchMeta match={match} place={where} className="-mt-2 px-1" />
       {match.cvLabel && cvs.length > 1 && (
-        <p className="-mt-3 px-1 text-[13px] text-muted">Send your <span className="font-medium text-fg">{match.cvLabel}</span> CV for this one — it fits best of your {cvs.length}.</p>
+        <p className="-mt-3 px-1 text-[13.5px] text-muted">Send your <span className="font-medium text-fg">{match.cvLabel}</span> CV for this one — it fits best of your {cvs.length}.</p>
       )}
 
-      {sub && (
+      {(sub || match.reasons.length > 0 || match.redFlags.length > 0) && (
         <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
           <p className="mb-3 text-[14px] font-medium">
             Why {match.score}
@@ -66,7 +74,17 @@ export function MatchDetail({
               <span className="font-normal text-muted"> · double-checked by the stronger model{match.aiMeta.verified.before !== match.score ? ` (was ${match.aiMeta.verified.before})` : ''}</span>
             )}
           </p>
-          <div className="space-y-2.5">
+          {(match.reasons.length > 0 || match.redFlags.length > 0) && (
+            <ul className="mb-4 space-y-2">
+              {match.reasons.map((r) => (
+                <li key={r} className="flex gap-2.5 text-[14px] leading-snug"><span className="font-semibold text-fit-strong">+</span><span>{r}</span></li>
+              ))}
+              {match.redFlags.map((r) => (
+                <li key={r} className="flex gap-2.5 text-[14px] leading-snug text-muted"><span className="font-semibold text-fit-weak">−</span><span>{r}</span></li>
+              ))}
+            </ul>
+          )}
+          {sub && <div className="space-y-2.5">
             {(Object.keys(WEIGHTS) as Array<keyof typeof WEIGHTS>).map((k) => (
               <div key={k} className="flex items-center gap-3 text-[13px]">
                 <span className="w-[72px] shrink-0 text-muted">{SUB_LABEL[k]}</span>
@@ -74,10 +92,10 @@ export function MatchDetail({
                   <span className={`absolute inset-y-0 left-0 rounded-full ${(sub[k] ?? 0) >= 75 ? 'bg-fit-strong' : (sub[k] ?? 0) >= 55 ? 'bg-fit-good' : (sub[k] ?? 0) >= 35 ? 'bg-fit-ok' : 'bg-fit-weak'}`} style={{ width: `${sub[k] ?? 0}%` }} />
                 </span>
                 <span className="w-7 shrink-0 text-right tabular-nums">{sub[k] ?? '–'}</span>
-                <span className="w-8 shrink-0 text-right text-[11px] text-subtle">×{Math.round(WEIGHTS[k] * 100)}%</span>
+                <span className="w-8 shrink-0 text-right text-[12px] text-subtle">×{Math.round(WEIGHTS[k] * 100)}%</span>
               </div>
             ))}
-          </div>
+          </div>}
         </section>
       )}
 
@@ -92,12 +110,9 @@ export function MatchDetail({
 
       <RequirementsList items={match.requirements} />
 
-      {(match.reasons.length > 0 || match.redFlags.length > 0) && (
-        <div className="space-y-2 px-1">
-          {match.reasons.map((r) => <Note key={r}>{r}</Note>)}
-          {match.redFlags.map((f) => <Note key={f} tone="warning">{f}</Note>)}
-        </div>
-      )}
+      {sections.length > 0 && <AdSections sections={sections} />}
+
+      <p className="px-1 pt-2 text-[14px] font-semibold">Prepare the application</p>
 
       <TailorCv matchId={match.id} initialAdvice={match.cvAdvice ?? null} initialCv={match.tailoredCv ?? null} cvs={cvs} cvId={match.cvId} initialMeta={match.aiMeta} />
 
@@ -111,8 +126,8 @@ export function MatchDetail({
       />
 
       <details className="group border-t border-line">
-        <summary className="cursor-pointer list-none py-4 text-[14px] font-medium">
-          Job description
+        <summary className="cursor-pointer list-none py-4 text-[14px] font-medium text-muted hover:text-fg">
+          Original job ad text
         </summary>
         <p className="whitespace-pre-wrap pb-6 text-[14px] leading-6 text-muted">{match.job.description}</p>
       </details>

@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export const capsClass = 'text-[11.5px] font-medium uppercase tracking-[0.14em] text-muted';
+export const capsClass = 'text-[13.5px] font-semibold tracking-[-0.01em] text-muted';
 
 export function PageHeader({
   title,
@@ -18,7 +18,7 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 md:mb-10">
+    <div className="mb-5 md:mb-8">
       {(eyebrow || eyebrowRight) && (
         <div className="mb-2 flex items-center justify-between text-[15px] text-muted">
           <span>{eyebrow}</span>
@@ -27,7 +27,7 @@ export function PageHeader({
       )}
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-[32px] font-semibold leading-[1.08] tracking-[-0.04em] md:text-[40px]">{title}</h1>
+          <h1 className="text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] md:text-[34px]">{title}</h1>
           {subtitle && <p className="mt-1.5 text-[15px] leading-snug text-muted">{subtitle}</p>}
         </div>
         {action}
@@ -56,7 +56,7 @@ export function CtaLink({ href, children, external, className }: { href: string;
 /** Quiet inline note: a small dot plus muted text. No tinted boxes. */
 export function Note({ tone = 'neutral', children, className }: { tone?: 'neutral' | 'warning'; children: React.ReactNode; className?: string }) {
   return (
-    <p className={cn('flex items-start gap-2 text-[12.5px] leading-snug text-muted', className)}>
+    <p className={cn('flex items-start gap-2 text-[13.5px] leading-snug text-muted', className)}>
       <span className={cn('mt-[6px] size-1 shrink-0 rounded-full', tone === 'warning' ? 'bg-warning' : 'bg-subtle')} />
       <span className="min-w-0">{children}</span>
     </p>
@@ -109,7 +109,7 @@ export function ScoreRing({ score, size = 36, className }: { score: number; size
           style={{ ['--ring-len' as string]: `${len}`, animation: 'ring-fill 0.9s cubic-bezier(0.2,0.7,0.2,1) both' }}
         />
       </svg>
-      <span className="absolute text-[12px] font-semibold tabular-nums text-fg" style={{ fontSize: size * 0.34 }}>{score}</span>
+      <span className="absolute text-[13px] font-semibold tabular-nums text-fg" style={{ fontSize: size * 0.34 }}>{score}</span>
     </span>
   );
 }
@@ -142,7 +142,7 @@ export function Group({ title, footer, children, className }: { title?: string; 
     <section className={cn('space-y-2', className)}>
       {title && <h2 className={cn(capsClass, 'px-1')}>{title}</h2>}
       <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">{children}</div>
-      {footer && <p className="px-1 text-[12.5px] leading-relaxed text-muted">{footer}</p>}
+      {footer && <p className="px-1 text-[13.5px] leading-relaxed text-muted">{footer}</p>}
     </section>
   );
 }
@@ -168,7 +168,7 @@ export function Row({
       {Icon && <Icon className="size-[17px] shrink-0 text-muted" strokeWidth={1.6} />}
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15.5px] font-medium tracking-[-0.01em]">{label}</div>
-        {detail && <div className="truncate text-[12.5px] text-muted">{detail}</div>}
+        {detail && <div className="truncate text-[13.5px] text-muted">{detail}</div>}
         {children}
       </div>
       {trailing}

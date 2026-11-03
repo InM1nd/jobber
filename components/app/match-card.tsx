@@ -29,12 +29,12 @@ export function MatchMeta({ match, place, className }: { match: DemoMatch; place
   return (
     <div className={cn('flex min-w-0 items-center gap-1.5 overflow-hidden', className)}>
       {tier && (
-        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11.5px] font-medium', tier.strong ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-muted')}>
+        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12.5px] font-medium', tier.strong ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-muted')}>
           <tier.icon className="size-3" /> {tier.label}
         </span>
       )}
       {match.cvLabel && (
-        <span className="inline-flex min-w-0 max-w-[150px] items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[11.5px] font-medium text-muted" title={`Use your ${match.cvLabel} CV`}>
+        <span className="inline-flex min-w-0 max-w-[150px] items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[12.5px] font-medium text-muted" title={`Use your ${match.cvLabel} CV`}>
           <FileText className="size-3 shrink-0" /> <span className="truncate">{match.cvLabel}</span>
         </span>
       )}

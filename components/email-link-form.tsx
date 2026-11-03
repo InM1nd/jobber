@@ -95,7 +95,7 @@ export function EmailLinkForm({
               </p>
             </div>
           </div>
-          <p className="mt-4 text-[12.5px] text-muted">Nothing there? Check spam or promotions.</p>
+          <p className="mt-4 text-[13.5px] text-muted">Nothing there? Check spam or promotions.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button type="button" size="sm" variant="outline" disabled={remaining > 0} onClick={() => send(state.email)}>
               <RotateCw /> {remaining > 0 ? `Resend in ${remaining}s` : 'Resend link'}

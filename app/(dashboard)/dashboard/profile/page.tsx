@@ -10,8 +10,8 @@ export default async function ProfilePage() {
   if (!user) return null;
   const profile = await getProfile(user.id);
   return (
-    <div>
-      <PageHeader title="Profile" subtitle="This is what Jobber searches and scores with. Your CVs only filled it in." />
+    <div data-wide className="lg:max-w-[1040px]">
+      <PageHeader title="Profile" subtitle="What Jobber searches and scores with. Changes apply to the next search." />
       <ProfilePanel initial={draftFromProfile(profile)} writingRules={profile.writingRules || ''} facts={profile.facts || ''} />
     </div>
   );

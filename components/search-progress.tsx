@@ -94,7 +94,7 @@ export function SearchProgress({ initial, onDone, className }: { initial: RunVie
         )}
         <div className="min-w-0 flex-1">
           <p className="text-[15.5px] font-medium tracking-[-0.01em]">{done ? 'Search complete' : runLabel(run)}</p>
-          <p className="truncate text-[12.5px] text-muted">
+          <p className="truncate text-[13.5px] text-muted">
             {done ? runLabel(run) : run.status === 'fetching' ? `Checking ${run.sourcesDone}/${run.sourcesTotal} job boards` : 'AI compares the best-ranked jobs with your CVs'}
           </p>
         </div>
@@ -102,7 +102,7 @@ export function SearchProgress({ initial, onDone, className }: { initial: RunVie
       <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-surface-2">
         <div className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out" style={{ width: `${Math.round(progress(run) * 100)}%` }} />
       </div>
-      {(run.note || error) && <p className="mt-2.5 text-[12.5px] leading-snug text-muted">{error || run.note}</p>}
+      {(run.note || error) && <p className="mt-2.5 text-[13.5px] leading-snug text-muted">{error || run.note}</p>}
     </div>
   );
 }
