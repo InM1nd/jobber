@@ -15,7 +15,7 @@ export function Chip({ on, onClick, children, className }: { on: boolean; onClic
         onClick();
       }}
       className={cn(
-        'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-[14px] font-medium transition-all active:scale-[0.97]',
+        'inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-[14px] font-medium transition-all active:scale-[0.97]',
         on ? 'border-accent bg-accent-soft text-fg' : 'border-line bg-bg text-muted hover:border-line-strong hover:text-fg',
         className,
       )}
@@ -78,7 +78,7 @@ export function ChipList({
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((v) => (
-            <span key={v} className="inline-flex min-h-10 items-center gap-1 rounded-full border border-accent bg-accent-soft pl-4 pr-1.5 text-[14px] font-medium">
+            <span key={v} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-accent bg-accent-soft pl-4 pr-1.5 text-[14px] font-medium">
               {v}
               <button type="button" aria-label={`Remove ${v}`} onClick={() => onChange(value.filter((x) => x !== v))} className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-bg hover:text-fg">
                 <X className="size-3.5" />
@@ -126,7 +126,7 @@ export function Toggle({ on, onChange, label, detail }: { on: boolean; onChange:
         {detail && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{detail}</span>}
       </span>
       <span className={cn('relative h-7 w-12 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-line-strong')}>
-        <span className={cn('absolute top-0.5 size-6 rounded-full bg-white shadow transition-all', on ? 'left-[22px]' : 'left-0.5')} />
+        <span className={cn('absolute top-0.5 size-6 rounded-full bg-fg shadow transition-all', on ? 'left-[22px]' : 'left-0.5')} />
       </span>
     </button>
   );

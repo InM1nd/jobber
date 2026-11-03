@@ -3,35 +3,36 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ---------------------------------------------------------------------------
-   Jobber design tokens. One accent (indigo-violet), soft surfaces, quiet borders.
+   Jobber design tokens. One accent (emerald), soft surfaces, quiet borders.
    Inside Telegram, surfaces and text follow themeParams (see telegram-ui.tsx).
    ------------------------------------------------------------------------- */
 :root {
-  --bg: #ffffff;
+  --bg: #f8faf9;
   --surface: #ffffff;
-  --surface-2: #f6f6f4;
+  --surface-2: #eef2ef;
   --fg: #111111;
-  --muted: #6b6b70;
+  --muted: #58645d;
   --subtle: #8b8b90;
   --border: #ececec;
   --border-strong: #dededc;
-  --accent: #0a7d5f;
+  --accent: #087456;
   --accent-hover: #086a50;
   --accent-fg: #ffffff;
   --accent-soft: rgb(11 143 108 / 0.09);
-  --fit-strong: #0a7d5f;
+  --fit-strong: #087456;
   --fit-good: #0369a1;
   --fit-ok: #b45309;
   --fit-weak: #be3f5a;
   --st-applied: #2563eb;
   --st-interview: #0a7d5f;
   --st-offer: #7c3aed;
-  --success: #16a34a;
+  --success: #15803d;
   --success-soft: transparent;
   --warning: #b45309;
   --warning-soft: transparent;
   --danger: #dc2626;
   --danger-soft: transparent;
+  --overlay: rgb(0 0 0 / 0.4);
   --shadow-sm: none;
   --shadow-md: 0 1px 2px rgb(0 0 0 / 0.04);
   --safe-top: env(safe-area-inset-top, 0px);
@@ -40,14 +41,14 @@
 }
 
 [data-theme="dark"] {
-  --bg: #000000;
-  --surface: #000000;
-  --surface-2: #121214;
+  --bg: #101512;
+  --surface: #171e1a;
+  --surface-2: #222c26;
   --fg: #f5f5f5;
-  --muted: #a3a3a8;
+  --muted: #b0bcb4;
   --subtle: #7c7c82;
-  --border: #232326;
-  --border-strong: #2e2e32;
+  --border: #303c34;
+  --border-strong: #455249;
   --accent: #4ee3b8;
   --accent-hover: #74ebc8;
   --accent-fg: #04120d;
@@ -75,6 +76,7 @@
 @theme inline {
   --font-sans: var(--font-inter-tight), var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-overlay: var(--overlay);
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -102,8 +104,8 @@
   --color-st-offer: var(--st-offer);
   --shadow-soft: var(--shadow-sm);
   --shadow-lift: var(--shadow-md);
-  --radius-card: 22px;
-  --radius-field: 14px;
+  --radius-card: 20px;
+  --radius-field: 12px;
   --animate-in: fade-up 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
@@ -133,4 +135,12 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Comfortable touch controls without changing the desktop density. */
+@media (max-width: 767px) {
+  button:not([role="switch"]), select, input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 44px;
+  }
+  button:has(> svg:only-child) { min-width: 44px; }
 }

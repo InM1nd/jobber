@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Sidebar account={accountLabel(user)} reviewCount={reviewCount} />
       <div className="min-w-0 flex-1">
         {demo && (
-          <div className="border-b border-line px-4 py-1.5 text-center text-[12px] text-subtle">
+          <div className="border-b border-line px-4 py-1.5 text-center text-[13px] text-muted">
             Demo mode · sample data
           </div>
         )}

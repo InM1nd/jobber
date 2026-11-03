@@ -190,7 +190,7 @@ function useOptimisticPath() {
 function Badge({ n, className }: { n?: number; className?: string }) {
   if (!n) return null;
   return (
-    <span className={cn('inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold tabular-nums text-accent-fg', className)}>
+    <span className={cn('inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[13px] font-semibold tabular-nums text-accent-fg', className)}>
       {n > 99 ? '99+' : n}
     </span>
   );
@@ -219,14 +219,14 @@ export function BottomNav({ reviewCount }: { reviewCount?: number }) {
               aria-label={count ? `${tab.label}, ${count} waiting` : tab.label}
               className={cn(
                 'relative my-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] transition-colors active:scale-[0.95]',
-                active ? 'bg-white/10 text-accent' : 'text-[#a3a3a8] hover:text-white',
+                active ? 'bg-white/10 text-[#74ebc8]' : 'text-[#a3a3a8] hover:text-white',
               )}
             >
               <span className="relative">
                 <Icon className="size-[21px]" strokeWidth={active ? 2.2 : 1.7} />
                 <Badge n={count} className="absolute -right-3 -top-1.5 ring-2 ring-[#111111] dark:ring-[#1c1c1f]" />
               </span>
-              <span className={cn('text-[11px] leading-none tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{tab.label}</span>
+              <span className={cn('text-[13px] leading-none tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{tab.label}</span>
             </Link>
           );
         })}
@@ -252,7 +252,7 @@ export function Sidebar({ account, reviewCount }: { account: string; reviewCount
               prefetch
               onClick={() => go(tab.href)}
               className={cn(
-                'flex items-center gap-2.5 rounded-full px-3.5 py-2 text-[14px] transition-colors',
+                'flex min-h-11 items-center gap-2.5 rounded-full px-3.5 py-2 text-[14px] transition-colors',
                 active ? 'bg-fg font-semibold text-bg [&_svg]:text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg',
               )}
             >

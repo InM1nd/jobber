@@ -2,7 +2,8 @@ import * as React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export const capsClass = 'text-[13.5px] font-semibold tracking-[-0.01em] text-muted';
+export const capsClass = 'text-[14px] font-semibold tracking-[-0.01em] text-fg';
+export const sectionHeadingClass = 'text-[20px] font-semibold leading-snug tracking-[-0.02em]';
 
 export function PageHeader({
   title,
@@ -25,7 +26,7 @@ export function PageHeader({
           {eyebrowRight && <span className="font-medium text-fg">{eyebrowRight}</span>}
         </div>
       )}
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] md:text-[34px]">{title}</h1>
           {subtitle && <p className="mt-1.5 text-[15px] leading-snug text-muted">{subtitle}</p>}
@@ -109,7 +110,7 @@ export function ScoreRing({ score, size = 36, className }: { score: number; size
           style={{ ['--ring-len' as string]: `${len}`, animation: 'ring-fill 0.9s cubic-bezier(0.2,0.7,0.2,1) both' }}
         />
       </svg>
-      <span className="absolute text-[13px] font-semibold tabular-nums text-fg" style={{ fontSize: size * 0.34 }}>{score}</span>
+      <span className="absolute text-[13px] font-semibold tabular-nums text-fg" style={{ fontSize: Math.max(13, size * 0.34) }}>{score}</span>
     </span>
   );
 }
@@ -128,9 +129,9 @@ export function Score({ score, className }: { score: number; className?: string 
 
 export function EmptyState({ icon: Icon, title, text, action }: { icon: LucideIcon; title: string; text: string; action?: React.ReactNode }) {
   return (
-    <div className="flex animate-in flex-col items-center px-6 py-16 text-center">
+    <div className="flex animate-in flex-col items-center rounded-[var(--radius-card)] border border-line bg-surface px-5 py-12 md:px-6 md:py-16 text-center">
       <Icon className="mb-5 size-7 text-fg" strokeWidth={1.5} />
-      <p className="text-[22px] font-semibold tracking-[-0.03em]">{title}</p>
+      <h2 className="text-[22px] font-semibold tracking-[-0.03em]">{title}</h2>
       <p className="mt-2 max-w-[300px] text-[15px] leading-relaxed text-muted">{text}</p>
       {action && <div className="mt-6">{action}</div>}
     </div>
@@ -141,7 +142,7 @@ export function Group({ title, footer, children, className }: { title?: string; 
   return (
     <section className={cn('space-y-2', className)}>
       {title && <h2 className={cn(capsClass, 'px-1')}>{title}</h2>}
-      <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line">{children}</div>
+      <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">{children}</div>
       {footer && <p className="px-1 text-[13.5px] leading-relaxed text-muted">{footer}</p>}
     </section>
   );
@@ -168,7 +169,7 @@ export function Row({
       {Icon && <Icon className="size-[17px] shrink-0 text-muted" strokeWidth={1.6} />}
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15.5px] font-medium tracking-[-0.01em]">{label}</div>
-        {detail && <div className="truncate text-[13.5px] text-muted">{detail}</div>}
+        {detail && <div className="text-[13.5px] leading-relaxed text-muted">{detail}</div>}
         {children}
       </div>
       {trailing}
@@ -177,13 +178,13 @@ export function Row({
 }
 
 export const fieldClass =
-  'w-full rounded-[var(--radius-field)] border border-line bg-surface-2 px-4 py-3 text-[15px] text-fg placeholder:text-subtle outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 md:text-sm';
+  'w-full rounded-[var(--radius-field)] border border-line bg-surface-2 px-4 py-3 text-[15px] text-fg placeholder:text-muted outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 md:text-sm';
 
 export const inlineFieldClass = 'w-full bg-transparent text-right text-[14.5px] text-fg placeholder:text-subtle outline-none';
 
 export function Notice({ tone, children }: { tone: 'success' | 'danger'; children: React.ReactNode }) {
   return (
-    <p className={cn('animate-in rounded-[var(--radius-field)] border border-line px-3 py-2 text-[13px]', tone === 'success' ? 'text-fg' : 'text-danger')}>
+    <p role={tone === 'danger' ? 'alert' : 'status'} className={cn('animate-in rounded-[var(--radius-field)] border border-line px-3 py-2 text-[13px]', tone === 'success' ? 'text-fg' : 'text-danger')}>
       {children}
     </p>
   );
