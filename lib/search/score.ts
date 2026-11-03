@@ -236,10 +236,10 @@ export async function scoreUserBatch(
   const profile = await prisma.profile.findUnique({ where: { userId } });
   if (!profile) return empty;
   const where = poolWhere(profile);
-  if (!where.OR.length) return empty;
-
+  // No sources/companies picked yet: there is no pool to pull from, but queued jobs (agent finds,
+  // "Score anyway") must still be scored, so only the pool query is skipped.
   const [unseen, waiting] = await Promise.all([
-    prisma.job.findMany({ where: { ...where, matches: { none: { userId } } }, include: { source: true }, orderBy: { createdAt: 'desc' }, take: 800 }),
+    !where.OR.length ? Promise.resolve([]) : prisma.job.findMany({ where: { ...where, matches: { none: { userId } } }, include: { source: true }, orderBy: { createdAt: 'desc' }, take: 800 }),
     prisma.jobMatch.findMany({ where: { userId, filtered: true, redFlags: { has: QUEUED_FLAG } }, include: { job: { include: { source: true } } }, orderBy: { updatedAt: 'desc' }, take: 300 }),
   ]);
 

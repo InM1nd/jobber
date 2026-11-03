@@ -85,7 +85,9 @@ async function findExisting(keys: { urlKey?: string | null; dedupeKey?: string |
 }
 
 export type AgentJobResult =
-  | { jobId: string; matchId: string; status: 'created' | 'duplicate'; title: string; company: string; score: number | null; tracked: string | null }
+  | { jobId: string; matchId: string; status: 'created' | 'duplicate'; title: string; company: string; score: number | null; tracked: string | null;
+      /** Already known: in the job pool before this call and/or in the tracker (by normalized link, then company + role). */
+      duplicate: { pool: boolean; tracker: string | null } | null }
   | { error: string; retry?: boolean };
 
 /**
@@ -170,10 +172,11 @@ export async function addAgentJob(ownerId: string, f: AgentJobFields): Promise<A
   const app = await prisma.application.findFirst({
     where: {
       userId: ownerId,
-      OR: [{ jobId: job.id }, { dedupeKey: { in: [urlKey, companyRoleKey(company, job.title)].filter((k): k is string => Boolean(k)) } }],
+      OR: [{ jobId: job.id }, ...(job.url ? [{ url: job.url }] : []), ...(f.url && f.url !== job.url ? [{ url: f.url }] : []), { dedupeKey: { in: [urlKey, companyRoleKey(company, job.title)].filter((k): k is string => Boolean(k)) } }],
     },
     select: { status: true },
   });
   const scored = existing && !existing.filtered ? existing.score : null;
-  return { jobId: job.id, matchId, status, title: job.title, company, score: scored, tracked: app?.status ?? null };
+  return { jobId: job.id, matchId, status, title: job.title, company, score: scored, tracked: app?.status ?? null,
+    duplicate: status === 'duplicate' || app ? { pool: status === 'duplicate', tracker: app?.status ?? null } : null };
 }
