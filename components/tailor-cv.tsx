@@ -73,7 +73,7 @@ export function TailorCv({
   }
 
   return (
-    <section className="overflow-hidden rounded-[var(--radius-card)] border border-line">
+    <section className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
       <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
         <p className="text-[14px] font-medium">Tailor CV</p>
         {cvs.length > 1 && (
@@ -128,7 +128,7 @@ export function TailorCv({
               <div className="flex flex-wrap gap-1.5">
                 {advice.missingKeywords.map((k) => <span key={k} className="rounded-full border border-line px-2.5 py-0.5 text-[13.5px]">{k}</span>)}
               </div>
-              <p className="mt-1.5 text-[13px] text-subtle">Only add the ones you actually have.</p>
+              <p className="mt-1.5 text-[13px] text-muted">Only add the ones you actually have.</p>
             </div>
           )}
           <List title="Don’t claim" items={advice.doNotClaim} tone="warning" />

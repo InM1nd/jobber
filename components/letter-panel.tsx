@@ -80,7 +80,7 @@ export function LetterPanel({
   const saveEdit = async () => { if (await call('PUT', { text: draft }, 'save')) setEditing(false); };
 
   return (
-    <section className="overflow-hidden rounded-[var(--radius-card)] border border-line">
+    <section className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
       <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
         <p className="text-[14px] font-medium">Cover letter</p>
         <div className="flex gap-1.5">
@@ -105,7 +105,7 @@ export function LetterPanel({
         <div className="px-4 py-6 text-center">
           <p className="text-[13px] text-muted">No letter yet. It sticks to facts from your CV and profile and follows your writing rules.</p>
           {claudeUrl && (
-            <a href={claudeUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block text-[13px] font-medium text-accent">
+            <a href={claudeUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center text-[13px] font-medium text-accent">
               Or write it with Claude (uses your Claude plan) →
             </a>
           )}
@@ -131,7 +131,7 @@ export function LetterPanel({
                       {busy === `p${i}` ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                       {instruction.trim() ? 'Rewrite with your note' : 'Rewrite this paragraph'}
                     </Button>
-                    <span className="text-[12.5px] text-subtle">The others stay as they are.</span>
+                    <span className="text-[13px] text-muted">The others stay as they are.</span>
                   </div>
                 )}
               </div>
@@ -162,7 +162,7 @@ export function LetterPanel({
                 {busy === 'refine' ? <Loader2 className="animate-spin" /> : <Send />}
               </Button>
             </form>
-            <p className="text-[12.5px] text-subtle">Tap a paragraph to rewrite only that one. Notes change wording and emphasis, never facts.</p>
+            <p className="text-[13px] text-muted">Tap a paragraph to rewrite only that one. Notes change wording and emphasis, never facts.</p>
           </div>
 
           {history.length > 0 && (
@@ -182,7 +182,7 @@ export function LetterPanel({
                           {busy === `r${i}` ? <Loader2 className="animate-spin" /> : null}Restore
                         </Button>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-[13.5px] leading-snug text-subtle">{h.text}</p>
+                      <p className="mt-1 line-clamp-2 text-[13.5px] leading-snug text-muted">{h.text}</p>
                     </li>
                   ))}
                 </ul>

@@ -88,7 +88,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         title="Matches"
         subtitle={matches.length ? summaryLine : 'New roles are scored every morning and afternoon.'}
         action={reviewCount > 0 ? (
-          <Link href="/dashboard/review" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-accent px-4 text-[14px] font-semibold text-accent-fg transition-transform active:scale-[0.98]">
+          <Link href="/dashboard/review" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-accent px-4 text-[14px] font-semibold text-accent-fg transition-transform active:scale-[0.98]">
             Review {reviewCount} <ChevronRight className="size-4" />
           </Link>
         ) : undefined}
@@ -123,10 +123,10 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                 <span className="inline-flex items-center gap-2"><FitDot fit={fit} />{FIT_LABEL[fit]}</span>
                 <span className="tabular-nums">{items.length}</span>
               </h2>
-              <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line xl:hidden">
+              <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface xl:hidden">
                 {items.map((match) => <MatchRow key={match.id} match={match} now={now} place={place} />)}
               </div>
-              <div className="hidden divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line xl:block">
+              <div className="hidden divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface xl:block">
                 {items.map((match) => (
                   <MatchRow key={match.id} match={match} now={now} place={place} compact href={`/dashboard/matches?m=${match.id}`} selected={match.id === selected?.id} />
                 ))}
@@ -148,7 +148,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       )}
     </div>
     {selected && (
-      <aside className="sticky top-6 hidden max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto rounded-[var(--radius-card)] border border-line p-5 xl:block" aria-label="Selected match">
+      <aside className="sticky top-6 hidden max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto rounded-[var(--radius-card)] border border-line bg-surface p-5 xl:block" aria-label="Selected match">
         <MatchDetail match={selectedFull || selected} profile={profile} cvs={cvs} claudeUrl={claudeOk ? claudeLetterUrl(selected.id, `${selected.job.title} at ${selected.job.company}`) : null} />
       </aside>
     )}

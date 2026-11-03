@@ -55,7 +55,7 @@ export function MatchActions({ matchId, initial }: { matchId: string; initial?: 
           <span className="font-semibold">In your tracker.</span>{' '}
           <span className="text-muted">The letter and the apply link are coming to Telegram.</span>
         </p>
-        <Link href="/dashboard/tracker" className="text-[14px] font-semibold text-accent">Open tracker</Link>
+        <Link href="/dashboard/tracker" className="inline-flex min-h-11 items-center text-[14px] font-semibold text-accent">Open tracker</Link>
         <button type="button" onClick={() => void run('open', { action: 'undo' })} className="inline-flex items-center gap-1 text-[13.5px] text-muted hover:text-fg">
           <RotateCcw className="size-3.5" /> Undo
         </button>

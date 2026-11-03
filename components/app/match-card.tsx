@@ -29,12 +29,12 @@ export function MatchMeta({ match, place, className }: { match: DemoMatch; place
   return (
     <div className={cn('flex min-w-0 items-center gap-1.5 overflow-hidden', className)}>
       {tier && (
-        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12.5px] font-medium', tier.strong ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-muted')}>
+        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[13px] font-medium', tier.strong ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-muted')}>
           <tier.icon className="size-3" /> {tier.label}
         </span>
       )}
       {match.cvLabel && (
-        <span className="inline-flex min-w-0 max-w-[150px] items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[12.5px] font-medium text-muted" title={`Use your ${match.cvLabel} CV`}>
+        <span className="inline-flex min-w-0 max-w-[150px] items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[13px] font-medium text-muted" title={`Use your ${match.cvLabel} CV`}>
           <FileText className="size-3 shrink-0" /> <span className="truncate">{match.cvLabel}</span>
         </span>
       )}
@@ -51,32 +51,32 @@ export function MatchRow({ match, now, place = {}, href, selected, compact }: { 
       scroll={!href}
       aria-current={selected ? 'true' : undefined}
       className={cn(
-        'group relative flex items-start gap-3.5 px-5 py-4 transition-colors hover:bg-surface-2/70 active:bg-surface-2',
+        'group relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-2/70 active:bg-surface-2',
         compact && 'py-3',
         selected && 'bg-accent-soft/60 hover:bg-accent-soft/60',
       )}
     >
       <span className={cn('absolute bottom-5 left-0 top-5 w-[3px] rounded-r-full', FIT_BG[fit])} aria-hidden />
-      <ScoreRing score={match.score} />
+      <ScoreRing score={match.score} className="order-2 mt-0.5" />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate text-[16px] font-semibold leading-snug tracking-[-0.02em]">{match.job.title}</h3>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-[-0.02em]">{match.job.title}</h3>
           {isNew(match, now) && (
-            <span className="shrink-0 rounded-[4px] bg-accent-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-accent">New</span>
+            <span className="shrink-0 rounded-[4px] bg-accent-soft px-1.5 py-px text-[13px] font-medium text-accent">New</span>
           )}
           {match.coverLetter && match.aiMeta?.letter?.cause === 'agent' && (
-            <span className="shrink-0 rounded-[4px] bg-surface-2 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-muted">Letter ready</span>
+            <span className="shrink-0 rounded-[4px] bg-surface-2 px-1.5 py-px text-[13px] font-medium text-muted">Letter ready</span>
           )}
         </div>
         <p className="mt-0.5 truncate text-[14px] text-muted">
           {match.job.company}
           {where ? ` · ${where}` : ''}
         </p>
-        <MatchMeta match={match} place={place} className="mt-2" />
-        {match.reasons[0] && <p className="mt-2 line-clamp-1 text-[14px] text-fg/85">{match.reasons[0]}</p>}
-        {match.redFlags[0] && !compact && <Note tone="warning" className="mt-1">{match.redFlags[0]}</Note>}
+        <MatchMeta match={match} place={place} className="mt-1.5 flex-wrap" />
+        {match.reasons[0] && <p className="mt-2 line-clamp-1 text-[14px] text-fg">{match.reasons[0]}</p>}
+        {match.redFlags[0] && !compact && <Note tone="warning" className="mt-1 text-[13px] [&>span:last-child]:line-clamp-1">{match.redFlags[0]}</Note>}
       </div>
-      <ChevronRight className="mt-2 size-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5" />
+      <ChevronRight className="order-3 mt-2 hidden size-4 md:block shrink-0 text-subtle transition-transform group-hover:translate-x-0.5" />
     </Link>
   );
 }

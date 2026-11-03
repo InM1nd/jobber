@@ -29,7 +29,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="space-y-6">
       <TelegramBack href="/dashboard/matches" />
-      <Link href="/dashboard/matches" className="-ml-1 inline-flex items-center gap-0.5 text-[13px] font-medium text-muted hover:text-fg">
+      <Link href="/dashboard/matches" className="-ml-1 inline-flex min-h-11 items-center gap-0.5 text-[13px] font-medium text-muted hover:text-fg">
         <ChevronLeft className="size-4" /> Matches
       </Link>
       <MatchDetail match={match} profile={profile} cvs={cvs} claudeUrl={claudeUrl} />

@@ -39,22 +39,22 @@ export function MatchDetail({
   const agentName = agent ? agent.by.charAt(0).toUpperCase() + agent.by.slice(1) : '';
   return (
     <>
-      <header data-theme="dark" className="rounded-[var(--radius-card)] border border-line bg-[#121214] p-6 text-white">
+      <header className="rounded-[var(--radius-card)] border border-line bg-surface p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[14px] text-white/55">{match.job.company}</p>
-            <h1 className="mt-1 text-[28px] font-semibold leading-[1.08] tracking-[-0.04em]">{match.job.title}</h1>
+            <p className="text-[14px] text-muted">{match.job.company}</p>
+            <h1 className="mt-1 text-[26px] md:text-[28px] font-semibold leading-[1.08] tracking-[-0.04em]">{match.job.title}</h1>
           </div>
-          <ScoreRing score={match.score} size={56} className="[&>span]:text-white" />
+          <ScoreRing score={match.score} size={56}  />
         </div>
-        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-white/55">
+        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-muted">
           <span className={`font-semibold ${FIT_TEXT[fitOf(match.score)]}`}>{FIT_LABEL[fitOf(match.score)]}</span>
           {place && <span>· {place}</span>}
           {viaOf(match.job.description) && <span>· via {viaOf(match.job.description)}</span>}
           {agent && <span>· found by {agentName}</span>}
           {salary && <span>· {salary}</span>}
         </div>
-        <a href={match.job.url} target="_blank" rel="noreferrer" className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-white/10 px-4 text-[14px] font-semibold transition-colors hover:bg-white/15">
+        <a href={match.job.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex h-11 items-center gap-1.5 rounded-full bg-surface-2 px-4 text-[14px] font-semibold transition-colors hover:bg-line">
           Open listing <ArrowUpRight className="size-4 text-accent" />
         </a>
       </header>
@@ -67,7 +67,7 @@ export function MatchDetail({
       )}
 
       {(sub || match.reasons.length > 0 || match.redFlags.length > 0) && (
-        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
           <p className="mb-3 text-[14px] font-medium">
             Why {match.score}
             {match.aiMeta?.verified && (
@@ -92,7 +92,7 @@ export function MatchDetail({
                   <span className={`absolute inset-y-0 left-0 rounded-full ${(sub[k] ?? 0) >= 75 ? 'bg-fit-strong' : (sub[k] ?? 0) >= 55 ? 'bg-fit-good' : (sub[k] ?? 0) >= 35 ? 'bg-fit-ok' : 'bg-fit-weak'}`} style={{ width: `${sub[k] ?? 0}%` }} />
                 </span>
                 <span className="w-7 shrink-0 text-right tabular-nums">{sub[k] ?? '–'}</span>
-                <span className="w-8 shrink-0 text-right text-[12px] text-subtle">×{Math.round(WEIGHTS[k] * 100)}%</span>
+                <span className="w-8 shrink-0 text-right text-[13px] text-muted">×{Math.round(WEIGHTS[k] * 100)}%</span>
               </div>
             ))}
           </div>}
@@ -100,7 +100,7 @@ export function MatchDetail({
       )}
 
       {agent?.note && (
-        <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
           <p className="mb-1.5 text-[14px] font-medium">
             {agentName}&rsquo;s note{agent.score !== undefined && <span className="font-normal text-muted"> · its guess {agent.score}</span>}
           </p>

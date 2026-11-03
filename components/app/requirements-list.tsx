@@ -12,10 +12,10 @@ export function RequirementsList({ items }: { items?: RequirementItem[] | null }
   if (!items?.length) return null;
   const covered = items.filter((i) => i.result === 'covered').length;
   return (
-    <section className="rounded-[var(--radius-card)] border border-line px-5 py-4">
+    <section className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <p className="text-[14px] font-medium">Requirements</p>
-        <p className="text-[13px] text-subtle">{covered} of {items.length} covered</p>
+        <p className="text-[14px] font-semibold">Requirements</p>
+        <p className="text-[13px] text-muted">{covered} of {items.length} covered</p>
       </div>
       <ul className="space-y-2.5">
         {items.map((it) => (
@@ -24,7 +24,7 @@ export function RequirementsList({ items }: { items?: RequirementItem[] | null }
             <span className="min-w-0">
               <span className="text-[13.5px] leading-snug">
                 {it.text}
-                {it.must && <span className="ml-1.5 text-[12px] font-medium uppercase tracking-wide text-subtle">must</span>}
+                {it.must && <span className="ml-1.5 text-[13px] font-medium tracking-normal text-muted">must</span>}
               </span>
               <span className="block text-[13px] text-muted">{it.note}</span>
             </span>
