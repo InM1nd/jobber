@@ -26,8 +26,8 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-screen flex-col bg-bg px-5">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between py-5">
-        <Link href="/"><Logo /></Link>
-        <Link href="/" className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-fg">
+        <Link href="/" className="inline-flex min-h-11 items-center"><Logo /></Link>
+        <Link href="/" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-fg">
           <ArrowLeft className="size-4" /> Home
         </Link>
       </header>
@@ -36,10 +36,10 @@ export default function SignInPage() {
           <h1 className="text-center text-[30px] font-semibold tracking-[-0.04em]">Welcome back</h1>
           <p className="mt-1.5 text-center text-[15px] text-muted">Same account as the Jobber app in Telegram.</p>
 
-          <div className="mt-8 rounded-[var(--radius-card)] border border-line p-6">
+          <div className="mt-8 rounded-[var(--radius-card)] border border-line bg-surface p-5 md:p-6">
             <TelegramLoginButton onDone={() => router.push('/dashboard/matches')} onError={setError} />
             {error && <div className="mt-3"><Notice tone="danger">{error}</Notice></div>}
-            <div className="my-5 flex items-center gap-3 text-[13px] text-subtle">
+            <div className="my-5 flex items-center gap-3 text-[13px] text-muted">
               <span className="h-px flex-1 bg-line" /> or with email <span className="h-px flex-1 bg-line" />
             </div>
             <EmailLinkForm
@@ -49,7 +49,7 @@ export default function SignInPage() {
             />
           </div>
           <p className="mt-6 text-center text-[13px] text-muted">
-            New here? <Link href="/auth/signup" className="font-medium text-fg underline-offset-4 hover:underline">Join with an invite</Link>
+            New here? <Link href="/auth/signup" className="inline-flex min-h-11 items-center font-medium text-fg underline-offset-4 hover:underline">Join with an invite</Link>
           </p>
         </div>
       </main>

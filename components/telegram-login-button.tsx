@@ -49,7 +49,7 @@ export function TelegramLoginButton({ invite, onDone, onError }: { invite?: stri
       <button
         type="button"
         onClick={start}
-        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#2AABEE] text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-fg text-[15px] font-semibold text-bg transition-opacity hover:opacity-90"
       >
         {state === 'waiting' ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
         {state === 'waiting' ? 'Waiting for Telegram…' : 'Sign in with Telegram'}

@@ -83,7 +83,7 @@ export function EmailLinkForm({
       )}
 
       {state.kind === 'sent' ? (
-        <div className="animate-in rounded-[18px] border border-accent/40 bg-accent-soft p-5" aria-live="polite">
+        <div className="animate-in rounded-[var(--radius-field)] border border-accent/40 bg-accent-soft p-5" aria-live="polite">
           <div className="flex items-start gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg">
               <Mail className="size-5" />
@@ -113,6 +113,8 @@ export function EmailLinkForm({
             void send(email.trim());
           }}
         >
+          <label className="block">
+          <span className="sr-only">Email address</span>
           <input
             type="email"
             value={email}
@@ -122,6 +124,7 @@ export function EmailLinkForm({
             required
             className={fieldClass}
           />
+          </label>
           {state.kind === 'error' && (
             <p className="flex items-start gap-2 rounded-[12px] border border-danger/30 px-3 py-2.5 text-[13px] text-danger" role="alert">
               <AlertCircle className="mt-px size-4 shrink-0" /> {state.message}

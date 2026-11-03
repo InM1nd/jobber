@@ -39,7 +39,7 @@ function StepDots({ step }: { step: Step }) {
 function Title({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
     <div className="mb-7">
-      <h1 className="text-[30px] font-semibold leading-[1.08] tracking-[-0.04em]">{children}</h1>
+      <h1 className="text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] md:text-[34px]">{children}</h1>
       {hint && <p className="mt-2.5 text-[15px] leading-relaxed text-muted">{hint}</p>}
     </div>
   );
@@ -135,7 +135,7 @@ export function Onboarding({ firstName, initialStep }: { firstName?: string | nu
   const options = [...extra, ...(plan?.companies || [])];
 
   return (
-    <div className="mx-auto max-w-lg pb-4">
+    <div className="mx-auto max-w-lg rounded-[var(--radius-card)] border border-line bg-surface p-5 md:p-7">
       <StepDots step={step} />
       {error && <div className="mb-5"><Notice tone="danger">{error}</Notice></div>}
 
@@ -145,7 +145,7 @@ export function Onboarding({ firstName, initialStep }: { firstName?: string | nu
             {firstName ? `Hi ${firstName}.` : 'Hi.'} Let’s start<br />with your CV.
           </Title>
           <CvManager cvs={cvs} onChange={onCvs} />
-          <p className="mt-6 text-center text-[13px] leading-relaxed text-subtle">Your CVs stay in your account and are read by Google Gemini.</p>
+          <p className="mt-6 text-center text-[13px] leading-relaxed text-muted">Your CVs stay in your account and are read by Google Gemini.</p>
           <Footer>
             {cvs.length ? (
               <NextButton onClick={next}>Continue</NextButton>
@@ -218,7 +218,7 @@ export function Onboarding({ firstName, initialStep }: { firstName?: string | nu
 }
 
 function Footer({ children }: { children: React.ReactNode }) {
-  return <div className="sticky bottom-0 -mx-5 mt-8 bg-gradient-to-t from-bg via-bg to-transparent px-5 pb-[calc(16px+var(--safe-bottom))] pt-6">{children}</div>;
+  return <div className="sticky bottom-0 -mx-5 mt-8 bg-gradient-to-t from-surface via-surface to-transparent px-5 pb-[calc(16px+var(--safe-bottom))] pt-6">{children}</div>;
 }
 
 function NextButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
